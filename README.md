@@ -12,7 +12,7 @@ npm start
 
 Then open **http://127.0.0.1:4187**. Node and Python 3 are needed for these development commands. There are no packages to install and no remote asset dependencies. Keep the server running while using the app; press Control-C in its terminal to stop it.
 
-Use the same browser and address each time. Browser storage belongs to an origin: `localhost:4187` and `127.0.0.1:4187` have separate progress. Settings contains JSON backup export/import for moving progress. Import validates the file and asks before replacing the current save. Clearing browser data removes progress unless backed up.
+Use the same browser and address each time. Browser storage belongs to an origin: `localhost:4187` and `127.0.0.1:4187` have separate progress. Settings contains JSON backup export/import for moving progress. Import validates the file and asks before replacing the current save. Clearing browser data removes progress unless backed up. Settings shows when you last exported a backup. If a week passes with progress and no backup, a small dashboard banner offers an export or a reminder in another week.
 
 For a self-contained copy, open **Twesk.html** directly in a regular browser. It embeds the styles, application code, artwork, and a Blob-based combat worker, so no server or internet connection is required. The original `index.html` is the development entry and needs the local server because browsers restrict local-file JavaScript module imports and workers. File-based browser storage can vary by browser and file location; use export/import to move progress between the served app and the HTML copy, and keep backups.
 
@@ -42,7 +42,7 @@ Regenerate `Twesk.html` after source changes with `npm run build:standalone`. Th
 - Achievements opens a collection of 28 original RPG seals for tasks, each positive habit category, leveling, monster victories, Vault entries, and journaling. Category filters, an earned-only view, progress bars, dates, and unlock notifications make milestones easy to find. Seals remain earned after undo; counters reverse undone completions and retain contributions from deleted records. Seals add no currency or combat bonuses.
 - Bestiary shows defeated, available, next, and locked encounters, with monster details, actual combat stats, and chapter navigation. Eight distinct voxel creatures have roots, scales, crystals, pincers, antlers, petals, armor, or patterned wings; their models also appear on the dashboard and in combat. Defeated creatures have grayscale bodies and X eyes. Later chapters repeat these species with increasing encounter stats.
 - Quick capture includes a Journal option alongside Note and Task. Ordinary journal entries count toward milestones without requiring combat defeat or healing HP.
-- Name and timezone settings, light/dark themes, sound mute, reduced motion, keyboard capture, and local backups.
+- Name and timezone settings (new saves start in this device's timezone; Settings offers a one-click switch if they differ), light/dark themes, sound mute, reduced motion, keyboard capture, and local backups.
 - Confirmed full reset with recoverable previous progress, plus a self-contained HTML build for opening without a local server.
 
 Quick capture: **Command/Ctrl-K**. Vault: **Command/Ctrl-J**. Escape closes dialogs. Reward sounds use a local audio synthesizer.
@@ -53,7 +53,7 @@ Quick capture: **Command/Ctrl-K**. Vault: **Command/Ctrl-J**. Escape closes dial
 npm test
 ```
 
-The 54 domain checks cover independent XP, the weekly progression target, momentum and missed days, reward undo, note caps, conversion/review, health, equipment, exact combat odds versus independent sampling, loot, rollover, backup validation, milestone persistence/migration, monster collection statuses, artwork bounds, habit icon compatibility/validation, personalized face portraits, reset/recovery, and failed-storage preservation.
+The 56 domain checks cover independent XP, the weekly progression target, momentum and missed days, reward undo, note caps, conversion/review, health, equipment, exact combat odds versus independent sampling, loot, rollover, backup validation, milestone persistence/migration, monster collection statuses, artwork bounds, habit icon compatibility/validation, personalized face portraits, reset/recovery, failed-storage preservation, device-timezone defaults, and backup-reminder timing.
 
 The full flows were also checked in the browser: capture → convert → complete → buy/equip; habit creation and undo; reload persistence; defeat → journal → HP recovery; potion use; hashtag search and archive restoration; backup export/import; stat level-up; victory; task/category/level/journal seal unlocks; direct journal capture; and bestiary inspection/chapter navigation. Desktop and narrow-screen layouts and both themes were inspected. Collection checks use a separate localhost save so the user's progress is not changed.
 

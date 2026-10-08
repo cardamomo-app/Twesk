@@ -121,3 +121,20 @@ test('backup identifiers and note dates cannot break markup or rendering',()=>{
   const s=E.freshState();s.tasks[0].id='a" onclick="bad';assert.throws(()=>E.validateState(s));
   const t=E.freshState();E.saveNote(t,{text:'Hi'},day(1));t.notes[0].created='not a date';assert.throws(()=>E.validateState(t));
 });
+
+test('new saves use the device timezone and older saves keep theirs',()=>{
+  const s=E.freshState();assert.equal(s.settings.timezone,E.deviceTimezone());assert.doesNotThrow(()=>E.dateKey(new Date(),s.settings.timezone));
+  const old=E.freshState();old.settings.timezone='Atlantic/Madeira';delete old.settings.lastBackup;delete old.settings.backupNudge;
+  const restored=E.validateState(JSON.parse(JSON.stringify(old)));
+  assert.equal(restored.settings.timezone,'Atlantic/Madeira');assert.equal(restored.settings.lastBackup,null);assert.equal(restored.settings.backupNudge,null);
+  for(const bad of ['yesterday',42])assert.throws(()=>E.validateState({...E.freshState(),settings:{...E.freshState().settings,lastBackup:bad}}));
+});
+test('backup reminders wait a week, need progress, and reset after export or snooze',()=>{
+  const s=E.freshState();s.settings.backupNudge=day(1);
+  assert.equal(E.backupDue(s,day(10)),false,'nothing to lose yet');
+  E.completeHabit(s,habit(s).id,day(1));
+  assert.equal(E.backupDue(s,day(7)),false);assert.equal(E.backupDue(s,day(8)),true);
+  s.settings.lastBackup=day(8);assert.equal(E.backupDue(s,day(14)),false);assert.equal(E.backupDue(s,day(15)),true);
+  s.settings.backupNudge=day(15);assert.equal(E.backupDue(s,day(21)),false);assert.equal(E.backupDue(s,day(22)),true);
+  const unstarted=E.freshState();unstarted.gold=50;assert.equal(E.backupDue(unstarted,day(30)),false,'clock starts when the app first opens');
+});

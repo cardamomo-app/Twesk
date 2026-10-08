@@ -16,6 +16,10 @@ export function dateKey(now = new Date(), timezone = 'Atlantic/Madeira') {
   const get = type => parts.find(p => p.type === type).value;
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
+export function deviceTimezone() {
+  try { const zone = Intl.DateTimeFormat().resolvedOptions().timeZone; dateKey(new Date(), zone); return zone; }
+  catch { return 'UTC'; }
+}
 export function daysBetween(a, b) { return Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86400000); }
 export const level = (s, stat) => Math.floor(s.xp[stat] / 300) + 1;
 export const maxHP = s => 100 + 15 * (level(s, 'body') - 1);
@@ -45,7 +49,7 @@ export function freshState() {
     supplies: {}, preparedSpell: null, activePet: null,
     progress: createProgress(),
     monster: { number: 1, defeatedOn: null }, battles: [], pendingRecovery: false,
-    settings: { theme: 'light', muted: false, reducedMotion: false, timezone: 'Atlantic/Madeira' },
+    settings: { theme: 'light', muted: false, reducedMotion: false, timezone: deviceTimezone(), lastBackup: null, backupNudge: null },
   };
 }
 
@@ -277,6 +281,13 @@ export function fight(s,today,rng=Math.random) {
   s.battles.unshift(result); s.battles=s.battles.slice(0,50); return result;
 }
 
+// A backup reminder is due after a week without a backup or a snooze, once there is progress worth keeping.
+export function backupDue(s,today,days=7) {
+  const since=[s.settings.lastBackup,s.settings.backupNudge].filter(Boolean).sort().pop();
+  const progress=s.gold>0||CATEGORIES.some(c=>s.xp[c]>0)||s.progress.tasks>0||s.progress.notes>0||s.battles.length>0;
+  return !!since&&progress&&daysBetween(since,today)>=days;
+}
+
 export function validateState(value) {
   const s=JSON.parse(JSON.stringify(value));
   const fail=()=>{ throw new Error('This file is not a valid Twesk backup.'); };
@@ -291,6 +302,8 @@ export function validateState(value) {
   if (s.hp>maxHP(s)||!array(s.tasks)||!array(s.habits,300)||!array(s.notes)||!array(s.inventory,SHOP.filter(i=>!isConsumable(i)).length)||!array(s.reviewDates)||!array(s.battles,50)) fail();
   if (!s.settings||!text(s.settings.timezone,100)||!['light','dark'].includes(s.settings.theme)||typeof s.settings.muted!=='boolean'||typeof s.settings.reducedMotion!=='boolean') fail();
   try { dateKey(new Date(),s.settings.timezone); } catch { fail(); }
+  s.settings.lastBackup ??= null; s.settings.backupNudge ??= null;
+  if (![s.settings.lastBackup,s.settings.backupNudge].every(v=>v===null||date(v))) fail();
   if (!s.monster||!integer(s.monster.number,1,500)||(s.monster.defeatedOn!==null&&!date(s.monster.defeatedOn))) fail();
   if (!integer(s.potions)||typeof s.pendingRecovery!=='boolean'||!s.noteGold||typeof s.noteGold!=='object'||Array.isArray(s.noteGold)) fail();
   if (!Object.entries(s.noteGold).every(([k,v])=>date(k)&&integer(v,0,6))||!s.reviewDates.every(date)) fail();

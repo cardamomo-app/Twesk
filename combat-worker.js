@@ -1,4 +1,4 @@
-import { victoryOdds, combatStats, monsterStats } from './engine.js?v=0.7.4';
+import { victoryOdds, combatStats, monsterStats } from './engine.js?v=0.7.5';
 self.onmessage = ({data:{state,key}}) => {
   try {
     const p=combatStats(state), m=monsterStats(state.monster.number);

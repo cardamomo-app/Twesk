@@ -59,7 +59,10 @@ The full flows were also checked in the browser: capture → convert → complet
 
 ## Files
 
-- `index.html`, `styles.css`, `app.js`: interface and local saving.
+- `index.html`, `styles.css`, `app.js`: page shell, styles, and the interface entry (dashboard layout, dialog routing, event wiring, startup).
+- `ui-core.js`: the shared `app` store (save plus view state), saving, HTML helpers, and toasts. `view` holds the top-level redraw functions, registered by `app.js` so feature modules never import it.
+- `ui-modal.js`: opening/closing dialogs, `commit` transactions with rollback, and seal notifications.
+- Feature modules, each exporting its `modals`, `actions` (keyed by `data-action`), and `forms` (keyed by form id): `ui-tasks.js`, `ui-habits.js`, `ui-vault.js`, `ui-character.js`, `ui-shop.js`, `ui-battle.js`, `ui-collection.js`, `ui-settings.js`. Supporting pieces: `ui-effects.js` (sounds and reward animation) and `ui-stat-tooltip.js`.
 - `Twesk.html`, `scripts/build-standalone.mjs`: generated standalone app and its dependency-free packager. Rebuild after source changes.
 - `save-recovery.js`: transactional reset/restore with a recoverable previous save.
 - `engine.js`: state model and reward/combat rules, independently testable.

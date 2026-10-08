@@ -6,6 +6,10 @@ import {resolve,dirname} from 'node:path';
 import {Script} from 'node:vm';
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
+// Source edits for running from a single file; each must apply exactly once across the app bundle.
+const WORKER=/^const worker = new Worker\('\/combat-worker\.js(?:\?[^']*)?', \{ type: 'module' \}\);$/m;
+const HOME_LINK='href="/" aria-label="Twesk home"';
+const applied=new Set();
 async function bundle(entry,{workerSource}={}){
   const modules=new Map();
   const dependency=specifier=>{
@@ -17,23 +21,27 @@ async function bundle(entry,{workerSource}={}){
     modules.set(file,'');
     let source=await readFile(resolve(root,file),'utf8');
     const exported=[],deps=[];
-    source=source.replace(/^import (.+?) from ['"](.+?)['"];?$/gm,(_,bindings,specifier)=>{
+    source=source.replace(/^import (\* as \w+|\{[\w$\s,]+\}) from ['"](.+?)['"];?$/gm,(_,bindings,specifier)=>{
       const dep=dependency(specifier);deps.push(dep);
       if(/^\* as \w+$/.test(bindings))return `const ${bindings.slice(5)}=require(${JSON.stringify(dep)});`;
-      if(/^\{[\w\s,]+\}$/.test(bindings))return `const ${bindings}=require(${JSON.stringify(dep)});`;
+      if(/^\{[\w$\s,]+\}$/.test(bindings))return `const ${bindings}=require(${JSON.stringify(dep)});`;
       throw new Error(`Unsupported import in ${file}: ${bindings}`);
     });
+    const leftover=source.match(/^import\b.*$/m);
+    if(leftover)throw new Error(`Unsupported import in ${file}: ${leftover[0]}`);
     source=source.replace(/^export \{([\w\s,]+)\} from ['"](.+?)['"];?$/gm,(_,names,specifier)=>{
       const dep=dependency(specifier);deps.push(dep);
       return `Object.assign(exports,(({${names}})=>({${names}}))(require(${JSON.stringify(dep)})));`;
     });
-    source=source.replace(/\bexport (function|const) (\w+)/g,(_,kind,name)=>{exported.push(name);return `${kind} ${name}`;});
-    if(file==='app.js'){
-      const workerLine="const worker=new Worker('/combat-worker.js?v=0.7.4',{type:'module'});";
-      if(!source.includes(workerLine)||!workerSource)throw new Error('Update standalone worker packaging for the current app.');
-      source=source.replace(workerLine,`const workerUrl=URL.createObjectURL(new Blob([${JSON.stringify(workerSource)}],{type:'text/javascript'}));\nconst worker=new Worker(workerUrl);\nworker.addEventListener('message',()=>URL.revokeObjectURL(workerUrl),{once:true});`);
-      source=source.replace('href="/" aria-label="Twesk home"','href="" aria-label="Twesk home"');
+    source=source.replace(/\bexport (async function|function|const) ([\w$]+)/g,(_,kind,name)=>{exported.push(name);return `${kind} ${name}`;});
+    if(WORKER.test(source)){
+      if(!workerSource||applied.has('worker'))throw new Error('Update standalone worker packaging for the current app.');
+      source=source.replace(WORKER,()=>`const workerUrl=URL.createObjectURL(new Blob([${JSON.stringify(workerSource)}],{type:'text/javascript'}));\nconst worker=new Worker(workerUrl);\nworker.addEventListener('message',()=>URL.revokeObjectURL(workerUrl),{once:true});`);
+      applied.add('worker');
     }
+    if(workerSource&&source.includes(HOME_LINK)){source=source.replace(HOME_LINK,'href="" aria-label="Twesk home"');applied.add('home');}
+    const unsupported=source.match(/^export\b.*$/m);
+    if(unsupported)throw new Error(`Unsupported export in ${file}: ${unsupported[0]}`);
     source+=`\nObject.assign(exports,{${exported.join(',')}});`;
     new Script(`(function(require,exports){${source}\n})`,{filename:file});
     modules.set(file,source);
@@ -45,6 +53,7 @@ async function bundle(entry,{workerSource}={}){
 }
 const workerSource=await bundle('combat-worker.js');
 const appSource=await bundle('app.js',{workerSource});
+if(!applied.has('worker')||!applied.has('home'))throw new Error('Standalone source edits did not apply; update the packager.');
 const template=await readFile(resolve(root,'index.html'),'utf8');
 const css=await readFile(resolve(root,'styles.css'),'utf8');
 const output=template.replace(/  <link rel="stylesheet"[^>]+>/,()=>`  <style>\n${css}\n  </style>`)

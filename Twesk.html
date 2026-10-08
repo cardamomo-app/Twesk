@@ -442,8 +442,23 @@ function dateLabel() {
     day: 'numeric',
   }).format(new Date());
 }
+// Selector for the same control after a redraw, e.g. [data-action="habit"][data-id="…"].
+function controlSelector(el) {
+  if (!el?.dataset?.action) return null;
+  return ['action', 'id', 'category', 'view', 'project', 'stat']
+    .filter(key => el.dataset[key] !== undefined)
+    .map(key => `[data-${key}="${CSS.escape(el.dataset[key])}"]`)
+    .join('');
+}
 function render() {
   hideStatTooltip();
+  // Redrawing replaces the dashboard; keep list scroll positions, the page position, and focus.
+  const scrolls = ['.tasks-scroll', '.habits-scroll'].map(selector => [
+      selector,
+      $(selector)?.scrollTop || 0,
+    ]),
+    pageY = window.scrollY,
+    focused = $('#app').contains(document.activeElement) ? controlSelector(document.activeElement) : null;
   const day = today();
   E.rollover(app.state, day);
   app.lastDay = day;
@@ -467,6 +482,9 @@ function render() {
       <section class="panel habits-panel" aria-labelledby="habits-heading"><div class="panel-heading"><div><span class="section-kicker">GROW AT YOUR OWN PACE</span><h2 id="habits-heading">Habits</h2></div>${iconButton('new-habit', 'plus', 'Add a habit')}</div><div class="habits-scroll">${[...E.CATEGORIES, 'harm'].map(habits.renderCategory).join('')}</div></section>
       <aside class="character-column" aria-label="Your character and adventure">${character.renderCharacter()}${battle.renderMonster()}</aside>
     </div><footer class="app-footer"><span><span class="local-dot"></span>${app.saveError ? 'Save unavailable' : 'Saved on this device'}</span><div class="day-summary" aria-label="Daily progress"><span>${icon('check')}<strong>${completed}</strong> tasks cleared</span><span>${icon('leaf')}<strong>${habitsDone}</strong> habits today</span></div><button data-action="vault">Open Vault <kbd>⌘ J</kbd></button></footer></main>`;
+  for (const [selector, top] of scrolls) if ($(selector)) $(selector).scrollTop = top;
+  if (window.scrollY !== pageY) window.scrollTo(0, pageY);
+  if (focused && !app.modal) $(`#app ${focused}`)?.focus({ preventScroll: true });
   renderModal();
   battle.updateOdds();
 }

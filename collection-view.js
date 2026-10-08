@@ -1,0 +1,36 @@
+import {ACHIEVEMENTS,ACHIEVEMENT_GROUPS,achievementValue,defeatedCount,monsterStatus} from './achievements.js?v=0.7.0';
+import {badgeArt} from './badge-art.js?v=0.7.0';
+import {monsterArt,monsterInfo,monsterName} from './monster-art.js?v=0.7.0';
+import {monsterStats} from './engine.js?v=0.7.4';
+const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const smallIcon=kind=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">${kind==='check'?'<path d="m5 12 4 4 10-11"/>':'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>'}</svg>`;
+export function collectionBody(s,{tab='seals',filter='all',earnedOnly=false,chapter=1,selectedMonster=s.monster.number}={}){
+  const earned=Object.keys(s.progress.earned).length;
+  return `<div class="collection-tabs" role="tablist" aria-label="Achievement collection"><button role="tab" id="collection-tab-seals" aria-controls="collection-content" aria-selected="${tab==='seals'}" tabindex="${tab==='seals'?0:-1}" data-action="collection-tab" data-tab="seals">Seals & badges <span>${earned}/${ACHIEVEMENTS.length}</span></button><button role="tab" id="collection-tab-monsters" aria-controls="collection-content" aria-selected="${tab==='monsters'}" tabindex="${tab==='monsters'?0:-1}" data-action="collection-tab" data-tab="monsters">Bestiary <span>${defeatedCount(s)} defeated</span></button></div><div id="collection-content" class="collection-body" role="tabpanel" aria-labelledby="collection-tab-${tab}" tabindex="0">${tab==='seals'?renderSeals(s,filter,earnedOnly):renderBestiary(s,chapter,selectedMonster)}</div>`;
+}
+function renderSeals(s,filter,earnedOnly){
+  const list=ACHIEVEMENTS.filter(b=>(filter==='all'||b.group===filter)&&(!earnedOnly||s.progress.earned[b.id]));
+  return `<div class="collection-toolbar"><div><h3>Your seals</h3><p>Badges stay earned. Counters reflect completions, with undo supported.</p></div><button class="earned-filter ${earnedOnly?'selected':''}" data-action="earned-filter" aria-pressed="${earnedOnly}">${smallIcon('check')}Earned only</button></div><div class="seal-filters" role="group" aria-label="Badge category">${ACHIEVEMENT_GROUPS.map(([key,label])=>`<button data-action="seal-filter" data-filter="${key}" aria-pressed="${filter===key}">${label}</button>`).join('')}</div><div class="seal-grid">${list.length?list.map(b=>{
+    const earnedOn=s.progress.earned[b.id],earned=!!earnedOn;
+    let value=achievementValue(s,b),target=b.target,unit='';
+    if(b.metric==='highestLevel'){value=Math.max(...Object.values(s.xp));target=300;unit=' XP';}
+    if(b.metric==='lowestLevel'){value=Object.values(s.xp).filter(x=>x>=300).length;target=4;unit=' stats';}
+    const ratio=earned?100:Math.min(100,value/target*100);
+    return `<article class="seal-card ${earned?'is-earned':'is-locked'} ${b.group}" aria-label="${esc(b.title)} · ${earned?'Earned':'Locked'}"><span class="seal-state">${smallIcon(earned?'check':'lock')}${earned?'Earned':'Locked'}</span>${badgeArt(b,earned)}<span class="seal-category">${ACHIEVEMENT_GROUPS.find(([key])=>key===b.group)[1]}</span><h4>${esc(b.title)}</h4><p>${esc(b.description)}</p><div class="seal-progress" role="progressbar" aria-label="${esc(b.title)} progress" aria-valuemin="0" aria-valuemax="${target}" aria-valuenow="${earned?target:Math.min(value,target)}"><span style="width:${ratio}%"></span></div><small>${earned?`Earned ${esc(earnedOn)}`:`${Math.min(value,target).toLocaleString()} / ${target.toLocaleString()}${unit}`}</small></article>`;
+  }).join(''):'<div class="collection-empty"><h3>No earned seals in this category yet</h3><p>Show all seals to see your next milestones.</p><button class="button secondary" data-action="earned-filter">Show all seals</button></div>'}</div><p class="collection-note">Seals are keepsakes. They do not spend or grant gold, XP, or HP.</p>`;
+}
+function statusText(s,n,status){
+  if(status==='defeated')return 'Defeated';
+  if(status==='available')return 'Available to challenge';
+  if(status==='next')return s.monster.defeatedOn?'Next · arrives tomorrow':'Next opponent';
+  return 'Locked';
+}
+function renderBestiary(s,chapter,selected){
+  const maxChapter=Math.max(2,Math.ceil(s.monster.number/8)+1),start=(chapter-1)*8+1;
+  const n=selected>=start&&selected<start+8?selected:start,meta=monsterInfo(n),status=monsterStatus(s,n),stats=monsterStats(n);
+  const requirement=status==='defeated'?'Victory recorded in your collection.':status==='available'?'Challenge whenever you feel ready.':status==='next'&&s.monster.defeatedOn?'Unlocks on the next local calendar day.':`Defeat ${monsterName(n-1)} to unlock this encounter.`;
+  return `<div class="collection-toolbar"><div><h3>Monster collection</h3><p>${defeatedCount(s)} defeated · encounters unlock in order</p></div><button class="text-button" data-action="current-monster">Current chapter ↗</button></div><section class="bestiary-feature ${status}" id="monster-details" tabindex="-1" aria-label="Selected monster: ${esc(monsterName(n))}"><div class="bestiary-portrait">${monsterArt(n,status==='defeated')}</div><div class="bestiary-detail"><span class="monster-status ${status}">${status==='available'?'':smallIcon(status==='defeated'?'check':'lock')}${statusText(s,n,status)}</span><span class="bestiary-kind">#${String(n).padStart(2,'0')} · ${esc(meta.kind)} · ${esc(meta.region)}</span><h3>${esc(monsterName(n))}</h3><p>${esc(meta.description)}</p><div class="bestiary-stats"><span><strong>${stats.hp}</strong> HP</span><span><strong>${stats.attack-10}–${stats.attack+10}</strong> attack</span><span>Loot: gold or gear</span></div><small>${esc(requirement)}</small>${status==='available'?'<button class="button secondary" data-action="view-challenge">View dashboard challenge</button>':''}</div></section><div class="bestiary-pagination"><button class="icon-button" data-action="monster-page" data-direction="-1" aria-label="Previous chapter" ${chapter<=1?'disabled':''}>←</button><label>Chapter <select id="monster-chapter" aria-label="Monster chapter">${Array.from({length:maxChapter},(_,i)=>`<option value="${i+1}" ${chapter===i+1?'selected':''}>${i+1} · encounters ${i*8+1}–${i*8+8}</option>`).join('')}</select></label><button class="icon-button" data-action="monster-page" data-direction="1" aria-label="Next chapter" ${chapter>=maxChapter?'disabled':''}>→</button></div><div class="bestiary-grid">${Array.from({length:8},(_,i)=>{
+    const number=start+i,state=monsterStatus(s,number);
+    return `<button class="monster-card ${state} ${number===n?'selected':''}" data-action="select-monster" data-number="${number}" aria-pressed="${number===n}" aria-label="Inspect ${esc(monsterName(number))} · ${statusText(s,number,state)}"><span class="monster-card-number">#${String(number).padStart(2,'0')}</span>${monsterArt(number,state==='defeated')}<strong>${esc(monsterName(number))}</strong><span class="monster-status ${state}">${state==='defeated'?smallIcon('check'):state==='locked'?smallIcon('lock'):''}${statusText(s,number,state)}</span></button>`;
+  }).join('')}</div><p class="collection-note">Eight creatures per chapter. Later chapters bring stronger encounters.</p>`;
+}

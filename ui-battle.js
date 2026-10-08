@@ -1,40 +1,32 @@
 // The monster card, victory odds, and animated encounters.
-import * as E from './engine.js?v=0.8.1';
+import * as E from './engine.js?v=0.8.2';
 import { avatarArt, monsterArt, monsterName, itemArt } from './art.js?v=0.7.4';
 import { describeCombatEvent } from './combat-presentation.js?v=0.6.0';
 import { createCombatAudio } from './combat-audio.js';
-import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.8.1';
+import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.8.2';
 import { announceBadges, commit } from './ui-modal.js?v=0.8.0';
+import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.8.2';
 export function renderMonster() {
   const number = app.state.monster.number,
     won = !!app.state.monster.defeatedOn,
     spell = E.preparedSpell(app.state);
   return `<section class="panel monster-panel ${won ? 'cleared' : ''}"><div class="monster-heading"><span class="section-kicker">${won ? 'A LITTLE VICTORY' : 'A CHALLENGE AWAITS'}</span><span class="chapter">#${String(number).padStart(2, '0')}</span></div><button class="monster-scene" data-action="bestiary" aria-label="Inspect ${esc(monsterName(number))} in the monster collection" title="Open monster collection">${monsterArt(number, won)}</button><h3>${monsterName(number)}</h3><p>${won ? 'Defeated. Enjoy your well-earned pause.' : 'Waiting here until you feel ready.'}</p>${won ? `<div class="victory-note">${icon('check')}Next opponent arrives tomorrow</div>` : `<div class="readiness"><span>Estimated victory chance</span><strong id="chance-value">${app.chance === null ? '…' : Math.round(app.chance * 100) + '%'}</strong></div><div class="readiness-bar"><div id="chance-bar" style="width:${(app.chance || 0) * 100}%"></div></div>${spell ? `<button class="prepared-spell" data-action="open-spells">${icon('soul')}<span>${spell.name} prepared<small>Consumed in your next fight</small></span></button>` : ''}<button class="button primary fight-button" data-action="fight" ${app.state.hp === 0 ? 'disabled' : ''}>${icon('sword')}Challenge ${monsterName(number)}</button>${app.state.hp === 0 ? '<button class="text-button" data-action="recover">Recover HP to fight</button>' : '<small class="fight-hint">Your stats, gear, spells & health shape your chances.</small>'}`}${app.state.battles.some(r => r.monster === number) ? '<button class="text-button replay-button" data-action="replay-battle">' + icon('undo') + 'Replay last encounter</button>' : ''}</section>`;
 }
-const worker = new Worker('/combat-worker.js?v=0.7.4', { type: 'module' });
-worker.onmessage = ({ data }) => {
-  if (data.key !== app.chanceKey) return;
-  app.chance = data.error ? null : data.chance;
-  const v = $('#chance-value'),
-    bar = $('#chance-bar');
-  if (v) v.textContent = app.chance === null ? 'Unavailable' : Math.round(app.chance * 100) + '%';
-  if (bar) bar.style.width = (app.chance || 0) * 100 + '%';
-};
 export function updateOdds() {
-  const key = JSON.stringify([
-    app.state.hp,
-    app.state.xp,
-    app.state.equipped,
-    app.state.monster.number,
-    app.state.preparedSpell,
-  ]);
-  if (key !== app.chanceKey) {
-    app.chanceKey = key;
-    app.chance = null;
-    const v = $('#chance-value');
-    if (v) v.textContent = '…';
-    worker.postMessage({ state: app.state, key });
-  }
+  const key = oddsKey(app.state);
+  if (key === app.chanceKey) return;
+  app.chanceKey = key;
+  app.chance = null;
+  const value = $('#chance-value');
+  if (value) value.textContent = '…';
+  requestOdds(app.state).then(chance => {
+    if (key !== app.chanceKey) return;
+    app.chance = chance;
+    const v = $('#chance-value'),
+      bar = $('#chance-bar');
+    if (v) v.textContent = chance === null ? 'Unavailable' : percent(chance);
+    if (bar) bar.style.width = (chance || 0) * 100 + '%';
+  });
 }
 function renderBattleModal() {
   const r = app.modal.result,

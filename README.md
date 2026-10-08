@@ -31,7 +31,10 @@ Regenerate `Twesk.html` after source changes with `npm run build:standalone`. Th
 - Every positive habit is available once per calendar day. There is no schedule or frequency field and no HP loss for missed habits. Background momentum can increase or gradually lower the next XP reward.
 - Starter habits and editable starter tasks, plus custom habits and suggestions. Creating or editing a habit offers 24 icon choices, including a category default; choices persist through renaming, reloads, and backups.
 - Vault with hashtags, search, pending review, kept notes, journal entries, archive/restore, and one-click task conversion. Captured tasks immediately appear in the task inbox.
+- Vault organization: pin notes to the top, filter by hashtag chips or by clicking a tag in a note, and review inbox captures one at a time (oldest first) with Keep / Make a task / Archive / Skip buttons or the K, T, A, S keys.
+- Habit details: the ⋯ menu shows the next reward and momentum (or tomorrow's, once done today), the current streak, all-time totals, and a 28-day history grid above the edit form.
 - Note-length and review gold, with limits and incremental payouts.
+- Equipment comparisons on every weapon, armor, and spell card in the shop and inventory: the attack or protection change versus what is equipped or prepared, and the win chance against the next opponent before → after (at full HP when currently at 0 HP).
 - Gold shop with Weapons, Armor, Potions, Spells, and Pets tabs, a matching inventory, visible avatar equipment, and original code-generated voxel artwork.
 - Task rewards and the character balance show voxel gold piles beside exact amounts. Larger rewards have fuller piles; completing a task plays a coin-clinking sound and sends voxel coins toward the balance. Mute and reduced-motion settings apply.
 - Shop and inventory show modeled equipment on small display stands, using the same geometry as the avatar. A voxel potion bottle, gold-pile prices and balance, and tier-aligned desktop columns keep the shop consistent with the dashboard.
@@ -55,7 +58,7 @@ Quick capture: **Command/Ctrl-K**. Vault: **Command/Ctrl-J**. Escape closes dial
 npm test
 ```
 
-The 59 domain checks cover independent XP, the weekly progression target, momentum and missed days, reward undo, note caps, conversion/review, health, equipment, exact combat odds versus independent sampling, loot, rollover, backup validation, milestone persistence/migration, monster collection statuses, artwork bounds, habit icon compatibility/validation, personalized face portraits, reset/recovery, failed-storage preservation, device-timezone defaults, backup-reminder timing, recurring-task schedules, and project tags.
+The 62 domain checks cover independent XP, the weekly progression target, momentum and missed days, reward undo, note caps, conversion/review, health, equipment, exact combat odds versus independent sampling, loot, rollover, backup validation, milestone persistence/migration, monster collection statuses, artwork bounds, habit icon compatibility/validation, personalized face portraits, reset/recovery, failed-storage preservation, device-timezone defaults, backup-reminder timing, recurring-task schedules, project tags, loadout comparisons, habit details, and pinned notes.
 
 The full flows were also checked in the browser: capture → convert → complete → buy/equip; habit creation and undo; reload persistence; defeat → journal → HP recovery; potion use; hashtag search and archive restoration; backup export/import; stat level-up; victory; task/category/level/journal seal unlocks; direct journal capture; and bestiary inspection/chapter navigation. Desktop and narrow-screen layouts and both themes were inspected. Collection checks use a separate localhost save so the user's progress is not changed.
 
@@ -68,7 +71,7 @@ The full flows were also checked in the browser: capture → convert → complet
 - `Twesk.html`, `scripts/build-standalone.mjs`: generated standalone app and its dependency-free packager. Rebuild after source changes.
 - `save-recovery.js`: transactional reset/restore with a recoverable previous save.
 - `engine.js`: state model and reward/combat rules, independently testable.
-- `combat-worker.js`: readiness calculations away from the main interface thread. Early encounters use exact probabilities; larger encounters use 15,000 deterministic samples of the same rules.
+- `combat-worker.js`, `ui-odds.js`: readiness calculations away from the main interface thread, cached per loadout and shared by the dashboard and shop comparisons. `estimateOdds` in the engine uses exact probabilities for early encounters and 15,000 deterministic samples of the same rules for larger ones.
 - `combat-presentation.js`, `combat-audio.js`: combat descriptions and locally synthesized effects.
 - `coin-sound.js`: locally synthesized metallic coin impacts for task completion.
 - `art.js`: original isometric voxel scenes and equipment artwork.

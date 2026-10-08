@@ -281,3 +281,41 @@ button.monster-scene:hover{background:color-mix(in srgb,var(--surface) 65%,trans
 .task-row.completed .task-tag{color:var(--muted)}
 .task-meta{display:inline-flex;align-items:center;gap:4px;font-size:9px;color:var(--muted)}
 .task-meta .icon{width:11px;height:11px}
+.item-compare{width:100%;display:flex;flex-direction:column;gap:3px;font-size:10px;color:var(--secondary);background:var(--surface);border-radius:8px;padding:7px 8px;margin:-4px 0 10px;text-align:left}
+.item-compare small{color:var(--muted);font-size:9px}
+.item-compare strong{color:var(--text);font-weight:600}
+.item-compare .up{color:var(--green)}
+.item-compare .down{color:var(--danger)}
+.item-odds{font-size:9px;color:var(--muted)}
+.habit-details{padding:20px 25px 0}
+.habit-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.habit-stats>div{background:var(--surface);border-radius:9px;padding:9px 11px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.habit-stats small{font-size:9px;color:var(--muted)}
+.habit-stats strong{font-size:15px;font-family:var(--heading)}
+.habit-stats span{font-size:9px;color:var(--secondary)}
+.habit-history{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;margin-top:14px}
+.history-cell{aspect-ratio:1;border-radius:3px;background:var(--surface-hover);border:1px solid var(--line)}
+.habit-details.body .history-cell.done{background:var(--body);border-color:var(--body)}
+.habit-details.mind .history-cell.done{background:var(--mind);border-color:var(--mind)}
+.habit-details.soul .history-cell.done{background:var(--soul);border-color:var(--soul)}
+.habit-details.heart .history-cell.done{background:var(--heart);border-color:var(--heart)}
+.habit-details.harm .history-cell.done{background:color-mix(in srgb,var(--harm) 55%,transparent);border-color:var(--harm)}
+.habit-details.harm .history-cell.many{background:var(--harm)}
+.history-cell.today{outline:1.5px solid var(--accent);outline-offset:1px}
+.history-range{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:5px}
+.habit-details .form-help{margin:8px 0 0}
+.note-card.pinned{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note-top .icon{width:11px;height:11px;vertical-align:-1px}
+button.hashtag{font-size:inherit;line-height:inherit;padding:0}
+button.hashtag:hover{text-decoration:underline}
+.vault-tag-chips{margin:12px 25px 0}
+.review-progress{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);padding:16px 25px 0}
+.review-card{margin:10px 25px 0;border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--surface)}
+.review-text{font-size:14px;line-height:1.7;margin-top:10px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:40vh;overflow:auto}
+.review-actions{display:flex;flex-wrap:wrap;gap:8px;padding:16px 25px 0;align-items:center}
+.review-actions .button{flex:1 1 auto;white-space:nowrap}
+.review-actions kbd{font-size:9px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:4px;font-family:inherit}
+.review-help{padding:0 25px 22px}
+.review-done{padding:30px 25px}
+@media (max-width:600px){.habit-details,.review-progress,.review-actions,.review-help{padding-left:20px;padding-right:20px}.review-card{margin-left:20px;margin-right:20px}.habit-history{gap:3px}}
+@media(max-width:560px){.vault-tag-chips{margin:12px 18px 0}}

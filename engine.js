@@ -67,6 +67,20 @@ export function momentum(habit, today) {
   for (let j = 0; j < Math.min(3, missed); j++) factor = decay(factor);
   return factor;
 }
+// Summary for the habit details view: next reward, streak, totals, and the last `days` days.
+export function habitStats(h, today, days = 28) {
+  const harm = h.category === 'harm', logs = harm ? h.harmLogs : h.logs;
+  const counts = new Map(); for (const l of logs) counts.set(l.day, (counts.get(l.day) || 0) + 1);
+  const shift = (day, n) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const doneToday = counts.has(today), nextDay = doneToday && !harm ? shift(today, 1) : today;
+  let streak = 0; for (let day = doneToday ? today : shift(today, -1); counts.has(day); day = shift(day, -1)) streak++;
+  const factor = harm ? 1 : momentum(h, nextDay);
+  return {
+    harm, doneToday, streak, factor, next: harm ? h.base : Math.round(h.base * factor),
+    total: logs.length, earned: harm ? logs.reduce((n, l) => n + l.damage, 0) : logs.reduce((n, l) => n + l.xp, 0),
+    history: Array.from({ length: days }, (_, i) => { const day = shift(today, i - days + 1); return { day, count: counts.get(day) || 0 }; }),
+  };
+}
 function decay(f) { return f > 1.2 ? 1.2 : f > 1.1 ? 1.1 : 1; }
 export function completeHabit(s, id, today) {
   const h = s.habits.find(h => h.id === id);
@@ -171,6 +185,12 @@ export function saveNote(s, { id, text, kind = 'note', recovery = false }, today
     s.pendingRecovery = s.hp < maxHP(s);
   }
   return { note, reward, healed };
+}
+export function togglePin(s, id) {
+  const note = s.notes.find(n => n.id === id);
+  if (!note) throw new Error('Note not found.');
+  if (note.pinned) delete note.pinned; else note.pinned = true;
+  return !!note.pinned;
 }
 export function convertNote(s, id, tier = 'quick') {
   const note = s.notes.find(n => n.id === id);
@@ -286,6 +306,31 @@ export function victoryOdds(s) {
   }
   return odds(p.hp,m.hp,true);
 }
+// Exact odds for early encounters; a fixed-seed sample of the same rules keeps larger ones responsive.
+export function estimateOdds(s) {
+  const p=combatStats(s), m=monsterStats(s.monster.number);
+  if(p.max<200 && m.hp<200) return victoryOdds(s);
+  let wins=0, seed=123456789;
+  const rng=()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};
+  for(let i=0;i<15000;i++) {
+    let hp=p.hp, enemy=m.hp, ready=true;
+    while(hp>0&&enemy>0) {
+      enemy-=10+2*Math.floor(rng()*13)+p.attack;
+      if(enemy<=0) {wins++;break;}
+      if(rng()<p.dodge) continue;
+      hp-=Math.max(1,m.attack-10+2*Math.floor(rng()*11)-p.armor);
+      if(hp>0&&ready&&p.rally&&hp<=p.max/2) {hp=Math.min(p.max,hp+p.rally);ready=false;}
+    }
+  }
+  return wins/15000;
+}
+// The combat-relevant state with `item` equipped or prepared, for before/after comparisons.
+export function withItem(s,item) {
+  const next={...s,equipped:{...s.equipped}};
+  if(item.type==='spell') next.preparedSpell=item.id; else next.equipped[item.type]=item.id;
+  return next;
+}
+export const oddsInput = s => ({hp:s.hp,xp:s.xp,equipped:s.equipped,preparedSpell:s.preparedSpell,monster:{number:s.monster.number}});
 export function fight(s,today,rng=Math.random) {
   if (!s.hp) throw new Error('Recover some HP before fighting.');
   if (s.monster.defeatedOn) throw new Error('Your next opponent arrives tomorrow.');
@@ -366,7 +411,7 @@ export function validateState(value) {
     if(!id(h.id)||!text(h.title,200)||![...CATEGORIES,'harm'].includes(h.category)||!(h.category==='harm'?[3,7,12]:[10,20,30]).includes(h.base)||!array(h.logs)||!array(h.harmLogs)) fail();
     if(!h.logs.every(l=>date(l.day)&&integer(l.xp,0,45))||new Set(h.logs.map(l=>l.day)).size!==h.logs.length||!h.harmLogs.every(l=>id(l.id)&&date(l.day)&&integer(l.damage,0,12))) fail();
   }
-  for(const n of s.notes) if(!id(n.id)||!text(n.text)||(!text(n.created,100)||Number.isNaN(Date.parse(n.created)))||!integer(n.paid,0,3)||!['inbox','kept','archived'].includes(n.status)||!['note','journal'].includes(n.kind)||typeof n.healed!=='boolean') fail();
+  for(const n of s.notes) if(!id(n.id)||!text(n.text)||(!text(n.created,100)||Number.isNaN(Date.parse(n.created)))||!integer(n.paid,0,3)||!['inbox','kept','archived'].includes(n.status)||!['note','journal'].includes(n.kind)||typeof n.healed!=='boolean'||(n.pinned!==undefined&&n.pinned!==true)) fail();
   for(const battle of s.battles) {
     if(!id(battle.id)||!date(battle.day)||!integer(battle.monster,1,500)||typeof battle.won!=='boolean'||!integer(battle.hp)||!array(battle.events,2000)||!battle.events.length) fail();
     for(const event of battle.events) {

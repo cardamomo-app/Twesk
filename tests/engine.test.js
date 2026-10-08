@@ -165,3 +165,29 @@ test('editing a task sets or clears its repeat, and project tags are case-insens
     const bad=E.freshState();change(bad);assert.throws(()=>E.validateState(bad));
   }
 });
+
+test('shared odds estimate matches exact odds early and compares loadouts without changing the save',()=>{
+  const s=E.freshState();assert.equal(E.estimateOdds(E.oddsInput(s)),E.victoryOdds(s));
+  const blade=E.SHOP.find(i=>i.id==='iron'),ward=E.SHOP.find(i=>i.id==='ward');
+  const armed=E.withItem(s,blade);assert.equal(E.combatStats(armed).attack,3);assert.equal(s.equipped.weapon,null,'original untouched');
+  assert.ok(E.estimateOdds(armed)>E.estimateOdds(s));
+  assert.equal(E.combatStats(E.withItem(s,ward)).armor,3);assert.equal(s.preparedSpell,null);
+  const late=E.freshState();late.monster.number=40;late.xp.body=3000;late.hp=E.maxHP(late);
+  const odds=E.estimateOdds(E.oddsInput(late));assert.ok(odds>=0&&odds<=1);assert.equal(E.estimateOdds(E.oddsInput(late)),odds,'sampling is deterministic');
+});
+test('habit details report next reward, streak, totals, and a dated history',()=>{
+  const s=E.freshState(),h=s.habits.find(h=>h.base===10&&h.category==='body');
+  for(const d of [3,4,5])E.completeHabit(s,h.id,day(d));
+  let st=E.habitStats(h,day(6));assert.equal(st.streak,3,'yesterday keeps the streak');assert.equal(st.next,15);assert.equal(st.factor,1.5);assert.equal(st.doneToday,false);
+  E.completeHabit(s,h.id,day(6));st=E.habitStats(h,day(6));assert.equal(st.streak,4);assert.equal(st.doneToday,true);assert.equal(st.next,15,'tomorrow keeps momentum');
+  assert.equal(st.total,4);assert.equal(st.earned,10+12+15+15);assert.equal(st.history.length,28);assert.equal(st.history.at(-1).day,day(6));assert.equal(st.history.at(-1).count,1);
+  assert.equal(E.habitStats(h,day(9)).streak,0);assert.equal(E.habitStats(h,day(9)).next,11,'two missed days lower momentum two steps');
+  const harm=s.habits.find(h=>h.category==='harm');E.logHarm(s,harm.id,day(6));E.logHarm(s,harm.id,day(6));
+  const hs=E.habitStats(harm,day(6));assert.equal(hs.harm,true);assert.equal(hs.history.at(-1).count,2);assert.equal(hs.earned,2*harm.base);
+});
+test('notes can be pinned and unpinned, and pins survive backups',()=>{
+  const s=E.freshState(),{note}=E.saveNote(s,{text:'Important #plan'},day(1));
+  assert.equal(E.togglePin(s,note.id),true);assert.equal(E.validateState(JSON.parse(JSON.stringify(s))).notes[0].pinned,true);
+  assert.equal(E.togglePin(s,note.id),false);assert.equal(note.pinned,undefined);
+  note.pinned='yes';assert.throws(()=>E.validateState(s));
+});

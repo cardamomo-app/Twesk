@@ -291,6 +291,44 @@ button.monster-scene:hover{background:color-mix(in srgb,var(--surface) 65%,trans
 .task-row.completed .task-tag{color:var(--muted)}
 .task-meta{display:inline-flex;align-items:center;gap:4px;font-size:9px;color:var(--muted)}
 .task-meta .icon{width:11px;height:11px}
+.item-compare{width:100%;display:flex;flex-direction:column;gap:3px;font-size:10px;color:var(--secondary);background:var(--surface);border-radius:8px;padding:7px 8px;margin:-4px 0 10px;text-align:left}
+.item-compare small{color:var(--muted);font-size:9px}
+.item-compare strong{color:var(--text);font-weight:600}
+.item-compare .up{color:var(--green)}
+.item-compare .down{color:var(--danger)}
+.item-odds{font-size:9px;color:var(--muted)}
+.habit-details{padding:20px 25px 0}
+.habit-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.habit-stats>div{background:var(--surface);border-radius:9px;padding:9px 11px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.habit-stats small{font-size:9px;color:var(--muted)}
+.habit-stats strong{font-size:15px;font-family:var(--heading)}
+.habit-stats span{font-size:9px;color:var(--secondary)}
+.habit-history{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;margin-top:14px}
+.history-cell{aspect-ratio:1;border-radius:3px;background:var(--surface-hover);border:1px solid var(--line)}
+.habit-details.body .history-cell.done{background:var(--body);border-color:var(--body)}
+.habit-details.mind .history-cell.done{background:var(--mind);border-color:var(--mind)}
+.habit-details.soul .history-cell.done{background:var(--soul);border-color:var(--soul)}
+.habit-details.heart .history-cell.done{background:var(--heart);border-color:var(--heart)}
+.habit-details.harm .history-cell.done{background:color-mix(in srgb,var(--harm) 55%,transparent);border-color:var(--harm)}
+.habit-details.harm .history-cell.many{background:var(--harm)}
+.history-cell.today{outline:1.5px solid var(--accent);outline-offset:1px}
+.history-range{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:5px}
+.habit-details .form-help{margin:8px 0 0}
+.note-card.pinned{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note-top .icon{width:11px;height:11px;vertical-align:-1px}
+button.hashtag{font-size:inherit;line-height:inherit;padding:0}
+button.hashtag:hover{text-decoration:underline}
+.vault-tag-chips{margin:12px 25px 0}
+.review-progress{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);padding:16px 25px 0}
+.review-card{margin:10px 25px 0;border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--surface)}
+.review-text{font-size:14px;line-height:1.7;margin-top:10px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:40vh;overflow:auto}
+.review-actions{display:flex;flex-wrap:wrap;gap:8px;padding:16px 25px 0;align-items:center}
+.review-actions .button{flex:1 1 auto;white-space:nowrap}
+.review-actions kbd{font-size:9px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:4px;font-family:inherit}
+.review-help{padding:0 25px 22px}
+.review-done{padding:30px 25px}
+@media (max-width:600px){.habit-details,.review-progress,.review-actions,.review-help{padding-left:20px;padding-right:20px}.review-card{margin-left:20px;margin-right:20px}.habit-history{gap:3px}}
+@media(max-width:560px){.vault-tag-chips{margin:12px 18px 0}}
 
   </style>
 
@@ -399,6 +437,7 @@ $('#overlay').addEventListener('change', event => {
 });
 document.addEventListener('keydown', event => {
   collection.onKeydown(event);
+  vault.onKeydown(event);
   shop.onKeydown(event);
   character.onKeydown(event);
 });
@@ -538,6 +577,20 @@ function momentum(habit, today) {
   for (let j = 0; j < Math.min(3, missed); j++) factor = decay(factor);
   return factor;
 }
+// Summary for the habit details view: next reward, streak, totals, and the last `days` days.
+function habitStats(h, today, days = 28) {
+  const harm = h.category === 'harm', logs = harm ? h.harmLogs : h.logs;
+  const counts = new Map(); for (const l of logs) counts.set(l.day, (counts.get(l.day) || 0) + 1);
+  const shift = (day, n) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const doneToday = counts.has(today), nextDay = doneToday && !harm ? shift(today, 1) : today;
+  let streak = 0; for (let day = doneToday ? today : shift(today, -1); counts.has(day); day = shift(day, -1)) streak++;
+  const factor = harm ? 1 : momentum(h, nextDay);
+  return {
+    harm, doneToday, streak, factor, next: harm ? h.base : Math.round(h.base * factor),
+    total: logs.length, earned: harm ? logs.reduce((n, l) => n + l.damage, 0) : logs.reduce((n, l) => n + l.xp, 0),
+    history: Array.from({ length: days }, (_, i) => { const day = shift(today, i - days + 1); return { day, count: counts.get(day) || 0 }; }),
+  };
+}
 function decay(f) { return f > 1.2 ? 1.2 : f > 1.1 ? 1.1 : 1; }
 function completeHabit(s, id, today) {
   const h = s.habits.find(h => h.id === id);
@@ -642,6 +695,12 @@ function saveNote(s, { id, text, kind = 'note', recovery = false }, today) {
     s.pendingRecovery = s.hp < maxHP(s);
   }
   return { note, reward, healed };
+}
+function togglePin(s, id) {
+  const note = s.notes.find(n => n.id === id);
+  if (!note) throw new Error('Note not found.');
+  if (note.pinned) delete note.pinned; else note.pinned = true;
+  return !!note.pinned;
 }
 function convertNote(s, id, tier = 'quick') {
   const note = s.notes.find(n => n.id === id);
@@ -757,6 +816,31 @@ function victoryOdds(s) {
   }
   return odds(p.hp,m.hp,true);
 }
+// Exact odds for early encounters; a fixed-seed sample of the same rules keeps larger ones responsive.
+function estimateOdds(s) {
+  const p=combatStats(s), m=monsterStats(s.monster.number);
+  if(p.max<200 && m.hp<200) return victoryOdds(s);
+  let wins=0, seed=123456789;
+  const rng=()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};
+  for(let i=0;i<15000;i++) {
+    let hp=p.hp, enemy=m.hp, ready=true;
+    while(hp>0&&enemy>0) {
+      enemy-=10+2*Math.floor(rng()*13)+p.attack;
+      if(enemy<=0) {wins++;break;}
+      if(rng()<p.dodge) continue;
+      hp-=Math.max(1,m.attack-10+2*Math.floor(rng()*11)-p.armor);
+      if(hp>0&&ready&&p.rally&&hp<=p.max/2) {hp=Math.min(p.max,hp+p.rally);ready=false;}
+    }
+  }
+  return wins/15000;
+}
+// The combat-relevant state with `item` equipped or prepared, for before/after comparisons.
+function withItem(s,item) {
+  const next={...s,equipped:{...s.equipped}};
+  if(item.type==='spell') next.preparedSpell=item.id; else next.equipped[item.type]=item.id;
+  return next;
+}
+const oddsInput = s => ({hp:s.hp,xp:s.xp,equipped:s.equipped,preparedSpell:s.preparedSpell,monster:{number:s.monster.number}});
 function fight(s,today,rng=Math.random) {
   if (!s.hp) throw new Error('Recover some HP before fighting.');
   if (s.monster.defeatedOn) throw new Error('Your next opponent arrives tomorrow.');
@@ -837,7 +921,7 @@ function validateState(value) {
     if(!id(h.id)||!text(h.title,200)||![...CATEGORIES,'harm'].includes(h.category)||!(h.category==='harm'?[3,7,12]:[10,20,30]).includes(h.base)||!array(h.logs)||!array(h.harmLogs)) fail();
     if(!h.logs.every(l=>date(l.day)&&integer(l.xp,0,45))||new Set(h.logs.map(l=>l.day)).size!==h.logs.length||!h.harmLogs.every(l=>id(l.id)&&date(l.day)&&integer(l.damage,0,12))) fail();
   }
-  for(const n of s.notes) if(!id(n.id)||!text(n.text)||(!text(n.created,100)||Number.isNaN(Date.parse(n.created)))||!integer(n.paid,0,3)||!['inbox','kept','archived'].includes(n.status)||!['note','journal'].includes(n.kind)||typeof n.healed!=='boolean') fail();
+  for(const n of s.notes) if(!id(n.id)||!text(n.text)||(!text(n.created,100)||Number.isNaN(Date.parse(n.created)))||!integer(n.paid,0,3)||!['inbox','kept','archived'].includes(n.status)||!['note','journal'].includes(n.kind)||typeof n.healed!=='boolean'||(n.pinned!==undefined&&n.pinned!==true)) fail();
   for(const battle of s.battles) {
     if(!id(battle.id)||!date(battle.day)||!integer(battle.monster,1,500)||typeof battle.won!=='boolean'||!integer(battle.hp)||!array(battle.events,2000)||!battle.events.length) fail();
     for(const event of battle.events) {
@@ -865,7 +949,7 @@ function validateState(value) {
   return s;
 }
 
-Object.assign(exports,{CATEGORIES,TASK_GOLD,CATEGORY_META,uid,dateKey,deviceTimezone,daysBetween,level,maxHP,healingMultiplier,words,noteEntitlement,freshState,momentum,completeHabit,undoHabit,logHarm,undoHarm,TAG_PATTERN,tags,REPEATS,nextOccurrence,saveTask,toggleTask,reopenTasks,saveNote,convertNote,reviewNote,rewardReview,SHOP,isConsumable,itemCount,preparedSpell,buy,equip,prepareSpell,usePotion,rollover,monsterStats,combatStats,victoryOdds,fight,backupDue,validateState});
+Object.assign(exports,{CATEGORIES,TASK_GOLD,CATEGORY_META,uid,dateKey,deviceTimezone,daysBetween,level,maxHP,healingMultiplier,words,noteEntitlement,freshState,momentum,habitStats,completeHabit,undoHabit,logHarm,undoHarm,TAG_PATTERN,tags,REPEATS,nextOccurrence,saveTask,toggleTask,reopenTasks,saveNote,togglePin,convertNote,reviewNote,rewardReview,SHOP,isConsumable,itemCount,preparedSpell,buy,equip,prepareSpell,usePotion,rollover,monsterStats,combatStats,victoryOdds,estimateOdds,withItem,oddsInput,fight,backupDue,validateState});
 },
 "appearance.js":function(require,exports){
 const APPEARANCE = {
@@ -1416,6 +1500,7 @@ function viewDefaults() {
     taskProject: null,
     vaultFilter: 'inbox',
     vaultSearch: '',
+    vaultTag: null,
     modal: null,
     pendingImport: null,
     pendingBadges: [],
@@ -1502,6 +1587,7 @@ const icons = {
   undo: '<path d="M9 4 3 10l6 6M3 10h11a6 6 0 0 1 0 12"/>',
   download: '<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>',
   upload: '<path d="M12 16V4m-5 5 5-5 5 5M4 16v5h16v-5"/>',
+  pin: '<path d="M9 3h6l-1 6 4 4H6l4-4ZM12 13v8"/>',
   repeat: '<path d="m17 2 4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4m14-5v2a3 3 0 0 1-3 3H3"/>',
 };
 function icon(name, cls = '') {
@@ -2093,13 +2179,37 @@ function suggestionButtons(cat) {
     .map(x => `<button type="button" data-action="suggest-habit" data-title="${x}">${x}</button>`)
     .join('');
 }
+const shortDate = day =>
+  new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(
+    new Date(`${day}T12:00:00Z`),
+  );
+// Recent history, next reward, momentum, and totals shown above the habit's edit form.
+function habitDetails(h) {
+  const st = E.habitStats(h, today()),
+    unit = st.harm ? 'HP' : 'XP',
+    active = st.history.filter(d => d.count).length;
+  const momentum = st.harm
+    ? 'Harm has no momentum. Each log costs the same HP.'
+    : st.factor >= 1.5
+      ? 'Top momentum. A missed day lowers it one step; nothing already earned is taken away.'
+      : st.factor > 1
+        ? 'Complete it on consecutive days to reach 1.5×.'
+        : 'Complete it two days in a row to start building momentum.';
+  const cells = st.history
+    .map(
+      d =>
+        `<span class="history-cell ${d.count ? 'done' : ''} ${d.count > 1 ? 'many' : ''} ${d.day === today() ? 'today' : ''}" title="${shortDate(d.day)}${d.count ? ` · ${st.harm ? d.count + '× logged' : 'completed'}` : ''}"></span>`,
+    )
+    .join('');
+  return `<section class="habit-details ${h.category}"><div class="habit-stats"><div><small>${st.harm ? 'Each log' : st.doneToday ? 'Tomorrow' : 'Next completion'}</small><strong>${st.harm ? '−' : '+'}${st.next} ${unit}</strong><span>${st.harm ? 'No momentum' : `${st.factor}× momentum`}</span></div><div><small>${st.harm ? 'Today' : 'Streak'}</small><strong>${st.harm ? `${st.history.at(-1).count}×` : `${st.streak} ${st.streak === 1 ? 'day' : 'days'}`}</strong><span>${active} of the last 28 days</span></div><div><small>All time</small><strong>${st.total}×</strong><span>${st.harm ? '−' : '+'}${st.earned} ${unit}</span></div></div><div class="habit-history" role="img" aria-label="Last 28 days: ${st.harm ? 'logged' : 'completed'} on ${active} days">${cells}</div><div class="history-range"><span>${shortDate(st.history[0].day)}</span><span>Today</span></div><p class="form-help">${momentum}</p></section>`;
+}
 const modals = {
   habit() {
     const h = app.state.habits.find(h => h.id === app.modal.id),
       cat = h?.category || app.modal.category || 'body';
     return modalShell(
-      h ? 'Edit habit' : 'Make room for a habit',
-      `<form id="habit-form" class="form-body"><label>Habit name<input name="title" required maxlength="100" placeholder="Something you’d like to do" value="${esc(h?.title || '')}" autofocus></label><div class="form-grid"><label>Category<select name="category" ${h ? 'disabled' : ''}>${[...E.CATEGORIES, 'harm'].map(c => `<option value="${c}" ${cat === c ? 'selected' : ''}>${E.CATEGORY_META[c].label}</option>`).join('')}</select></label><label id="effort-label">${cat === 'harm' ? 'HP cost' : 'Effort'}<select name="base" id="habit-base">${habitOptions(cat, h?.base)}</select></label></div><p class="form-help">${cat === 'harm' ? 'Log it whenever it happens. It costs HP, with no XP or level.' : 'Available every day, once a day. No schedule to keep.'}</p>${renderHabitIconPicker(cat, h ? habitIconChoice(h) : 'category')}${!h ? `<div class="suggestions"><span class="small-label">A FEW IDEAS</span><div id="habit-suggestions">${suggestionButtons(cat)}</div></div>` : ''}<div class="form-actions">${h ? `<button type="button" class="button danger subtle" data-action="delete-habit" data-id="${h.id}">Remove habit</button>` : '<span></span>'}<button class="button primary">${h ? 'Save changes' : 'Add habit'}${icon('plus')}</button></div></form>`,
+      h ? esc(h.title) : 'Make room for a habit',
+      `${h ? habitDetails(h) : ''}<form id="habit-form" class="form-body"><label>Habit name<input name="title" required maxlength="100" placeholder="Something you’d like to do" value="${esc(h?.title || '')}" autofocus></label><div class="form-grid"><label>Category<select name="category" ${h ? 'disabled' : ''}>${[...E.CATEGORIES, 'harm'].map(c => `<option value="${c}" ${cat === c ? 'selected' : ''}>${E.CATEGORY_META[c].label}</option>`).join('')}</select></label><label id="effort-label">${cat === 'harm' ? 'HP cost' : 'Effort'}<select name="base" id="habit-base">${habitOptions(cat, h?.base)}</select></label></div><p class="form-help">${cat === 'harm' ? 'Log it whenever it happens. It costs HP, with no XP or level.' : 'Available every day, once a day. No schedule to keep.'}</p>${renderHabitIconPicker(cat, h ? habitIconChoice(h) : 'category')}${!h ? `<div class="suggestions"><span class="small-label">A FEW IDEAS</span><div id="habit-suggestions">${suggestionButtons(cat)}</div></div>` : ''}<div class="form-actions">${h ? `<button type="button" class="button danger subtle" data-action="delete-habit" data-id="${h.id}">Remove habit</button>` : '<span></span>'}<button class="button primary">${h ? 'Save changes' : 'Add habit'}${icon('plus')}</button></div></form>`,
     );
   },
   'confirm-delete'() {
@@ -2224,26 +2334,80 @@ const E=require("engine.js");
 const { $, app, coin, esc, icon, modalShell, toast, today, view }=require("ui-core.js");
 const { closeModal, commit, openModal }=require("ui-modal.js");
 const { sound }=require("ui-effects.js");
-function renderNotes() {
-  const notes = app.state.notes.filter(
-    n =>
-      (app.vaultFilter === 'archived'
-        ? n.status === 'archived'
-        : n.status !== 'archived' &&
-          (app.vaultFilter === 'all' ||
-            (app.vaultFilter === 'journal' ? n.kind === 'journal' : n.status === app.vaultFilter))) &&
-      `${n.text} ${n.kind === 'journal' ? '#reflection' : ''}`
-        .toLowerCase()
-        .includes(app.vaultSearch.toLowerCase()),
+const noteDate = n =>
+  new Intl.DateTimeFormat('en', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: app.state.settings.timezone,
+  }).format(new Date(n.created));
+// Note text with each #tag as a button that filters the Vault by that tag.
+const noteText = text =>
+  esc(text).replace(
+    /(^|\s)(#[\p{L}\p{N}_-]+)/gu,
+    (_, space, tag) =>
+      `${space}<button class="hashtag" data-action="vault-tag" data-tag="${tag.toLowerCase()}" title="Show notes tagged ${tag}">${tag}</button>`,
   );
+const inTab = n =>
+  app.vaultFilter === 'archived'
+    ? n.status === 'archived'
+    : n.status !== 'archived' &&
+      (app.vaultFilter === 'all' ||
+        (app.vaultFilter === 'journal' ? n.kind === 'journal' : n.status === app.vaultFilter));
+const searchable = n => `${n.text} ${n.kind === 'journal' ? '#reflection' : ''}`.toLowerCase();
+function renderTagChips() {
+  const counts = new Map();
+  for (const n of app.state.notes.filter(inTab))
+    for (const tag of E.tags(n.text)) counts.set(tag, (counts.get(tag) || 0) + 1);
+  if (app.vaultTag && !counts.has(app.vaultTag)) counts.set(app.vaultTag, 0);
+  if (!counts.size) return '';
+  return `<div class="project-chips vault-tag-chips" role="group" aria-label="Filter notes by hashtag">${[
+    ...counts,
+  ]
+    .sort((a, b) => b[1] - a[1])
+    .map(
+      ([tag, n]) =>
+        `<button class="project-chip ${app.vaultTag === tag ? 'selected' : ''}" data-action="vault-tag" data-tag="${esc(tag)}" aria-pressed="${app.vaultTag === tag}">${esc(tag)}<span>${n}</span></button>`,
+    )
+    .join('')}</div>`;
+}
+function renderNotes() {
+  const notes = app.state.notes
+    .filter(
+      n =>
+        inTab(n) &&
+        (!app.vaultTag || E.tags(n.text).includes(app.vaultTag)) &&
+        searchable(n).includes(app.vaultSearch.toLowerCase()),
+    )
+    .sort((a, b) => !!b.pinned - !!a.pinned);
   if (!notes.length)
-    return `<div class="empty-state"><span class="empty-symbol">${icon('vault')}</span><h3>${app.vaultSearch ? 'Nothing found just yet' : app.vaultFilter === 'inbox' ? 'Room for a new thought' : 'A little space for your ideas'}</h3><p>${app.vaultSearch ? 'Try another word or hashtag.' : 'Capture something now. You can make sense of it later.'}</p><button class="button secondary" data-action="capture">${icon('plus')}Quick capture</button></div>`;
+    return `<div class="empty-state"><span class="empty-symbol">${icon('vault')}</span><h3>${app.vaultSearch || app.vaultTag ? 'Nothing found just yet' : app.vaultFilter === 'inbox' ? 'Room for a new thought' : 'A little space for your ideas'}</h3><p>${app.vaultSearch || app.vaultTag ? 'Try another word, hashtag, or tab.' : 'Capture something now. You can make sense of it later.'}</p><button class="button secondary" data-action="capture">${icon('plus')}Quick capture</button></div>`;
   return notes
     .map(
       n =>
-        `<article class="note-card"><div class="note-top"><span>${n.kind === 'journal' ? icon('pencil') + ' REFLECTION' : 'NOTE'} · ${esc(new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: app.state.settings.timezone }).format(new Date(n.created)))}</span>${coin(n.paid)}</div><p class="note-text">${esc(n.text).replace(/(^|\s)(#[\p{L}\p{N}_-]+)/gu, '$1<span class="hashtag">$2</span>')}</p><div class="note-actions"><button class="text-button" data-action="edit-note" data-id="${n.id}">${icon('pencil')}Edit</button>${n.taskId ? '<span class="converted">' + icon('check') + 'Sent to tasks</span>' : `<button class="text-button" data-action="convert-note" data-id="${n.id}">${icon('arrow')}Make a task</button>`}${n.status === 'inbox' ? `<button class="text-button" data-action="keep-note" data-id="${n.id}">Keep note</button>` : ''}<button class="text-button archive" data-action="${n.status === 'archived' ? 'restore-note' : 'archive-note'}" data-id="${n.id}">${n.status === 'archived' ? 'Restore' : 'Archive'}</button></div></article>`,
+        `<article class="note-card ${n.pinned ? 'pinned' : ''}"><div class="note-top"><span>${n.pinned ? icon('pin') + ' PINNED · ' : ''}${n.kind === 'journal' ? icon('pencil') + ' REFLECTION' : 'NOTE'} · ${esc(noteDate(n))}</span>${coin(n.paid)}</div><p class="note-text">${noteText(n.text)}</p><div class="note-actions"><button class="text-button" data-action="edit-note" data-id="${n.id}">${icon('pencil')}Edit</button>${n.status !== 'archived' ? `<button class="text-button" data-action="pin-note" data-id="${n.id}" aria-pressed="${!!n.pinned}">${icon('pin')}${n.pinned ? 'Unpin' : 'Pin'}</button>` : ''}${n.taskId ? '<span class="converted">' + icon('check') + 'Sent to tasks</span>' : `<button class="text-button" data-action="convert-note" data-id="${n.id}">${icon('arrow')}Make a task</button>`}${n.status === 'inbox' ? `<button class="text-button" data-action="keep-note" data-id="${n.id}">Keep note</button>` : ''}<button class="text-button archive" data-action="${n.status === 'archived' ? 'restore-note' : 'archive-note'}" data-id="${n.id}">${n.status === 'archived' ? 'Restore' : 'Archive'}</button></div></article>`,
     )
     .join('');
+}
+const refreshVault = () => {
+  $('#vault-tags').innerHTML = renderTagChips();
+  $('#vault-results').innerHTML = renderNotes();
+};
+// Inbox notes for one-by-one review, oldest first, minus any skipped this session.
+const reviewQueue = () =>
+  app.state.notes
+    .filter(n => n.status === 'inbox' && !app.modal.skipped.includes(n.id))
+    .sort((a, b) => a.created.localeCompare(b.created));
+function convert(id) {
+  const wasInbox = app.state.notes.find(n => n.id === id)?.status === 'inbox';
+  const r = commit(() => {
+    const t = E.convertNote(app.state, id);
+    if (wasInbox) E.rewardReview(app.state, today());
+    return t;
+  });
+  if (r) {
+    toast('Sent to your task inbox' + (wasInbox ? ' · review saved.' : '.'));
+    sound();
+  }
 }
 function performReview(id, status) {
   const reward = commit(() => E.reviewNote(app.state, id, status, today()));
@@ -2261,9 +2425,10 @@ const modals = {
     );
   },
   vault() {
+    const inboxCount = app.state.notes.filter(n => n.status === 'inbox').length;
     return modalShell(
       'The Vault',
-      `<div class="vault-toolbar"><label class="search-box">${icon('search')}<input id="vault-search" aria-label="Search notes and hashtags" placeholder="Search thoughts or #tags" value="${esc(app.vaultSearch)}"></label><button class="button secondary" data-action="capture">${icon('plus')}Capture</button></div><div class="vault-tabs segmented">${[
+      `<div class="vault-toolbar"><label class="search-box">${icon('search')}<input id="vault-search" aria-label="Search notes and hashtags" placeholder="Search thoughts or #tags" value="${esc(app.vaultSearch)}"></label>${inboxCount ? `<button class="button secondary" data-action="review-notes">${icon('check')}Review ${inboxCount} one by one</button>` : ''}<button class="button secondary" data-action="capture">${icon('plus')}Capture</button></div><div class="vault-tabs segmented">${[
         ['inbox', 'Needs review'],
         ['kept', 'Notes'],
         ['journal', 'Journal'],
@@ -2272,13 +2437,27 @@ const modals = {
       ]
         .map(
           ([k, l]) =>
-            `<button data-action="vault-filter" data-filter="${k}" class="${app.vaultFilter === k ? 'selected' : ''}">${l}${k === 'inbox' ? ` <span>${app.state.notes.filter(n => n.status === 'inbox').length}</span>` : ''}</button>`,
+            `<button data-action="vault-filter" data-filter="${k}" class="${app.vaultFilter === k ? 'selected' : ''}">${l}${k === 'inbox' ? ` <span>${inboxCount}</span>` : ''}</button>`,
         )
         .join(
           '',
-        )}</div><div id="vault-results" class="vault-results">${renderNotes()}</div><footer class="vault-footer"><span>${app.state.reviewDates.includes(today()) ? 'Review reward earned today · +4 gold' : 'Keep, convert, or archive an inbox note to earn +4 gold.'}</span></footer>`,
+        )}</div><div id="vault-tags">${renderTagChips()}</div><div id="vault-results" class="vault-results">${renderNotes()}</div><footer class="vault-footer"><span>${app.state.reviewDates.includes(today()) ? 'Review reward earned today · +4 gold' : 'Keep, convert, or archive an inbox note to earn +4 gold.'}</span></footer>`,
       'vault-modal',
       'Thoughts first. Plans when you’re ready.',
+    );
+  },
+  review() {
+    const queue = reviewQueue(),
+      note = queue[0],
+      sorted = app.modal.sorted;
+    const body = note
+      ? `<div class="review-progress"><span>${queue.length} to sort${app.modal.skipped.length ? ` · ${app.modal.skipped.length} skipped` : ''}</span><span>${sorted} sorted</span></div><article class="review-card"><div class="note-top"><span>${note.kind === 'journal' ? 'REFLECTION' : 'NOTE'} · ${esc(noteDate(note))}</span>${coin(note.paid)}</div><p class="review-text">${esc(note.text).replace(/(^|\s)(#[\p{L}\p{N}_-]+)/gu, '$1<span class="hashtag">$2</span>')}</p></article><div class="review-actions"><button class="button secondary" data-action="review-keep" data-id="${note.id}">${icon('check')}Keep<kbd>K</kbd></button><button class="button secondary" data-action="review-task" data-id="${note.id}">${icon('arrow')}Make a task<kbd>T</kbd></button><button class="button secondary" data-action="review-archive" data-id="${note.id}">${icon('vault')}Archive<kbd>A</kbd></button><button class="text-button" data-action="review-skip" data-id="${note.id}">Skip for now<kbd>S</kbd></button></div><p class="form-help review-help">${app.state.reviewDates.includes(today()) ? 'Review reward earned today · +4 gold.' : 'Your first review today earns +4 gold.'} Tasks keep the note’s hashtags.</p>`
+      : `<div class="empty-state review-done"><span class="empty-symbol">${icon('check')}</span><h3>${sorted ? 'All sorted' : 'Nothing waiting'}</h3><p>${sorted ? `You sorted ${sorted} ${sorted === 1 ? 'note' : 'notes'}.` : 'Your inbox is clear.'}${app.modal.skipped.length ? ` ${app.modal.skipped.length} skipped ${app.modal.skipped.length === 1 ? 'note is' : 'notes are'} still in Needs review.` : ''}</p><button class="button primary" data-action="vault">Back to the Vault</button></div>`;
+    return modalShell(
+      'Review captures',
+      body,
+      'review-modal',
+      'One at a time: keep it, make it a task, or let it go.',
     );
   },
 };
@@ -2296,26 +2475,49 @@ const actions = {
   },
   vault(b, { a, id, sourceRect }) {
     app.vaultSearch = '';
+    app.vaultTag = null;
     openModal({ type: 'vault' });
   },
   'vault-filter'(b, { a, id, sourceRect }) {
     app.vaultFilter = b.dataset.filter;
     view.renderModal();
+    $(`[data-action="vault-filter"][data-filter="${app.vaultFilter}"]`)?.focus();
   },
   'edit-note'(b, { a, id, sourceRect }) {
     openModal({ type: 'capture', id });
   },
-  'convert-note'(b, { a, id, sourceRect }) {
-    const wasInbox = app.state.notes.find(n => n.id === id)?.status === 'inbox';
-    const r = commit(() => {
-      const t = E.convertNote(app.state, id);
-      if (wasInbox) E.rewardReview(app.state, today());
-      return t;
-    });
-    if (r) {
-      toast('Sent to your task inbox' + (wasInbox ? ' · review saved.' : '.'));
-      sound();
-    }
+  'convert-note'(b, { id }) {
+    convert(id);
+  },
+  'pin-note'(b, { id }) {
+    const pinned = commit(() => E.togglePin(app.state, id));
+    if (pinned !== undefined) toast(pinned ? 'Pinned to the top.' : 'Unpinned.');
+  },
+  'vault-tag'(b) {
+    const tag = b.dataset.tag;
+    app.vaultTag = app.vaultTag === tag ? null : tag;
+    if (app.modal?.type !== 'vault') return;
+    refreshVault();
+    $(`#vault-tags [data-tag="${CSS.escape(tag)}"]`)?.focus();
+  },
+  'review-notes'() {
+    openModal({ type: 'review', skipped: [], sorted: 0 });
+  },
+  'review-keep'(b, { id }) {
+    app.modal.sorted++;
+    performReview(id, 'kept');
+  },
+  'review-task'(b, { id }) {
+    app.modal.sorted++;
+    convert(id);
+  },
+  'review-archive'(b, { id }) {
+    app.modal.sorted++;
+    performReview(id, 'archived');
+  },
+  'review-skip'(b, { id }) {
+    app.modal.skipped.push(id);
+    view.renderModal();
   },
   'keep-note'(b, { a, id, sourceRect }) {
     performReview(id, 'kept');
@@ -2378,7 +2580,7 @@ const forms = {
 function onInput(event) {
   if (event.target.id === 'vault-search') {
     app.vaultSearch = event.target.value;
-    $('#vault-results').innerHTML = renderNotes();
+    refreshVault();
   }
   if (event.target.id === 'capture-text') {
     const count = E.words(event.target.value);
@@ -2394,8 +2596,21 @@ function onInput(event) {
     }
   }
 }
+// Review shortcuts: K keep, T task, A archive, S skip.
+function onKeydown(event) {
+  if (app.modal?.type !== 'review' || app.busy || event.metaKey || event.ctrlKey || event.altKey) return;
+  if (event.target.matches?.('input, textarea, select')) return;
+  const action = { k: 'review-keep', t: 'review-task', a: 'review-archive', s: 'review-skip' }[
+    event.key.toLowerCase()
+  ];
+  const button = action && $(`#overlay [data-action="${action}"]`);
+  if (!button) return;
+  event.preventDefault();
+  button.click();
+  requestAnimationFrame(() => $('#overlay .review-actions button')?.focus());
+}
 
-Object.assign(exports,{modals,actions,forms,onInput});
+Object.assign(exports,{modals,actions,forms,onInput,onKeydown});
 },
 "ui-character.js":function(require,exports){
 // The adventurer: dashboard card, rotatable model, appearance studio.
@@ -2558,11 +2773,66 @@ Object.assign(exports,{petCompanion,potionCount,renderCharacter,onKeydown,modals
 "ui-shop.js":function(require,exports){
 // Shop and inventory: buying, equipping, potions, spells, and pets.
 const E=require("engine.js");
-const { itemArt }=require("art.js");
+const { itemArt, monsterName }=require("art.js");
 const { $, app, coin, esc, icon, modalShell, toast, view }=require("ui-core.js");
 const { commit, openModal }=require("ui-modal.js");
 const { sound }=require("ui-effects.js");
 const { potionCount }=require("ui-character.js");
+const { percent, requestOdds }=require("ui-odds.js");
+// Odds are compared against the next opponent, at full health when currently at 0 HP.
+function comparisonBase() {
+  const s = app.state;
+  return {
+    ...s,
+    hp: s.hp || E.maxHP(s),
+    monster: { number: s.monster.number + (s.monster.defeatedOn ? 1 : 0) },
+  };
+}
+const inUse = item =>
+  item.type === 'spell' ? app.state.preparedSpell === item.id : app.state.equipped[item.type] === item.id;
+// What changes if this weapon, armor, or spell replaces the current one.
+function comparison(item) {
+  if (!['weapon', 'armor', 'spell'].includes(item.type)) return '';
+  const stat = item.type === 'armor' || item.effect === 'armor' ? 'armor' : 'attack',
+    unit = stat === 'armor' ? 'blocked per hit' : 'attack';
+  const now = E.combatStats(app.state)[stat],
+    then = E.combatStats(E.withItem(app.state, item))[stat],
+    delta = then - now;
+  const current =
+    item.type === 'spell'
+      ? E.preparedSpell(app.state)
+      : E.SHOP.find(x => x.id === app.state.equipped[item.type]);
+  const selected = inUse(item);
+  const change = selected
+    ? `<strong>${now} ${unit}</strong> <small>${item.type === 'spell' ? 'prepared' : 'equipped'}</small>`
+    : `<strong class="${delta > 0 ? 'up' : delta < 0 ? 'down' : ''}">${delta > 0 ? '+' : delta < 0 ? '−' : '±'}${Math.abs(delta)} ${unit}</strong> <small>vs ${current ? esc(current.name) : item.type === 'weapon' ? 'unarmed' : item.type === 'armor' ? 'no armor' : 'no spell'}</small>`;
+  const base = comparisonBase(),
+    foe = monsterName(base.monster.number);
+  return `<div class="item-compare" data-compare="${item.id}"><span>${change}</span><span class="item-odds">Win vs ${esc(foe)}${app.state.hp ? '' : ' at full HP'}: ${selected ? '<strong data-odds="now">…</strong>' : '<span data-odds="now">…</span> → <strong data-odds="with">…</strong>'}</span></div>`;
+}
+// Fill in odds after the dialog renders; results arrive from the worker.
+function fillComparisons() {
+  const base = comparisonBase();
+  for (const el of document.querySelectorAll('[data-compare]')) {
+    const item = E.SHOP.find(i => i.id === el.dataset.compare);
+    const show = (slot, chance) => {
+      const target = el.querySelector(`[data-odds="${slot}"]`);
+      if (target) target.textContent = percent(chance);
+    };
+    Promise.all([requestOdds(base), requestOdds(E.withItem(base, item))]).then(([before, after]) => {
+      show('now', before);
+      show('with', after);
+      const strong = el.querySelector('[data-odds="with"]');
+      if (strong && before !== null && after !== null)
+        strong.className =
+          Math.round(after * 100) > Math.round(before * 100)
+            ? 'up'
+            : Math.round(after * 100) < Math.round(before * 100)
+              ? 'down'
+              : '';
+    });
+  }
+}
 const shopTabs = [
   ['weapon', 'Weapons', 'sword'],
   ['armor', 'Armor', 'shield'],
@@ -2571,6 +2841,7 @@ const shopTabs = [
   ['pet', 'Pets', 'pet'],
 ];
 function renderShop(inventory) {
+  queueMicrotask(fillComparisons);
   const items = E.SHOP.filter(
     i => i.type === app.shopCategory && (!inventory || E.itemCount(app.state, i.id) > 0),
   ).sort((a, b) => a.price - b.price);
@@ -2615,7 +2886,7 @@ function renderShop(inventory) {
                       : selected
                         ? 'Equipped · remove'
                         : 'Equip';
-              return `<article class="shop-item ${i.tier} ${i.type} ${owned ? 'owned' : ''} ${selected ? 'item-selected' : ''}">${count ? `<span class="item-count">${consumable ? count + ' owned' : selected ? icon('check') + 'Selected' : 'Owned'}</span>` : ''}<div class="item-art">${itemArt(i)}</div><div class="item-copy"><span class="item-tier">${i.type === 'pet' ? 'COMPANION' : i.type === 'spell' ? 'ONE FIGHT' : i.tier.toUpperCase()}</span><h3>${esc(i.name)}</h3><p>${esc(i.description)}</p></div>${!inventory ? `<button class="button secondary" data-action="buy" data-id="${i.id}" aria-label="${owned ? esc(i.name) + ' owned' : 'Buy ' + esc(i.name) + ' for ' + i.price + ' gold'}" ${owned || app.state.gold < i.price ? 'disabled' : ''}>${owned ? icon('check') + 'Owned' : `Buy ${coin(i.price, true)}`}</button>` : ''}${count ? `<button class="button ${inventory ? 'primary' : 'item-use'}" data-action="${action}" data-id="${i.id}" aria-label="${i.type === 'potion' ? 'Use' : i.type === 'spell' ? (selected ? 'Put away' : 'Prepare') : selected ? 'Remove' : 'Equip'} ${esc(i.name)}" ${i.type === 'potion' && app.state.hp === E.maxHP(app.state) ? 'disabled' : ''}>${i.type === 'potion' && app.state.hp === E.maxHP(app.state) ? 'Full health' : useLabel}</button>` : ''}</article>`;
+              return `<article class="shop-item ${i.tier} ${i.type} ${owned ? 'owned' : ''} ${selected ? 'item-selected' : ''}">${count ? `<span class="item-count">${consumable ? count + ' owned' : selected ? icon('check') + 'Selected' : 'Owned'}</span>` : ''}<div class="item-art">${itemArt(i)}</div><div class="item-copy"><span class="item-tier">${i.type === 'pet' ? 'COMPANION' : i.type === 'spell' ? 'ONE FIGHT' : i.tier.toUpperCase()}</span><h3>${esc(i.name)}</h3><p>${esc(i.description)}</p></div>${comparison(i)}${!inventory ? `<button class="button secondary" data-action="buy" data-id="${i.id}" aria-label="${owned ? esc(i.name) + ' owned' : 'Buy ' + esc(i.name) + ' for ' + i.price + ' gold'}" ${owned || app.state.gold < i.price ? 'disabled' : ''}>${owned ? icon('check') + 'Owned' : `Buy ${coin(i.price, true)}`}</button>` : ''}${count ? `<button class="button ${inventory ? 'primary' : 'item-use'}" data-action="${action}" data-id="${i.id}" aria-label="${i.type === 'potion' ? 'Use' : i.type === 'spell' ? (selected ? 'Put away' : 'Prepare') : selected ? 'Remove' : 'Equip'} ${esc(i.name)}" ${i.type === 'potion' && app.state.hp === E.maxHP(app.state) ? 'disabled' : ''}>${i.type === 'potion' && app.state.hp === E.maxHP(app.state) ? 'Full health' : useLabel}</button>` : ''}</article>`;
             })
             .join('')
         : `<div class="empty-state"><span class="empty-symbol">${icon(shopTabs.find(t => t[0] === app.shopCategory)[2])}</span><h3>No ${shopTabs.find(t => t[0] === app.shopCategory)[1].toLowerCase()} in inventory</h3><button class="button primary" data-action="shop">Browse shop</button></div>`
@@ -2709,6 +2980,39 @@ const actions = {
 
 Object.assign(exports,{onKeydown,modals,actions});
 },
+"ui-odds.js":function(require,exports){
+// Victory-chance estimates, computed off the main thread and cached by the combat-relevant state.
+const E=require("engine.js");
+const workerUrl=URL.createObjectURL(new Blob(["(()=>{'use strict';\nconst modules={\"combat-worker.js\":function(require,exports){\nconst { estimateOdds }=require(\"engine.js\");\nself.onmessage = ({data:{state,key}}) => {\n  try { self.postMessage({key,chance:estimateOdds(state)}); }\n  catch(error) { self.postMessage({key,error:error.message}); }\n};\n\nObject.assign(exports,{});\n},\n\"engine.js\":function(require,exports){\nconst {DEFAULT_APPEARANCE,validAppearance}=require(\"appearance.js\");\nconst {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS}=require(\"achievements.js\");\nconst {validHabitIcon}=require(\"habit-icons.js\");\nconst CATEGORIES = ['body', 'mind', 'soul', 'heart'];\nconst TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };\nconst CATEGORY_META = {\n  body: { label: 'Body', subtitle: 'Care for your physical self', icon: 'body' },\n  mind: { label: 'Mind', subtitle: 'Learn, practice, create', icon: 'mind' },\n  soul: { label: 'Soul', subtitle: 'Make space within', icon: 'soul' },\n  heart: { label: 'Heart', subtitle: 'Connect and care', icon: 'heart' },\n  harm: { label: 'Harm', subtitle: 'Notice what takes a toll', icon: 'harm' },\n};\nconst uid = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;\nfunction dateKey(now = new Date(), timezone = 'Atlantic/Madeira') {\n  const parts = new Intl.DateTimeFormat('en', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);\n  const get = type => parts.find(p => p.type === type).value;\n  return `${get('year')}-${get('month')}-${get('day')}`;\n}\nfunction deviceTimezone() {\n  try { const zone = Intl.DateTimeFormat().resolvedOptions().timeZone; dateKey(new Date(), zone); return zone; }\n  catch { return 'UTC'; }\n}\nfunction daysBetween(a, b) { return Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86400000); }\nconst level = (s, stat) => Math.floor(s.xp[stat] / 300) + 1;\nconst maxHP = s => 100 + 15 * (level(s, 'body') - 1);\nconst healingMultiplier = s => 1 + .1 * (level(s, 'heart') - 1);\nconst words = text => (text.trim().match(/\\S+/gu) || []).length;\nconst noteEntitlement = text => words(text) >= 150 ? 3 : words(text) >= 50 ? 2 : words(text) ? 1 : 0;\n\nfunction freshState() {\n  const habit = (title, category, base) => ({ id: uid(), title, category, base, logs: [], harmLogs: [], created: Date.now() });\n  return {\n    version: 1, revision: 0, name: 'Adventurer', gold: 0, hp: 100,\n    appearance: {...DEFAULT_APPEARANCE},\n    xp: { body: 0, mind: 0, soul: 0, heart: 0 },\n    tasks: [\n      { id: uid(), title: 'Reply to that email', tier: 'quick', done: false, earned: 0 },\n      { id: uid(), title: 'Clear a little space on your desk', tier: 'quick', done: false, earned: 0 },\n      { id: uid(), title: 'Finish something you’ve been putting off', tier: 'hard', done: false, earned: 0 },\n    ],\n    habits: [\n      habit('Drink enough water', 'body', 10), habit('Get a good night’s sleep', 'body', 10), habit('Eat nourishing meals', 'body', 10),\n      habit('Read a few pages', 'mind', 10), habit('Practice a skill', 'mind', 20),\n      habit('Take a mindful pause', 'soul', 10), habit('Write a reflection', 'soul', 20),\n      habit('Check in with someone', 'heart', 20), habit('Do something kind', 'heart', 10),\n      habit('Mindless scrolling', 'harm', 3), habit('Fast food', 'harm', 7),\n    ],\n    notes: [], noteGold: {}, reviewDates: [], inventory: [], equipped: { weapon: null, armor: null }, potions: 0,\n    supplies: {}, preparedSpell: null, activePet: null,\n    progress: createProgress(),\n    monster: { number: 1, defeatedOn: null }, battles: [], pendingRecovery: false,\n    settings: { theme: 'light', muted: false, reducedMotion: false, timezone: deviceTimezone(), lastBackup: null, backupNudge: null },\n  };\n}\n\nfunction momentum(habit, today) {\n  const logs = [...habit.logs].filter(l => l.day < today).sort((a,b) => a.day.localeCompare(b.day));\n  if (!logs.length) return 1;\n  let factor = 1;\n  for (let i = 1; i < logs.length; i++) {\n    const missed = Math.max(0, daysBetween(logs[i-1].day, logs[i].day) - 1);\n    if (missed === 0) factor = factor < 1.2 ? 1.2 : 1.5;\n    else for (let j = 0; j < Math.min(3, missed); j++) factor = decay(factor);\n  }\n  const missed = Math.max(0, daysBetween(logs.at(-1).day, today) - 1);\n  if (!missed) return factor < 1.2 ? 1.2 : 1.5;\n  for (let j = 0; j < Math.min(3, missed); j++) factor = decay(factor);\n  return factor;\n}\n// Summary for the habit details view: next reward, streak, totals, and the last `days` days.\nfunction habitStats(h, today, days = 28) {\n  const harm = h.category === 'harm', logs = harm ? h.harmLogs : h.logs;\n  const counts = new Map(); for (const l of logs) counts.set(l.day, (counts.get(l.day) || 0) + 1);\n  const shift = (day, n) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };\n  const doneToday = counts.has(today), nextDay = doneToday && !harm ? shift(today, 1) : today;\n  let streak = 0; for (let day = doneToday ? today : shift(today, -1); counts.has(day); day = shift(day, -1)) streak++;\n  const factor = harm ? 1 : momentum(h, nextDay);\n  return {\n    harm, doneToday, streak, factor, next: harm ? h.base : Math.round(h.base * factor),\n    total: logs.length, earned: harm ? logs.reduce((n, l) => n + l.damage, 0) : logs.reduce((n, l) => n + l.xp, 0),\n    history: Array.from({ length: days }, (_, i) => { const day = shift(today, i - days + 1); return { day, count: counts.get(day) || 0 }; }),\n  };\n}\nfunction decay(f) { return f > 1.2 ? 1.2 : f > 1.1 ? 1.1 : 1; }\nfunction completeHabit(s, id, today) {\n  const h = s.habits.find(h => h.id === id);\n  if (!h || h.category === 'harm') throw new Error('Choose a positive habit.');\n  if (h.logs.some(l => l.day === today)) throw new Error('Already completed today.');\n  const amount = Math.round(h.base * momentum(h, today));\n  const beforeLevel = level(s, h.category), beforeHP = maxHP(s);\n  ensureProgress(s).habits[h.category]++;\n  h.logs.push({ day: today, xp: amount }); s.xp[h.category] += amount;\n  s.hp = Math.max(0, Math.min(maxHP(s), s.hp + maxHP(s) - beforeHP));\n  return { amount, category: h.category, leveled: level(s, h.category) > beforeLevel };\n}\nfunction undoHabit(s, id, today) {\n  const h = s.habits.find(h => h.id === id), log = h?.logs.find(l => l.day === today);\n  if (!log) throw new Error('Nothing to undo today.');\n  const beforeHP = maxHP(s);\n  const progress=ensureProgress(s);progress.habits[h.category]=Math.max(0,progress.habits[h.category]-1);\n  s.xp[h.category] -= log.xp; h.logs = h.logs.filter(l => l !== log);\n  s.hp = Math.max(0, Math.min(maxHP(s), s.hp + maxHP(s) - beforeHP));\n  return log.xp;\n}\nfunction logHarm(s, id, today) {\n  const h = s.habits.find(h => h.id === id);\n  if (!h || h.category !== 'harm') throw new Error('Choose a Harm habit.');\n  const damage = Math.min(s.hp, h.base);\n  s.hp -= damage; h.harmLogs.push({ id: uid(), day: today, damage });\n  if (!s.hp) s.pendingRecovery = true;\n  return damage;\n}\nfunction undoHarm(s, id, logId, today) {\n  const h = s.habits.find(h => h.id === id), l = h?.harmLogs.find(l => l.id === logId && l.day === today);\n  if (!l) throw new Error('Nothing to undo.');\n  s.hp = Math.min(maxHP(s), s.hp + l.damage); h.harmLogs = h.harmLogs.filter(x => x !== l);\n  return l.damage;\n}\nconst TAG_PATTERN = /#[\\p{L}\\p{N}_-]+/gu;\nconst tags = text => [...new Set((text.match(TAG_PATTERN) || []).map(t => t.toLowerCase()))];\nconst REPEATS = { daily: 'Every day', weekdays: 'Weekdays', weekly: 'Every week', monthly: 'Every month' };\n// The date a recurring task reopens after being completed on `day`. Missed occurrences never pile up.\nfunction nextOccurrence(day, repeat) {\n  const d = new Date(`${day}T12:00:00Z`), key = () => d.toISOString().slice(0, 10);\n  if (repeat === 'daily') d.setUTCDate(d.getUTCDate() + 1);\n  else if (repeat === 'weekly') d.setUTCDate(d.getUTCDate() + 7);\n  else if (repeat === 'weekdays') do d.setUTCDate(d.getUTCDate() + 1); while ([0, 6].includes(d.getUTCDay()));\n  else if (repeat === 'monthly') {\n    const target = d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + 1);\n    d.setUTCDate(Math.min(target, new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate()));\n  } else throw new Error('Unknown repeat.');\n  return key();\n}\nfunction saveTask(s, { id, title, tier, repeat = null, sort = false }, today) {\n  title = String(title || '').trim();\n  if (!title) throw new Error('Give this task a name.');\n  if (repeat !== null && !Object.hasOwn(REPEATS, repeat)) throw new Error('Unknown repeat.');\n  let task = s.tasks.find(t => t.id === id);\n  if (!task) { task = { id: uid(), title, tier, done: false, earned: 0 }; s.tasks.unshift(task); }\n  task.title = title;\n  if (!task.done) task.tier = tier;\n  if (sort) task.inbox = false;\n  if (repeat) { task.repeat = repeat; task.due = task.done ? nextOccurrence(task.doneOn || today, repeat) : null; }\n  else { delete task.repeat; delete task.due; }\n  return task;\n}\nfunction toggleTask(s, id, today) {\n  const task = s.tasks.find(t => t.id === id);\n  if (!task) throw new Error('Task not found.');\n  const progress=ensureProgress(s);\n  if (task.done) {\n    const amount = task.earned; s.gold -= amount; task.done = false; task.earned = 0; progress.tasks=Math.max(0,progress.tasks-1);\n    delete task.doneOn; if (task.repeat) task.due = null;\n    return -amount;\n  }\n  progress.tasks++;\n  const amount = TASK_GOLD[task.tier]; task.done = true; task.earned = amount; s.gold += amount;\n  if (today) task.doneOn = today;\n  if (task.repeat) task.due = nextOccurrence(today, task.repeat);\n  return amount;\n}\n// Recurring tasks whose next date has arrived return to the to-do list. Earned gold stays earned.\nfunction reopenTasks(s, today) {\n  let reopened = 0;\n  for (const t of s.tasks) if (t.repeat && t.done && t.due && t.due <= today) { t.done = false; t.earned = 0; t.due = null; delete t.doneOn; reopened++; }\n  return reopened;\n}\nfunction saveNote(s, { id, text, kind = 'note', recovery = false }, today) {\n  if (!text.trim()) throw new Error('Write something first.');\n  const progress=ensureProgress(s);\n  let note = s.notes.find(n => n.id === id);\n  if (!note) {\n    note = { id: uid(), text: '', created: new Date().toISOString(), paid: 0, status: 'inbox', kind:recovery?'journal':kind, healed: false };s.notes.unshift(note);\n    progress.notes++;if(note.kind==='journal')progress.journals++;\n  }\n  note.text = text.trim();\n  const remaining = Math.max(0, 6 - (s.noteGold[today] || 0));\n  const reward = Math.max(0, Math.min(remaining, noteEntitlement(text) - note.paid));\n  note.paid += reward; s.gold += reward; s.noteGold[today] = (s.noteGold[today] || 0) + reward;\n  let healed = 0;\n  if (recovery && !note.healed) {\n    if(note.kind!=='journal')progress.journals++;\n    healed = Math.min(maxHP(s)-s.hp, Math.floor(words(text)/2*healingMultiplier(s)));\n    s.hp += healed; note.healed = true; note.kind = 'journal'; note.monster = s.monster.number;\n    s.pendingRecovery = s.hp < maxHP(s);\n  }\n  return { note, reward, healed };\n}\nfunction togglePin(s, id) {\n  const note = s.notes.find(n => n.id === id);\n  if (!note) throw new Error('Note not found.');\n  if (note.pinned) delete note.pinned; else note.pinned = true;\n  return !!note.pinned;\n}\nfunction convertNote(s, id, tier = 'quick') {\n  const note = s.notes.find(n => n.id === id);\n  if (!note) throw new Error('Note not found.');\n  if (note.taskId) return s.tasks.find(t => t.id === note.taskId) || null;\n  // Hashtags carry over, so a captured task joins the note's projects.\n  const base = note.text.replace(TAG_PATTERN,'').trim().split('\\n')[0].replace(/\\s+/g,' ').trim(), noteTags = tags(note.text).join(' ');\n  const title = [base.slice(0, Math.max(0, 159 - noteTags.length)) || (noteTags ? '' : 'Captured task'), noteTags].filter(Boolean).join(' ').slice(0,160) || 'Captured task';\n  const task = { id: uid(), title, tier, done: false, earned: 0, source: note.id, inbox: true };\n  s.tasks.unshift(task); note.taskId = task.id; note.status = 'kept'; return task;\n}\nfunction reviewNote(s, id, status, today) {\n  const note = s.notes.find(n => n.id === id);\n  if (!note) throw new Error('Note not found.');\n  const pending = note.status === 'inbox';\n  note.status = status;\n  return pending ? rewardReview(s,today) : 0;\n}\nfunction rewardReview(s,today) {\n  if (s.reviewDates.includes(today)) return 0;\n  s.reviewDates.push(today); s.gold += 4; return 4;\n}\nconst SHOP = [\n  { id: 'potion', name: 'Healing potion', type: 'potion', tier: 'basic', price: 10, bonus: 30, description: 'Restore 30 HP · Heart improves healing' },\n  { id: 'twig', name: 'Trail blade', type: 'weapon', tier: 'basic', price: 35, bonus: 1, description: '+1 attack · a trusty beginning' },\n  { id: 'linen', name: 'Wayfarer vest', type: 'armor', tier: 'basic', price: 35, bonus: 1, description: 'Reduce each hit by 1' },\n  { id: 'iron', name: 'Ironwood sword', type: 'weapon', tier: 'large', price: 125, bonus: 3, description: '+3 attack · made to last' },\n  { id: 'guard', name: 'Mossguard armor', type: 'armor', tier: 'large', price: 125, bonus: 3, description: 'Reduce each hit by 3' },\n  { id: 'star', name: 'Starlight edge', type: 'weapon', tier: 'special', price: 250, bonus: 5, description: '+5 attack · a little extraordinary' },\n  { id: 'moon', name: 'Moonstone mail', type: 'armor', tier: 'special', price: 250, bonus: 5, description: 'Reduce each hit by 5' },\n  { id: 'greater-potion', name: 'Greater healing potion', type: 'potion', tier: 'large', price: 20, bonus: 65, description: 'Restore 65 HP · Heart improves healing' },\n  { id: 'full-potion', name: 'Full healing potion', type: 'potion', tier: 'special', price: 35, bonus: 0, description: 'Restore all missing HP, at any Body level' },\n  { id: 'ember', name: 'Ember spell', type: 'spell', tier: 'basic', price: 20, bonus: 3, effect: 'attack', description: '+3 damage on every attack in your next fight' },\n  { id: 'ward', name: 'Stone ward', type: 'spell', tier: 'large', price: 25, bonus: 3, effect: 'armor', description: 'Block 3 extra damage on every hit in your next fight' },\n  { id: 'fox', name: 'Fern fox', type: 'pet', tier: 'basic', price: 80, bonus: 0, description: 'A fox companion · cosmetic, stays with you' },\n  { id: 'owl', name: 'Dusk owl', type: 'pet', tier: 'large', price: 125, bonus: 0, description: 'An owl companion · cosmetic, stays with you' },\n  { id: 'cat', name: 'Moon cat', type: 'pet', tier: 'special', price: 250, bonus: 0, description: 'A cat companion · cosmetic, stays with you' },\n];\nconst isConsumable = item => ['potion','spell'].includes(item.type);\nconst itemCount = (s,id) => id==='potion' ? s.potions : (s.supplies?.[id] || (s.inventory.includes(id)?1:0));\nconst preparedSpell = s => SHOP.find(i=>i.type==='spell'&&i.id===s.preparedSpell);\nfunction buy(s, id) {\n  const item = SHOP.find(i => i.id === id);\n  if (!item) throw new Error('Item not found.');\n  if (!isConsumable(item) && s.inventory.includes(id)) throw new Error('You already own this.');\n  if (s.gold < item.price) throw new Error('A little more gold needed.');\n  s.gold -= item.price;\n  if (id==='potion') s.potions++;\n  else if(isConsumable(item)) { s.supplies ||= {}; s.supplies[id]=(s.supplies[id]||0)+1; }\n  else {\n    s.inventory.push(id);\n    if(item.type==='pet') { if(!s.activePet)s.activePet=id; }\n    else if (!s.equipped[item.type]) s.equipped[item.type] = id;\n  }\n  return item;\n}\nfunction equip(s,id) {\n  if (!s.inventory.includes(id)) throw new Error('This item is not in your inventory.');\n  const item = SHOP.find(i => i.id === id);\n  if(!item||isConsumable(item))throw new Error('Choose equipment or a companion.');\n  if(item.type==='pet') { s.activePet=s.activePet===id?null:id; return; }\n  s.equipped[item.type] = s.equipped[item.type] === id ? null : id;\n}\nfunction prepareSpell(s,id) {\n  if(!SHOP.some(i=>i.id===id&&i.type==='spell')||!itemCount(s,id))throw new Error('Buy this spell first.');\n  s.preparedSpell=s.preparedSpell===id?null:id;\n  return s.preparedSpell;\n}\nfunction usePotion(s,id='potion') {\n  const item=SHOP.find(i=>i.id===id&&i.type==='potion');\n  if (!item||!itemCount(s,id)) throw new Error('You don’t have this potion yet.');\n  if (s.hp === maxHP(s)) throw new Error('You’re already at full health.');\n  const amount = id==='full-potion'?maxHP(s)-s.hp:Math.min(maxHP(s)-s.hp, Math.floor(item.bonus*healingMultiplier(s)));\n  if(id==='potion')s.potions--;else s.supplies[id]--;\n  s.hp += amount; s.pendingRecovery = s.hp < maxHP(s); return amount;\n}\nfunction rollover(s,today) {\n  reopenTasks(s,today);\n  if (s.monster.defeatedOn && s.monster.defeatedOn < today) { s.monster.number++; s.monster.defeatedOn = null; }\n}\nfunction monsterStats(number) {\n  return { hp: Math.round(112*(1+.06*(number-1))), attack: 24+Math.floor(.8*(number-1)+.5) };\n}\nfunction combatStats(s) {\n  const spell=preparedSpell(s);\n  return {\n    hp: s.hp, max: maxHP(s), attack: 4*(level(s,'mind')-1)+(SHOP.find(i => i.id === s.equipped.weapon)?.bonus || 0)+(spell?.effect==='attack'?spell.bonus:0),\n    armor: (SHOP.find(i => i.id === s.equipped.armor)?.bonus || 0)+(spell?.effect==='armor'?spell.bonus:0),\n    dodge: 1-.88**(level(s,'soul')-1), rally: 15*(level(s,'heart')-1),\n  };\n}\nfunction victoryOdds(s) {\n  const p = combatStats(s), m = monsterStats(s.monster.number);\n  if (p.hp <= 0) return 0;\n  const cache = new Map();\n  function odds(hp, enemy, ready) {\n    const key = `${hp},${enemy},${+ready}`;\n    if (cache.has(key)) return cache.get(key);\n    let sum = 0;\n    for (let roll=10; roll<=34; roll+=2) {\n      const left = enemy-roll-p.attack;\n      if (left <= 0) { sum++; continue; }\n      let branch = p.dodge ? p.dodge*odds(hp,left,ready) : 0;\n      for (let hit=m.attack-10; hit<=m.attack+10; hit+=2) {\n        let remaining = hp-Math.max(1,hit-p.armor), nextReady=ready;\n        if (remaining<=0) continue;\n        if (ready && p.rally && remaining <= p.max/2) { remaining=Math.min(p.max,remaining+p.rally); nextReady=false; }\n        branch += (1-p.dodge)*odds(remaining,left,nextReady)/11;\n      }\n      sum += branch;\n    }\n    const result=sum/13; cache.set(key,result); return result;\n  }\n  return odds(p.hp,m.hp,true);\n}\n// Exact odds for early encounters; a fixed-seed sample of the same rules keeps larger ones responsive.\nfunction estimateOdds(s) {\n  const p=combatStats(s), m=monsterStats(s.monster.number);\n  if(p.max<200 && m.hp<200) return victoryOdds(s);\n  let wins=0, seed=123456789;\n  const rng=()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};\n  for(let i=0;i<15000;i++) {\n    let hp=p.hp, enemy=m.hp, ready=true;\n    while(hp>0&&enemy>0) {\n      enemy-=10+2*Math.floor(rng()*13)+p.attack;\n      if(enemy<=0) {wins++;break;}\n      if(rng()<p.dodge) continue;\n      hp-=Math.max(1,m.attack-10+2*Math.floor(rng()*11)-p.armor);\n      if(hp>0&&ready&&p.rally&&hp<=p.max/2) {hp=Math.min(p.max,hp+p.rally);ready=false;}\n    }\n  }\n  return wins/15000;\n}\n// The combat-relevant state with `item` equipped or prepared, for before/after comparisons.\nfunction withItem(s,item) {\n  const next={...s,equipped:{...s.equipped}};\n  if(item.type==='spell') next.preparedSpell=item.id; else next.equipped[item.type]=item.id;\n  return next;\n}\nconst oddsInput = s => ({hp:s.hp,xp:s.xp,equipped:s.equipped,preparedSpell:s.preparedSpell,monster:{number:s.monster.number}});\nfunction fight(s,today,rng=Math.random) {\n  if (!s.hp) throw new Error('Recover some HP before fighting.');\n  if (s.monster.defeatedOn) throw new Error('Your next opponent arrives tomorrow.');\n  const p=combatStats(s), m=monsterStats(s.monster.number), events=[];\n  const spell=preparedSpell(s);\n  if(spell) { s.supplies[spell.id]--;s.preparedSpell=null; }\n  let hp=p.hp, enemy=m.hp, ready=true, round=0;\n  const roll=(min,count)=>min+2*Math.floor(rng()*count);\n  while (hp>0 && enemy>0) {\n    round++;\n    const baseDamage=roll(10,13), weaponBonus=SHOP.find(i=>i.id===s.equipped.weapon)?.bonus||0;\n    const damage=baseDamage+p.attack, enemyBefore=enemy; enemy=Math.max(0,enemy-damage);\n    events.push({type:'attack',round,amount:damage,actualDamage:enemyBefore-enemy,baseDamage,weaponBonus,mindBonus:4*(level(s,'mind')-1),spellBonus:spell?.effect==='attack'?spell.bonus:0,hpBefore:hp,enemyBefore,hp,enemy});\n    if (!enemy) break;\n    if (p.dodge && rng()<p.dodge) { events.push({type:'deflect',round,amount:0,soulLevel:level(s,'soul'),hpBefore:hp,enemyBefore:enemy,hp,enemy}); continue; }\n    const rawDamage=roll(m.attack-10,11), injury=Math.max(1,rawDamage-p.armor), hpBefore=hp;\n    hp=Math.max(0,hp-injury);\n    const spellBlock=spell?.effect==='armor'?Math.min(spell.bonus,rawDamage-injury):0;\n    events.push({type:'hit',round,amount:injury,actualDamage:hpBefore-hp,rawDamage,blocked:rawDamage-injury,armorBonus:p.armor-(spell?.effect==='armor'?spell.bonus:0),spellBlock,hpBefore,enemyBefore:enemy,hp,enemy});\n    if (hp && ready && p.rally && hp<=p.max/2) {\n      const healed=Math.min(p.max-hp,p.rally), hpBefore=hp; hp+=healed; ready=false;\n      events.push({type:'rally',round,amount:healed,heartLevel:level(s,'heart'),hpBefore,enemyBefore:enemy,hp,enemy});\n    }\n  }\n  s.hp=hp; let loot=null;\n  if (!enemy) {\n    s.monster.defeatedOn=today;\n    if (rng()<.75) { const gold=8+2*(s.monster.number-1); s.gold+=gold; loot={type:'gold',amount:gold}; }\n    else {\n      const tier=s.monster.number<=3?'basic':s.monster.number<=7?'large':'special';\n      const choices=SHOP.filter(i=>i.tier===tier && ['weapon','armor'].includes(i.type) && !s.inventory.includes(i.id));\n      if (!choices.length) { const gold=8+2*(s.monster.number-1); s.gold+=gold; loot={type:'gold',amount:gold}; }\n      else { const item=choices[Math.floor(rng()*choices.length)]; s.inventory.push(item.id); loot={type:'equipment',id:item.id}; }\n    }\n  } else s.pendingRecovery=true;\n  const result={id:uid(),day:today,monster:s.monster.number,won:enemy===0,loot,hp,events,spell:spell?.id||null,initialHP:p.hp,maxHP:p.max,playerName:s.name,appearance:{...(s.appearance||DEFAULT_APPEARANCE)},loadout:{...s.equipped},levels:Object.fromEntries(CATEGORIES.map(c=>[c,level(s,c)]))};\n  s.battles.unshift(result); s.battles=s.battles.slice(0,50); return result;\n}\n\n// A backup reminder is due after a week without a backup or a snooze, once there is progress worth keeping.\nfunction backupDue(s,today,days=7) {\n  const since=[s.settings.lastBackup,s.settings.backupNudge].filter(Boolean).sort().pop();\n  const progress=s.gold>0||CATEGORIES.some(c=>s.xp[c]>0)||s.progress.tasks>0||s.progress.notes>0||s.battles.length>0;\n  return !!since&&progress&&daysBetween(since,today)>=days;\n}\n\nfunction validateState(value) {\n  const s=JSON.parse(JSON.stringify(value));\n  const fail=()=>{ throw new Error('This file is not a valid Twesk backup.'); };\n  const integer=(n,min=0,max=1e8)=>Number.isSafeInteger(n)&&n>=min&&n<=max;\n  const text=(v,max=100000)=>typeof v==='string'&&v.length<=max;\n  const id=v=>typeof v==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(v);\n  const date=v=>typeof v==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v));\n  const array=(a,max=10000)=>Array.isArray(a)&&a.length<=max;\n  if (!s||s.version!==1||!text(s.name,80)||!integer(s.gold,-1e8)||!integer(s.hp)||!s.xp||!CATEGORIES.every(k=>integer(s.xp[k]))) fail();\n  if(s.appearance===undefined)s.appearance={...DEFAULT_APPEARANCE};\n  if(!validAppearance(s.appearance))fail();\n  if (s.hp>maxHP(s)||!array(s.tasks)||!array(s.habits,300)||!array(s.notes)||!array(s.inventory,SHOP.filter(i=>!isConsumable(i)).length)||!array(s.reviewDates)||!array(s.battles,50)) fail();\n  if (!s.settings||!text(s.settings.timezone,100)||!['light','dark'].includes(s.settings.theme)||typeof s.settings.muted!=='boolean'||typeof s.settings.reducedMotion!=='boolean') fail();\n  try { dateKey(new Date(),s.settings.timezone); } catch { fail(); }\n  s.settings.lastBackup ??= null; s.settings.backupNudge ??= null;\n  if (![s.settings.lastBackup,s.settings.backupNudge].every(v=>v===null||date(v))) fail();\n  if (!s.monster||!integer(s.monster.number,1,500)||(s.monster.defeatedOn!==null&&!date(s.monster.defeatedOn))) fail();\n  if (!integer(s.potions)||typeof s.pendingRecovery!=='boolean'||!s.noteGold||typeof s.noteGold!=='object'||Array.isArray(s.noteGold)) fail();\n  if (!Object.entries(s.noteGold).every(([k,v])=>date(k)&&integer(v,0,6))||!s.reviewDates.every(date)) fail();\n  s.supplies ??= {};s.preparedSpell ??= null;s.activePet ??= null;\n  if(typeof s.supplies!=='object'||Array.isArray(s.supplies)||!Object.entries(s.supplies).every(([id,n])=>id!=='potion'&&SHOP.some(i=>i.id===id&&isConsumable(i))&&integer(n)))fail();\n  if(s.preparedSpell!==null&&(!preparedSpell(s)||!itemCount(s,s.preparedSpell)))fail();\n  if(s.activePet!==null&&(!s.inventory.includes(s.activePet)||!SHOP.some(i=>i.id===s.activePet&&i.type==='pet')))fail();\n  if (!s.equipped||!s.inventory.every(id=>SHOP.some(i=>i.id===id&&!isConsumable(i)))||new Set(s.inventory).size!==s.inventory.length) fail();\n  for(const type of ['weapon','armor']) if(s.equipped[type]!==null&&(!s.inventory.includes(s.equipped[type])||!SHOP.some(i=>i.id===s.equipped[type]&&i.type===type))) fail();\n  const unique=a=>new Set(a.map(x=>x.id)).size===a.length;\n  if (![s.tasks,s.habits,s.notes].every(unique)) fail();\n  for(const t of s.tasks) if(!id(t.id)||!text(t.title,500)||!Object.hasOwn(TASK_GOLD,t.tier)||typeof t.done!=='boolean'||!integer(t.earned,0,40)||(t.done?t.earned!==TASK_GOLD[t.tier]:t.earned!==0)) fail();\n  for(const t of s.tasks) if((t.repeat!==undefined&&!Object.hasOwn(REPEATS,t.repeat))||(t.due!=null&&!date(t.due))||(t.doneOn!==undefined&&!date(t.doneOn))||(t.repeat&&t.done&&!t.due)) fail();\n  for(const h of s.habits) {\n    if(h.icon!==undefined&&!validHabitIcon(h.icon))fail();\n    if(!id(h.id)||!text(h.title,200)||![...CATEGORIES,'harm'].includes(h.category)||!(h.category==='harm'?[3,7,12]:[10,20,30]).includes(h.base)||!array(h.logs)||!array(h.harmLogs)) fail();\n    if(!h.logs.every(l=>date(l.day)&&integer(l.xp,0,45))||new Set(h.logs.map(l=>l.day)).size!==h.logs.length||!h.harmLogs.every(l=>id(l.id)&&date(l.day)&&integer(l.damage,0,12))) fail();\n  }\n  for(const n of s.notes) if(!id(n.id)||!text(n.text)||(!text(n.created,100)||Number.isNaN(Date.parse(n.created)))||!integer(n.paid,0,3)||!['inbox','kept','archived'].includes(n.status)||!['note','journal'].includes(n.kind)||typeof n.healed!=='boolean'||(n.pinned!==undefined&&n.pinned!==true)) fail();\n  for(const battle of s.battles) {\n    if(!id(battle.id)||!date(battle.day)||!integer(battle.monster,1,500)||typeof battle.won!=='boolean'||!integer(battle.hp)||!array(battle.events,2000)||!battle.events.length) fail();\n    for(const event of battle.events) {\n      if(!event||!['attack','hit','deflect','rally'].includes(event.type)||!integer(event.amount)||!integer(event.hp)||!integer(event.enemy)) fail();\n      for(const key of ['round','actualDamage','baseDamage','weaponBonus','mindBonus','spellBonus','spellBlock','hpBefore','enemyBefore','rawDamage','blocked','armorBonus','soulLevel','heartLevel']) if(event[key]!==undefined&&!integer(event[key])) fail();\n    }\n    if(battle.won) {\n      if(!battle.loot||!['gold','equipment'].includes(battle.loot.type)) fail();\n      if(battle.loot.type==='gold'&&!integer(battle.loot.amount)) fail();\n      if(battle.loot.type==='equipment'&&!SHOP.some(i=>i.id===battle.loot.id&&['weapon','armor'].includes(i.type))) fail();\n    } else if(battle.loot!==null) fail();\n    if(battle.initialHP!==undefined&&!integer(battle.initialHP)) fail();\n    if(battle.maxHP!==undefined&&!integer(battle.maxHP,1)) fail();\n    if(battle.playerName!==undefined&&!text(battle.playerName,80)) fail();\n    if(battle.appearance!==undefined&&!validAppearance(battle.appearance))fail();\n    if(battle.spell!=null&&!SHOP.some(i=>i.id===battle.spell&&i.type==='spell'))fail();\n    if(battle.loadout) for(const type of ['weapon','armor']) if(battle.loadout[type]!==null&&!SHOP.some(i=>i.id===battle.loadout[type]&&i.type===type)) fail();\n    if(battle.levels&&!CATEGORIES.every(c=>integer(battle.levels[c],1))) fail();\n  }\n  const migrateProgress=s.progress===undefined,p=ensureProgress(s);\n  if(!p||typeof p!=='object'||Array.isArray(p)||!integer(p.tasks)||!integer(p.notes)||!integer(p.journals)||p.journals>p.notes||!p.habits||!CATEGORIES.every(c=>integer(p.habits[c]))||!p.earned||typeof p.earned!=='object'||Array.isArray(p.earned))fail();\n  if(!Object.entries(p.earned).every(([id,day])=>ACHIEVEMENTS.some(a=>a.id===id)&&date(day)))fail();\n  if(migrateProgress)awardAchievements(s,dateKey(new Date(),s.settings.timezone));\n  s.revision=integer(s.revision)?s.revision:0;\n  return s;\n}\n\nObject.assign(exports,{CATEGORIES,TASK_GOLD,CATEGORY_META,uid,dateKey,deviceTimezone,daysBetween,level,maxHP,healingMultiplier,words,noteEntitlement,freshState,momentum,habitStats,completeHabit,undoHabit,logHarm,undoHarm,TAG_PATTERN,tags,REPEATS,nextOccurrence,saveTask,toggleTask,reopenTasks,saveNote,togglePin,convertNote,reviewNote,rewardReview,SHOP,isConsumable,itemCount,preparedSpell,buy,equip,prepareSpell,usePotion,rollover,monsterStats,combatStats,victoryOdds,estimateOdds,withItem,oddsInput,fight,backupDue,validateState});\n},\n\"appearance.js\":function(require,exports){\nconst APPEARANCE = {\n  skin: [{id:'warm',name:'Warm',color:'#dcaa83'},{id:'light',name:'Light',color:'#f2cdb0'},{id:'olive',name:'Olive',color:'#bd906c'},{id:'brown',name:'Brown',color:'#916246'},{id:'deep',name:'Deep',color:'#634333'}],\n  hair: [{id:'umber',name:'Umber',color:'#493a37'},{id:'ink',name:'Ink',color:'#292d3c'},{id:'copper',name:'Copper',color:'#a65636'},{id:'gold',name:'Gold',color:'#d5ad62'},{id:'silver',name:'Silver',color:'#c1c9d5'}],\n  outfit: [{id:'sage',name:'Sage',color:'#60877c'},{id:'iris',name:'Iris',color:'#8976be'},{id:'rust',name:'Rust',color:'#b96950'},{id:'ocean',name:'Ocean',color:'#527c9b'},{id:'rose',name:'Rose',color:'#ac718b'}],\n  style: [{id:'swept',name:'Swept'},{id:'crop',name:'Cropped'},{id:'braids',name:'Braids'}],\n};\nconst DEFAULT_APPEARANCE = {skin:'warm',hair:'umber',outfit:'sage',style:'swept'};\nconst validAppearance = value => !!value && Object.entries(APPEARANCE).every(([key,options])=>options.some(o=>o.id===value[key]));\n\nObject.assign(exports,{APPEARANCE,DEFAULT_APPEARANCE,validAppearance});\n},\n\"achievements.js\":function(require,exports){\nconst stats=['body','mind','soul','heart'];\nconst ACHIEVEMENT_GROUPS=[['all','All seals'],['journey','Journey'],['tasks','Tasks'],['body','Body'],['mind','Mind'],['soul','Soul'],['heart','Heart'],['monsters','Monsters'],['vault','Vault'],['journal','Journal']];\nconst milestones=(group,metric,thresholds,titles,verb)=>thresholds.map((target,i)=>({id:`${group}-${target}`,group,metric,target,title:titles[i],description:verb(target),tier:Math.min(4,i+1)}));\nconst ACHIEVEMENTS=[\n  {id:'first-level',group:'journey',metric:'highestLevel',target:2,title:'The Awakening',description:'Reach level 2 in any stat',tier:1},\n  {id:'fourfold',group:'journey',metric:'lowestLevel',target:2,title:'Fourfold Adventurer',description:'Reach level 2 in all four stats',tier:3},\n  ...milestones('tasks','tasks',[1,10,50,100],['First Contract','Errand Runner','Guild Regular','Quest Keeper'],n=>`Complete ${n} ${n===1?'task':'tasks'}`),\n  ...milestones('body','body',[10,50,100],['Trail Walker','Iron Roots','Titan’s Stride'],n=>`Complete ${n} Body habits`),\n  ...milestones('mind','mind',[10,50,100],['Curious Apprentice','Lore Keeper','Archmage of Ideas'],n=>`Complete ${n} Mind habits`),\n  ...milestones('soul','soul',[10,50,100],['Stillwater Initiate','Inner Compass','Keeper of the Flame'],n=>`Complete ${n} Soul habits`),\n  ...milestones('heart','heart',[10,50,100],['Kindred Spirit','Hearth Keeper','Heart of the Realm'],n=>`Complete ${n} Heart habits`),\n  ...milestones('monsters','monsters',[1,3,8,25],['Mossbreaker','Monster Scout','Chapter Champion','Realm Guardian'],n=>`Defeat ${n} ${n===1?'monster':'monsters'}`),\n  ...milestones('vault','notes',[1,10,50],['Pocket Scribe','Idea Alchemist','Vault Curator'],n=>`Save ${n} ${n===1?'entry':'entries'} to the Vault`),\n  ...milestones('journal','journals',[1,10,30],['First Page','Mirror Mage','Chronicler'],n=>`Write ${n} journal ${n===1?'entry':'entries'}`),\n];\nfunction createProgress(){return {tasks:0,habits:Object.fromEntries(stats.map(c=>[c,0])),notes:0,journals:0,earned:{}};}\nfunction ensureProgress(s){\n  if(s.progress===undefined){\n    const p=createProgress();p.tasks=s.tasks.filter(t=>t.done).length;\n    for(const c of stats)p.habits[c]=s.habits.filter(h=>h.category===c).reduce((sum,h)=>sum+h.logs.length,0);\n    p.notes=s.notes.length;p.journals=s.notes.filter(n=>n.kind==='journal').length;s.progress=p;\n  }\n  return s.progress;\n}\nconst defeatedCount=s=>s.monster.number-1+(s.monster.defeatedOn?1:0);\nfunction achievementValue(s,badge){\n  const p=ensureProgress(s);\n  if(badge.metric==='highestLevel')return Math.max(...stats.map(c=>Math.floor(s.xp[c]/300)+1));\n  if(badge.metric==='lowestLevel')return Math.min(...stats.map(c=>Math.floor(s.xp[c]/300)+1));\n  if(badge.metric==='monsters')return defeatedCount(s);\n  return stats.includes(badge.metric)?p.habits[badge.metric]:p[badge.metric];\n}\nfunction awardAchievements(s,day){\n  const p=ensureProgress(s),earned=[];\n  for(const badge of ACHIEVEMENTS)if(!p.earned[badge.id]&&achievementValue(s,badge)>=badge.target){p.earned[badge.id]=day;earned.push(badge);}\n  return earned;\n}\nfunction monsterStatus(s,n){\n  if(n<s.monster.number||(n===s.monster.number&&s.monster.defeatedOn))return 'defeated';\n  if(n===s.monster.number)return 'available';\n  if(n===s.monster.number+1)return 'next';\n  return 'locked';\n}\n\nObject.assign(exports,{ACHIEVEMENT_GROUPS,ACHIEVEMENTS,createProgress,ensureProgress,defeatedCount,achievementValue,awardAchievements,monsterStatus});\n},\n\"habit-icons.js\":function(require,exports){\n// Named, local line icons shared by the habit picker and saved habit rows.\nconst HABIT_ICONS=[\n  {id:'category',label:'Category default',path:''},\n  {id:'water',label:'Water',path:'<path d=\"M12 3C9 7 5 11 5 15a7 7 0 0 0 14 0c0-4-4-8-7-12Z\"/><path d=\"M8 15a4 4 0 0 0 4 4\"/>'},\n  {id:'leaf',label:'Nature',path:'<path d=\"M20 3c0 13-4 17-11 14C3 14 6 5 20 3ZM4 21 17 8\"/>'},\n  {id:'moon',label:'Sleep',path:'<path d=\"M20 14a8 8 0 0 1-10-10 8 8 0 1 0 10 10Z\"/>'},\n  {id:'food',label:'Food',path:'<path d=\"M4 3v6a3 3 0 0 0 6 0V3M7 3v18M18 3c-3 3-3 7 0 9h2V3ZM20 12v9\"/>'},\n  {id:'body',label:'Exercise',path:'<path d=\"M4 8v8m3-10v12m10-12v12m3-10v8M7 12h10\"/>'},\n  {id:'walk',label:'Walking',path:'<circle cx=\"13\" cy=\"4\" r=\"2\"/><path d=\"m7 12 3-4 4 1 3 4h3M12 9l-2 6-5 5m5-5 5 2 2 4\"/>'},\n  {id:'sun',label:'Sunlight',path:'<circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2\"/>'},\n  {id:'mind',label:'Reading',path:'<path d=\"M4 5h6l2 2 2-2h6v14h-6l-2 2-2-2H4ZM12 7v14\"/>'},\n  {id:'pencil',label:'Writing',path:'<path d=\"m16 3 5 5L8 21H3v-5ZM13 6l5 5\"/>'},\n  {id:'brush',label:'Art',path:'<path d=\"m14 11 6-8 1 1-5 9ZM14 11l2 2M13 13c-5-2-3 6-9 6 5 4 12 0 11-4Z\"/>'},\n  {id:'music',label:'Music',path:'<path d=\"M9 17V5l11-2v12M9 8l11-2\"/><ellipse cx=\"6\" cy=\"18\" rx=\"3\" ry=\"2\"/><ellipse cx=\"17\" cy=\"16\" rx=\"3\" ry=\"2\"/>'},\n  {id:'language',label:'Languages',path:'<path d=\"M3 5h11M8 3v2M5 5c0 6 5 9 8 10M12 5c0 6-5 9-9 10M14 21l4-11 4 11M16 17h4\"/>'},\n  {id:'code',label:'Coding',path:'<path d=\"m8 6-6 6 6 6m8-12 6 6-6 6m-3-15-2 18\"/>'},\n  {id:'soul',label:'Mindfulness',path:'<path d=\"M12 3c1 5 4 8 9 9-5 1-8 4-9 9-1-5-4-8-9-9 5-1 8-4 9-9Z\"/>'},\n  {id:'heart',label:'Care',path:'<path d=\"M20 5c-3-3-7-1-8 1-1-2-5-4-8-1-5 5 3 11 8 15 5-4 13-10 8-15Z\"/>'},\n  {id:'people',label:'Connection',path:'<circle cx=\"9\" cy=\"7\" r=\"3\"/><path d=\"M3 21v-3a6 6 0 0 1 12 0v3M17 4a3 3 0 0 1 0 6m1 4a5 5 0 0 1 3 5v2\"/>'},\n  {id:'smile',label:'Joy',path:'<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M8 9v1m8-1v1m-9 4c2 5 8 5 10 0\"/>'},\n  {id:'plant',label:'Growth',path:'<path d=\"M12 21V10M12 14C5 14 3 11 3 6c6 0 9 2 9 8ZM12 10c0-5 3-7 9-7 0 5-3 7-9 7ZM6 21h12\"/>'},\n  {id:'coffee',label:'Coffee',path:'<path d=\"M4 8h13v8a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5ZM17 9h2a3 3 0 0 1 0 6h-2M7 3v2m4-3v3m4-2v2\"/>'},\n  {id:'phone',label:'Phone',path:'<rect x=\"6\" y=\"2\" width=\"12\" height=\"20\" rx=\"2\"/><path d=\"M10 5h4m-3 14h2\"/>'},\n  {id:'bed',label:'Rest',path:'<path d=\"M3 19V6m18 13V9M3 15h18M3 10h5V6H3m5 4h13v5M3 19v2m18-2v2\"/>'},\n  {id:'star',label:'Star',path:'<path d=\"m12 2 3 7 7 1-5 5 1 7-6-4-6 4 1-7-5-5 7-1Z\"/>'},\n  {id:'harm',label:'Harm',path:'<path d=\"m13 2-8 12h6l-1 8 9-13h-7Z\"/>'},\n];\nconst validHabitIcon=value=>HABIT_ICONS.some(i=>i.id===value);\nfunction habitIconChoice(habit){\n  if(validHabitIcon(habit.icon))return habit.icon;\n  // Keep existing saves' water/nature icon and category defaults until edited.\n  return habit.category!=='harm'&&habit.title.toLowerCase().includes('water')?'leaf':'category';\n}\nfunction resolvedHabitIcon(habit){\n  const choice=habitIconChoice(habit);return choice==='category'?habit.category:choice;\n}\n\nObject.assign(exports,{HABIT_ICONS,validHabitIcon,habitIconChoice,resolvedHabitIcon});\n}};\nconst cache=Object.create(null);function require(id){if(cache[id])return cache[id];const exports=cache[id]={};modules[id](require,exports);return exports;}require(\"combat-worker.js\");\n})();"],{type:'text/javascript'}));
+const worker=new Worker(workerUrl);
+worker.addEventListener('message',()=>URL.revokeObjectURL(workerUrl),{once:true});
+const cache = new Map(),
+  waiting = new Map();
+worker.onmessage = ({ data }) => {
+  const chance = data.error ? null : data.chance;
+  if (cache.size > 300) cache.clear();
+  cache.set(data.key, chance);
+  for (const resolve of waiting.get(data.key) || []) resolve(chance);
+  waiting.delete(data.key);
+};
+const oddsKey = s => JSON.stringify(E.oddsInput(s));
+// Resolves to a 0–1 chance, or null if it could not be computed.
+function requestOdds(s) {
+  const input = E.oddsInput(s),
+    key = JSON.stringify(input);
+  if (cache.has(key)) return Promise.resolve(cache.get(key));
+  return new Promise(resolve => {
+    if (!waiting.has(key)) {
+      waiting.set(key, []);
+      worker.postMessage({ state: input, key });
+    }
+    waiting.get(key).push(resolve);
+  });
+}
+const percent = chance => (chance === null ? '—' : Math.round(chance * 100) + '%');
+
+Object.assign(exports,{oddsKey,requestOdds,percent});
+},
 "ui-battle.js":function(require,exports){
 // The monster card, victory odds, and animated encounters.
 const E=require("engine.js");
@@ -2717,38 +3021,28 @@ const { describeCombatEvent }=require("combat-presentation.js");
 const { createCombatAudio }=require("combat-audio.js");
 const { $, app, esc, icon, modalShell, persist, today, view }=require("ui-core.js");
 const { announceBadges, commit }=require("ui-modal.js");
+const { oddsKey, percent, requestOdds }=require("ui-odds.js");
 function renderMonster() {
   const number = app.state.monster.number,
     won = !!app.state.monster.defeatedOn,
     spell = E.preparedSpell(app.state);
   return `<section class="panel monster-panel ${won ? 'cleared' : ''}"><div class="monster-heading"><span class="section-kicker">${won ? 'A LITTLE VICTORY' : 'A CHALLENGE AWAITS'}</span><span class="chapter">#${String(number).padStart(2, '0')}</span></div><button class="monster-scene" data-action="bestiary" aria-label="Inspect ${esc(monsterName(number))} in the monster collection" title="Open monster collection">${monsterArt(number, won)}</button><h3>${monsterName(number)}</h3><p>${won ? 'Defeated. Enjoy your well-earned pause.' : 'Waiting here until you feel ready.'}</p>${won ? `<div class="victory-note">${icon('check')}Next opponent arrives tomorrow</div>` : `<div class="readiness"><span>Estimated victory chance</span><strong id="chance-value">${app.chance === null ? '…' : Math.round(app.chance * 100) + '%'}</strong></div><div class="readiness-bar"><div id="chance-bar" style="width:${(app.chance || 0) * 100}%"></div></div>${spell ? `<button class="prepared-spell" data-action="open-spells">${icon('soul')}<span>${spell.name} prepared<small>Consumed in your next fight</small></span></button>` : ''}<button class="button primary fight-button" data-action="fight" ${app.state.hp === 0 ? 'disabled' : ''}>${icon('sword')}Challenge ${monsterName(number)}</button>${app.state.hp === 0 ? '<button class="text-button" data-action="recover">Recover HP to fight</button>' : '<small class="fight-hint">Your stats, gear, spells & health shape your chances.</small>'}`}${app.state.battles.some(r => r.monster === number) ? '<button class="text-button replay-button" data-action="replay-battle">' + icon('undo') + 'Replay last encounter</button>' : ''}</section>`;
 }
-const workerUrl=URL.createObjectURL(new Blob(["(()=>{'use strict';\nconst modules={\"combat-worker.js\":function(require,exports){\nconst { victoryOdds, combatStats, monsterStats }=require(\"engine.js\");\nself.onmessage = ({data:{state,key}}) => {\n  try {\n    const p=combatStats(state), m=monsterStats(state.monster.number);\n    let chance;\n    if(p.max<200 && m.hp<200) chance=victoryOdds(state);\n    else {\n      // Same battle rules; bounded sampling keeps high-level previews responsive.\n      let wins=0, seed=123456789;\n      const rng=()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};\n      for(let i=0;i<15000;i++) {\n        let hp=p.hp, enemy=m.hp, ready=true;\n        while(hp>0&&enemy>0) {\n          enemy-=10+2*Math.floor(rng()*13)+p.attack;\n          if(enemy<=0) {wins++;break;}\n          if(rng()<p.dodge) continue;\n          hp-=Math.max(1,m.attack-10+2*Math.floor(rng()*11)-p.armor);\n          if(hp>0&&ready&&p.rally&&hp<=p.max/2) {hp=Math.min(p.max,hp+p.rally);ready=false;}\n        }\n      }\n      chance=wins/15000;\n    }\n    self.postMessage({key,chance});\n  } catch(error) { self.postMessage({key,error:error.message}); }\n};\n\nObject.assign(exports,{});\n},\n\"engine.js\":function(require,exports){\nconst {DEFAULT_APPEARANCE,validAppearance}=require(\"appearance.js\");\nconst {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS}=require(\"achievements.js\");\nconst {validHabitIcon}=require(\"habit-icons.js\");\nconst CATEGORIES = ['body', 'mind', 'soul', 'heart'];\nconst TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };\nconst CATEGORY_META = {\n  body: { label: 'Body', subtitle: 'Care for your physical self', icon: 'body' },\n  mind: { label: 'Mind', subtitle: 'Learn, practice, create', icon: 'mind' },\n  soul: { label: 'Soul', subtitle: 'Make space within', icon: 'soul' },\n  heart: { label: 'Heart', subtitle: 'Connect and care', icon: 'heart' },\n  harm: { label: 'Harm', subtitle: 'Notice what takes a toll', icon: 'harm' },\n};\nconst uid = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;\nfunction dateKey(now = new Date(), timezone = 'Atlantic/Madeira') {\n  const parts = new Intl.DateTimeFormat('en', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);\n  const get = type => parts.find(p => p.type === type).value;\n  return `${get('year')}-${get('month')}-${get('day')}`;\n}\nfunction deviceTimezone() {\n  try { const zone = Intl.DateTimeFormat().resolvedOptions().timeZone; dateKey(new Date(), zone); return zone; }\n  catch { return 'UTC'; }\n}\nfunction daysBetween(a, b) { return Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86400000); }\nconst level = (s, stat) => Math.floor(s.xp[stat] / 300) + 1;\nconst maxHP = s => 100 + 15 * (level(s, 'body') - 1);\nconst healingMultiplier = s => 1 + .1 * (level(s, 'heart') - 1);\nconst words = text => (text.trim().match(/\\S+/gu) || []).length;\nconst noteEntitlement = text => words(text) >= 150 ? 3 : words(text) >= 50 ? 2 : words(text) ? 1 : 0;\n\nfunction freshState() {\n  const habit = (title, category, base) => ({ id: uid(), title, category, base, logs: [], harmLogs: [], created: Date.now() });\n  return {\n    version: 1, revision: 0, name: 'Adventurer', gold: 0, hp: 100,\n    appearance: {...DEFAULT_APPEARANCE},\n    xp: { body: 0, mind: 0, soul: 0, heart: 0 },\n    tasks: [\n      { id: uid(), title: 'Reply to that email', tier: 'quick', done: false, earned: 0 },\n      { id: uid(), title: 'Clear a little space on your desk', tier: 'quick', done: false, earned: 0 },\n      { id: uid(), title: 'Finish something you’ve been putting off', tier: 'hard', done: false, earned: 0 },\n    ],\n    habits: [\n      habit('Drink enough water', 'body', 10), habit('Get a good night’s sleep', 'body', 10), habit('Eat nourishing meals', 'body', 10),\n      habit('Read a few pages', 'mind', 10), habit('Practice a skill', 'mind', 20),\n      habit('Take a mindful pause', 'soul', 10), habit('Write a reflection', 'soul', 20),\n      habit('Check in with someone', 'heart', 20), habit('Do something kind', 'heart', 10),\n      habit('Mindless scrolling', 'harm', 3), habit('Fast food', 'harm', 7),\n    ],\n    notes: [], noteGold: {}, reviewDates: [], inventory: [], equipped: { weapon: null, armor: null }, potions: 0,\n    supplies: {}, preparedSpell: null, activePet: null,\n    progress: createProgress(),\n    monster: { number: 1, defeatedOn: null }, battles: [], pendingRecovery: false,\n    settings: { theme: 'light', muted: false, reducedMotion: false, timezone: deviceTimezone(), lastBackup: null, backupNudge: null },\n  };\n}\n\nfunction momentum(habit, today) {\n  const logs = [...habit.logs].filter(l => l.day < today).sort((a,b) => a.day.localeCompare(b.day));\n  if (!logs.length) return 1;\n  let factor = 1;\n  for (let i = 1; i < logs.length; i++) {\n    const missed = Math.max(0, daysBetween(logs[i-1].day, logs[i].day) - 1);\n    if (missed === 0) factor = factor < 1.2 ? 1.2 : 1.5;\n    else for (let j = 0; j < Math.min(3, missed); j++) factor = decay(factor);\n  }\n  const missed = Math.max(0, daysBetween(logs.at(-1).day, today) - 1);\n  if (!missed) return factor < 1.2 ? 1.2 : 1.5;\n  for (let j = 0; j < Math.min(3, missed); j++) factor = decay(factor);\n  return factor;\n}\nfunction decay(f) { return f > 1.2 ? 1.2 : f > 1.1 ? 1.1 : 1; }\nfunction completeHabit(s, id, today) {\n  const h = s.habits.find(h => h.id === id);\n  if (!h || h.category === 'harm') throw new Error('Choose a positive habit.');\n  if (h.logs.some(l => l.day === today)) throw new Error('Already completed today.');\n  const amount = Math.round(h.base * momentum(h, today));\n  const beforeLevel = level(s, h.category), beforeHP = maxHP(s);\n  ensureProgress(s).habits[h.category]++;\n  h.logs.push({ day: today, xp: amount }); s.xp[h.category] += amount;\n  s.hp = Math.max(0, Math.min(maxHP(s), s.hp + maxHP(s) - beforeHP));\n  return { amount, category: h.category, leveled: level(s, h.category) > beforeLevel };\n}\nfunction undoHabit(s, id, today) {\n  const h = s.habits.find(h => h.id === id), log = h?.logs.find(l => l.day === today);\n  if (!log) throw new Error('Nothing to undo today.');\n  const beforeHP = maxHP(s);\n  const progress=ensureProgress(s);progress.habits[h.category]=Math.max(0,progress.habits[h.category]-1);\n  s.xp[h.category] -= log.xp; h.logs = h.logs.filter(l => l !== log);\n  s.hp = Math.max(0, Math.min(maxHP(s), s.hp + maxHP(s) - beforeHP));\n  return log.xp;\n}\nfunction logHarm(s, id, today) {\n  const h = s.habits.find(h => h.id === id);\n  if (!h || h.category !== 'harm') throw new Error('Choose a Harm habit.');\n  const damage = Math.min(s.hp, h.base);\n  s.hp -= damage; h.harmLogs.push({ id: uid(), day: today, damage });\n  if (!s.hp) s.pendingRecovery = true;\n  return damage;\n}\nfunction undoHarm(s, id, logId, today) {\n  const h = s.habits.find(h => h.id === id), l = h?.harmLogs.find(l => l.id === logId && l.day === today);\n  if (!l) throw new Error('Nothing to undo.');\n  s.hp = Math.min(maxHP(s), s.hp + l.damage); h.harmLogs = h.harmLogs.filter(x => x !== l);\n  return l.damage;\n}\nconst TAG_PATTERN = /#[\\p{L}\\p{N}_-]+/gu;\nconst tags = text => [...new Set((text.match(TAG_PATTERN) || []).map(t => t.toLowerCase()))];\nconst REPEATS = { daily: 'Every day', weekdays: 'Weekdays', weekly: 'Every week', monthly: 'Every month' };\n// The date a recurring task reopens after being completed on `day`. Missed occurrences never pile up.\nfunction nextOccurrence(day, repeat) {\n  const d = new Date(`${day}T12:00:00Z`), key = () => d.toISOString().slice(0, 10);\n  if (repeat === 'daily') d.setUTCDate(d.getUTCDate() + 1);\n  else if (repeat === 'weekly') d.setUTCDate(d.getUTCDate() + 7);\n  else if (repeat === 'weekdays') do d.setUTCDate(d.getUTCDate() + 1); while ([0, 6].includes(d.getUTCDay()));\n  else if (repeat === 'monthly') {\n    const target = d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + 1);\n    d.setUTCDate(Math.min(target, new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate()));\n  } else throw new Error('Unknown repeat.');\n  return key();\n}\nfunction saveTask(s, { id, title, tier, repeat = null, sort = false }, today) {\n  title = String(title || '').trim();\n  if (!title) throw new Error('Give this task a name.');\n  if (repeat !== null && !Object.hasOwn(REPEATS, repeat)) throw new Error('Unknown repeat.');\n  let task = s.tasks.find(t => t.id === id);\n  if (!task) { task = { id: uid(), title, tier, done: false, earned: 0 }; s.tasks.unshift(task); }\n  task.title = title;\n  if (!task.done) task.tier = tier;\n  if (sort) task.inbox = false;\n  if (repeat) { task.repeat = repeat; task.due = task.done ? nextOccurrence(task.doneOn || today, repeat) : null; }\n  else { delete task.repeat; delete task.due; }\n  return task;\n}\nfunction toggleTask(s, id, today) {\n  const task = s.tasks.find(t => t.id === id);\n  if (!task) throw new Error('Task not found.');\n  const progress=ensureProgress(s);\n  if (task.done) {\n    const amount = task.earned; s.gold -= amount; task.done = false; task.earned = 0; progress.tasks=Math.max(0,progress.tasks-1);\n    delete task.doneOn; if (task.repeat) task.due = null;\n    return -amount;\n  }\n  progress.tasks++;\n  const amount = TASK_GOLD[task.tier]; task.done = true; task.earned = amount; s.gold += amount;\n  if (today) task.doneOn = today;\n  if (task.repeat) task.due = nextOccurrence(today, task.repeat);\n  return amount;\n}\n// Recurring tasks whose next date has arrived return to the to-do list. Earned gold stays earned.\nfunction reopenTasks(s, today) {\n  let reopened = 0;\n  for (const t of s.tasks) if (t.repeat && t.done && t.due && t.due <= today) { t.done = false; t.earned = 0; t.due = null; delete t.doneOn; reopened++; }\n  return reopened;\n}\nfunction saveNote(s, { id, text, kind = 'note', recovery = false }, today) {\n  if (!text.trim()) throw new Error('Write something first.');\n  const progress=ensureProgress(s);\n  let note = s.notes.find(n => n.id === id);\n  if (!note) {\n    note = { id: uid(), text: '', created: new Date().toISOString(), paid: 0, status: 'inbox', kind:recovery?'journal':kind, healed: false };s.notes.unshift(note);\n    progress.notes++;if(note.kind==='journal')progress.journals++;\n  }\n  note.text = text.trim();\n  const remaining = Math.max(0, 6 - (s.noteGold[today] || 0));\n  const reward = Math.max(0, Math.min(remaining, noteEntitlement(text) - note.paid));\n  note.paid += reward; s.gold += reward; s.noteGold[today] = (s.noteGold[today] || 0) + reward;\n  let healed = 0;\n  if (recovery && !note.healed) {\n    if(note.kind!=='journal')progress.journals++;\n    healed = Math.min(maxHP(s)-s.hp, Math.floor(words(text)/2*healingMultiplier(s)));\n    s.hp += healed; note.healed = true; note.kind = 'journal'; note.monster = s.monster.number;\n    s.pendingRecovery = s.hp < maxHP(s);\n  }\n  return { note, reward, healed };\n}\nfunction convertNote(s, id, tier = 'quick') {\n  const note = s.notes.find(n => n.id === id);\n  if (!note) throw new Error('Note not found.');\n  if (note.taskId) return s.tasks.find(t => t.id === note.taskId) || null;\n  // Hashtags carry over, so a captured task joins the note's projects.\n  const base = note.text.replace(TAG_PATTERN,'').trim().split('\\n')[0].replace(/\\s+/g,' ').trim(), noteTags = tags(note.text).join(' ');\n  const title = [base.slice(0, Math.max(0, 159 - noteTags.length)) || (noteTags ? '' : 'Captured task'), noteTags].filter(Boolean).join(' ').slice(0,160) || 'Captured task';\n  const task = { id: uid(), title, tier, done: false, earned: 0, source: note.id, inbox: true };\n  s.tasks.unshift(task); note.taskId = task.id; note.status = 'kept'; return task;\n}\nfunction reviewNote(s, id, status, today) {\n  const note = s.notes.find(n => n.id === id);\n  if (!note) throw new Error('Note not found.');\n  const pending = note.status === 'inbox';\n  note.status = status;\n  return pending ? rewardReview(s,today) : 0;\n}\nfunction rewardReview(s,today) {\n  if (s.reviewDates.includes(today)) return 0;\n  s.reviewDates.push(today); s.gold += 4; return 4;\n}\nconst SHOP = [\n  { id: 'potion', name: 'Healing potion', type: 'potion', tier: 'basic', price: 10, bonus: 30, description: 'Restore 30 HP · Heart improves healing' },\n  { id: 'twig', name: 'Trail blade', type: 'weapon', tier: 'basic', price: 35, bonus: 1, description: '+1 attack · a trusty beginning' },\n  { id: 'linen', name: 'Wayfarer vest', type: 'armor', tier: 'basic', price: 35, bonus: 1, description: 'Reduce each hit by 1' },\n  { id: 'iron', name: 'Ironwood sword', type: 'weapon', tier: 'large', price: 125, bonus: 3, description: '+3 attack · made to last' },\n  { id: 'guard', name: 'Mossguard armor', type: 'armor', tier: 'large', price: 125, bonus: 3, description: 'Reduce each hit by 3' },\n  { id: 'star', name: 'Starlight edge', type: 'weapon', tier: 'special', price: 250, bonus: 5, description: '+5 attack · a little extraordinary' },\n  { id: 'moon', name: 'Moonstone mail', type: 'armor', tier: 'special', price: 250, bonus: 5, description: 'Reduce each hit by 5' },\n  { id: 'greater-potion', name: 'Greater healing potion', type: 'potion', tier: 'large', price: 20, bonus: 65, description: 'Restore 65 HP · Heart improves healing' },\n  { id: 'full-potion', name: 'Full healing potion', type: 'potion', tier: 'special', price: 35, bonus: 0, description: 'Restore all missing HP, at any Body level' },\n  { id: 'ember', name: 'Ember spell', type: 'spell', tier: 'basic', price: 20, bonus: 3, effect: 'attack', description: '+3 damage on every attack in your next fight' },\n  { id: 'ward', name: 'Stone ward', type: 'spell', tier: 'large', price: 25, bonus: 3, effect: 'armor', description: 'Block 3 extra damage on every hit in your next fight' },\n  { id: 'fox', name: 'Fern fox', type: 'pet', tier: 'basic', price: 80, bonus: 0, description: 'A fox companion · cosmetic, stays with you' },\n  { id: 'owl', name: 'Dusk owl', type: 'pet', tier: 'large', price: 125, bonus: 0, description: 'An owl companion · cosmetic, stays with you' },\n  { id: 'cat', name: 'Moon cat', type: 'pet', tier: 'special', price: 250, bonus: 0, description: 'A cat companion · cosmetic, stays with you' },\n];\nconst isConsumable = item => ['potion','spell'].includes(item.type);\nconst itemCount = (s,id) => id==='potion' ? s.potions : (s.supplies?.[id] || (s.inventory.includes(id)?1:0));\nconst preparedSpell = s => SHOP.find(i=>i.type==='spell'&&i.id===s.preparedSpell);\nfunction buy(s, id) {\n  const item = SHOP.find(i => i.id === id);\n  if (!item) throw new Error('Item not found.');\n  if (!isConsumable(item) && s.inventory.includes(id)) throw new Error('You already own this.');\n  if (s.gold < item.price) throw new Error('A little more gold needed.');\n  s.gold -= item.price;\n  if (id==='potion') s.potions++;\n  else if(isConsumable(item)) { s.supplies ||= {}; s.supplies[id]=(s.supplies[id]||0)+1; }\n  else {\n    s.inventory.push(id);\n    if(item.type==='pet') { if(!s.activePet)s.activePet=id; }\n    else if (!s.equipped[item.type]) s.equipped[item.type] = id;\n  }\n  return item;\n}\nfunction equip(s,id) {\n  if (!s.inventory.includes(id)) throw new Error('This item is not in your inventory.');\n  const item = SHOP.find(i => i.id === id);\n  if(!item||isConsumable(item))throw new Error('Choose equipment or a companion.');\n  if(item.type==='pet') { s.activePet=s.activePet===id?null:id; return; }\n  s.equipped[item.type] = s.equipped[item.type] === id ? null : id;\n}\nfunction prepareSpell(s,id) {\n  if(!SHOP.some(i=>i.id===id&&i.type==='spell')||!itemCount(s,id))throw new Error('Buy this spell first.');\n  s.preparedSpell=s.preparedSpell===id?null:id;\n  return s.preparedSpell;\n}\nfunction usePotion(s,id='potion') {\n  const item=SHOP.find(i=>i.id===id&&i.type==='potion');\n  if (!item||!itemCount(s,id)) throw new Error('You don’t have this potion yet.');\n  if (s.hp === maxHP(s)) throw new Error('You’re already at full health.');\n  const amount = id==='full-potion'?maxHP(s)-s.hp:Math.min(maxHP(s)-s.hp, Math.floor(item.bonus*healingMultiplier(s)));\n  if(id==='potion')s.potions--;else s.supplies[id]--;\n  s.hp += amount; s.pendingRecovery = s.hp < maxHP(s); return amount;\n}\nfunction rollover(s,today) {\n  reopenTasks(s,today);\n  if (s.monster.defeatedOn && s.monster.defeatedOn < today) { s.monster.number++; s.monster.defeatedOn = null; }\n}\nfunction monsterStats(number) {\n  return { hp: Math.round(112*(1+.06*(number-1))), attack: 24+Math.floor(.8*(number-1)+.5) };\n}\nfunction combatStats(s) {\n  const spell=preparedSpell(s);\n  return {\n    hp: s.hp, max: maxHP(s), attack: 4*(level(s,'mind')-1)+(SHOP.find(i => i.id === s.equipped.weapon)?.bonus || 0)+(spell?.effect==='attack'?spell.bonus:0),\n    armor: (SHOP.find(i => i.id === s.equipped.armor)?.bonus || 0)+(spell?.effect==='armor'?spell.bonus:0),\n    dodge: 1-.88**(level(s,'soul')-1), rally: 15*(level(s,'heart')-1),\n  };\n}\nfunction victoryOdds(s) {\n  const p = combatStats(s), m = monsterStats(s.monster.number);\n  if (p.hp <= 0) return 0;\n  const cache = new Map();\n  function odds(hp, enemy, ready) {\n    const key = `${hp},${enemy},${+ready}`;\n    if (cache.has(key)) return cache.get(key);\n    let sum = 0;\n    for (let roll=10; roll<=34; roll+=2) {\n      const left = enemy-roll-p.attack;\n      if (left <= 0) { sum++; continue; }\n      let branch = p.dodge ? p.dodge*odds(hp,left,ready) : 0;\n      for (let hit=m.attack-10; hit<=m.attack+10; hit+=2) {\n        let remaining = hp-Math.max(1,hit-p.armor), nextReady=ready;\n        if (remaining<=0) continue;\n        if (ready && p.rally && remaining <= p.max/2) { remaining=Math.min(p.max,remaining+p.rally); nextReady=false; }\n        branch += (1-p.dodge)*odds(remaining,left,nextReady)/11;\n      }\n      sum += branch;\n    }\n    const result=sum/13; cache.set(key,result); return result;\n  }\n  return odds(p.hp,m.hp,true);\n}\nfunction fight(s,today,rng=Math.random) {\n  if (!s.hp) throw new Error('Recover some HP before fighting.');\n  if (s.monster.defeatedOn) throw new Error('Your next opponent arrives tomorrow.');\n  const p=combatStats(s), m=monsterStats(s.monster.number), events=[];\n  const spell=preparedSpell(s);\n  if(spell) { s.supplies[spell.id]--;s.preparedSpell=null; }\n  let hp=p.hp, enemy=m.hp, ready=true, round=0;\n  const roll=(min,count)=>min+2*Math.floor(rng()*count);\n  while (hp>0 && enemy>0) {\n    round++;\n    const baseDamage=roll(10,13), weaponBonus=SHOP.find(i=>i.id===s.equipped.weapon)?.bonus||0;\n    const damage=baseDamage+p.attack, enemyBefore=enemy; enemy=Math.max(0,enemy-damage);\n    events.push({type:'attack',round,amount:damage,actualDamage:enemyBefore-enemy,baseDamage,weaponBonus,mindBonus:4*(level(s,'mind')-1),spellBonus:spell?.effect==='attack'?spell.bonus:0,hpBefore:hp,enemyBefore,hp,enemy});\n    if (!enemy) break;\n    if (p.dodge && rng()<p.dodge) { events.push({type:'deflect',round,amount:0,soulLevel:level(s,'soul'),hpBefore:hp,enemyBefore:enemy,hp,enemy}); continue; }\n    const rawDamage=roll(m.attack-10,11), injury=Math.max(1,rawDamage-p.armor), hpBefore=hp;\n    hp=Math.max(0,hp-injury);\n    const spellBlock=spell?.effect==='armor'?Math.min(spell.bonus,rawDamage-injury):0;\n    events.push({type:'hit',round,amount:injury,actualDamage:hpBefore-hp,rawDamage,blocked:rawDamage-injury,armorBonus:p.armor-(spell?.effect==='armor'?spell.bonus:0),spellBlock,hpBefore,enemyBefore:enemy,hp,enemy});\n    if (hp && ready && p.rally && hp<=p.max/2) {\n      const healed=Math.min(p.max-hp,p.rally), hpBefore=hp; hp+=healed; ready=false;\n      events.push({type:'rally',round,amount:healed,heartLevel:level(s,'heart'),hpBefore,enemyBefore:enemy,hp,enemy});\n    }\n  }\n  s.hp=hp; let loot=null;\n  if (!enemy) {\n    s.monster.defeatedOn=today;\n    if (rng()<.75) { const gold=8+2*(s.monster.number-1); s.gold+=gold; loot={type:'gold',amount:gold}; }\n    else {\n      const tier=s.monster.number<=3?'basic':s.monster.number<=7?'large':'special';\n      const choices=SHOP.filter(i=>i.tier===tier && ['weapon','armor'].includes(i.type) && !s.inventory.includes(i.id));\n      if (!choices.length) { const gold=8+2*(s.monster.number-1); s.gold+=gold; loot={type:'gold',amount:gold}; }\n      else { const item=choices[Math.floor(rng()*choices.length)]; s.inventory.push(item.id); loot={type:'equipment',id:item.id}; }\n    }\n  } else s.pendingRecovery=true;\n  const result={id:uid(),day:today,monster:s.monster.number,won:enemy===0,loot,hp,events,spell:spell?.id||null,initialHP:p.hp,maxHP:p.max,playerName:s.name,appearance:{...(s.appearance||DEFAULT_APPEARANCE)},loadout:{...s.equipped},levels:Object.fromEntries(CATEGORIES.map(c=>[c,level(s,c)]))};\n  s.battles.unshift(result); s.battles=s.battles.slice(0,50); return result;\n}\n\n// A backup reminder is due after a week without a backup or a snooze, once there is progress worth keeping.\nfunction backupDue(s,today,days=7) {\n  const since=[s.settings.lastBackup,s.settings.backupNudge].filter(Boolean).sort().pop();\n  const progress=s.gold>0||CATEGORIES.some(c=>s.xp[c]>0)||s.progress.tasks>0||s.progress.notes>0||s.battles.length>0;\n  return !!since&&progress&&daysBetween(since,today)>=days;\n}\n\nfunction validateState(value) {\n  const s=JSON.parse(JSON.stringify(value));\n  const fail=()=>{ throw new Error('This file is not a valid Twesk backup.'); };\n  const integer=(n,min=0,max=1e8)=>Number.isSafeInteger(n)&&n>=min&&n<=max;\n  const text=(v,max=100000)=>typeof v==='string'&&v.length<=max;\n  const id=v=>typeof v==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(v);\n  const date=v=>typeof v==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v));\n  const array=(a,max=10000)=>Array.isArray(a)&&a.length<=max;\n  if (!s||s.version!==1||!text(s.name,80)||!integer(s.gold,-1e8)||!integer(s.hp)||!s.xp||!CATEGORIES.every(k=>integer(s.xp[k]))) fail();\n  if(s.appearance===undefined)s.appearance={...DEFAULT_APPEARANCE};\n  if(!validAppearance(s.appearance))fail();\n  if (s.hp>maxHP(s)||!array(s.tasks)||!array(s.habits,300)||!array(s.notes)||!array(s.inventory,SHOP.filter(i=>!isConsumable(i)).length)||!array(s.reviewDates)||!array(s.battles,50)) fail();\n  if (!s.settings||!text(s.settings.timezone,100)||!['light','dark'].includes(s.settings.theme)||typeof s.settings.muted!=='boolean'||typeof s.settings.reducedMotion!=='boolean') fail();\n  try { dateKey(new Date(),s.settings.timezone); } catch { fail(); }\n  s.settings.lastBackup ??= null; s.settings.backupNudge ??= null;\n  if (![s.settings.lastBackup,s.settings.backupNudge].every(v=>v===null||date(v))) fail();\n  if (!s.monster||!integer(s.monster.number,1,500)||(s.monster.defeatedOn!==null&&!date(s.monster.defeatedOn))) fail();\n  if (!integer(s.potions)||typeof s.pendingRecovery!=='boolean'||!s.noteGold||typeof s.noteGold!=='object'||Array.isArray(s.noteGold)) fail();\n  if (!Object.entries(s.noteGold).every(([k,v])=>date(k)&&integer(v,0,6))||!s.reviewDates.every(date)) fail();\n  s.supplies ??= {};s.preparedSpell ??= null;s.activePet ??= null;\n  if(typeof s.supplies!=='object'||Array.isArray(s.supplies)||!Object.entries(s.supplies).every(([id,n])=>id!=='potion'&&SHOP.some(i=>i.id===id&&isConsumable(i))&&integer(n)))fail();\n  if(s.preparedSpell!==null&&(!preparedSpell(s)||!itemCount(s,s.preparedSpell)))fail();\n  if(s.activePet!==null&&(!s.inventory.includes(s.activePet)||!SHOP.some(i=>i.id===s.activePet&&i.type==='pet')))fail();\n  if (!s.equipped||!s.inventory.every(id=>SHOP.some(i=>i.id===id&&!isConsumable(i)))||new Set(s.inventory).size!==s.inventory.length) fail();\n  for(const type of ['weapon','armor']) if(s.equipped[type]!==null&&(!s.inventory.includes(s.equipped[type])||!SHOP.some(i=>i.id===s.equipped[type]&&i.type===type))) fail();\n  const unique=a=>new Set(a.map(x=>x.id)).size===a.length;\n  if (![s.tasks,s.habits,s.notes].every(unique)) fail();\n  for(const t of s.tasks) if(!id(t.id)||!text(t.title,500)||!Object.hasOwn(TASK_GOLD,t.tier)||typeof t.done!=='boolean'||!integer(t.earned,0,40)||(t.done?t.earned!==TASK_GOLD[t.tier]:t.earned!==0)) fail();\n  for(const t of s.tasks) if((t.repeat!==undefined&&!Object.hasOwn(REPEATS,t.repeat))||(t.due!=null&&!date(t.due))||(t.doneOn!==undefined&&!date(t.doneOn))||(t.repeat&&t.done&&!t.due)) fail();\n  for(const h of s.habits) {\n    if(h.icon!==undefined&&!validHabitIcon(h.icon))fail();\n    if(!id(h.id)||!text(h.title,200)||![...CATEGORIES,'harm'].includes(h.category)||!(h.category==='harm'?[3,7,12]:[10,20,30]).includes(h.base)||!array(h.logs)||!array(h.harmLogs)) fail();\n    if(!h.logs.every(l=>date(l.day)&&integer(l.xp,0,45))||new Set(h.logs.map(l=>l.day)).size!==h.logs.length||!h.harmLogs.every(l=>id(l.id)&&date(l.day)&&integer(l.damage,0,12))) fail();\n  }\n  for(const n of s.notes) if(!id(n.id)||!text(n.text)||(!text(n.created,100)||Number.isNaN(Date.parse(n.created)))||!integer(n.paid,0,3)||!['inbox','kept','archived'].includes(n.status)||!['note','journal'].includes(n.kind)||typeof n.healed!=='boolean') fail();\n  for(const battle of s.battles) {\n    if(!id(battle.id)||!date(battle.day)||!integer(battle.monster,1,500)||typeof battle.won!=='boolean'||!integer(battle.hp)||!array(battle.events,2000)||!battle.events.length) fail();\n    for(const event of battle.events) {\n      if(!event||!['attack','hit','deflect','rally'].includes(event.type)||!integer(event.amount)||!integer(event.hp)||!integer(event.enemy)) fail();\n      for(const key of ['round','actualDamage','baseDamage','weaponBonus','mindBonus','spellBonus','spellBlock','hpBefore','enemyBefore','rawDamage','blocked','armorBonus','soulLevel','heartLevel']) if(event[key]!==undefined&&!integer(event[key])) fail();\n    }\n    if(battle.won) {\n      if(!battle.loot||!['gold','equipment'].includes(battle.loot.type)) fail();\n      if(battle.loot.type==='gold'&&!integer(battle.loot.amount)) fail();\n      if(battle.loot.type==='equipment'&&!SHOP.some(i=>i.id===battle.loot.id&&['weapon','armor'].includes(i.type))) fail();\n    } else if(battle.loot!==null) fail();\n    if(battle.initialHP!==undefined&&!integer(battle.initialHP)) fail();\n    if(battle.maxHP!==undefined&&!integer(battle.maxHP,1)) fail();\n    if(battle.playerName!==undefined&&!text(battle.playerName,80)) fail();\n    if(battle.appearance!==undefined&&!validAppearance(battle.appearance))fail();\n    if(battle.spell!=null&&!SHOP.some(i=>i.id===battle.spell&&i.type==='spell'))fail();\n    if(battle.loadout) for(const type of ['weapon','armor']) if(battle.loadout[type]!==null&&!SHOP.some(i=>i.id===battle.loadout[type]&&i.type===type)) fail();\n    if(battle.levels&&!CATEGORIES.every(c=>integer(battle.levels[c],1))) fail();\n  }\n  const migrateProgress=s.progress===undefined,p=ensureProgress(s);\n  if(!p||typeof p!=='object'||Array.isArray(p)||!integer(p.tasks)||!integer(p.notes)||!integer(p.journals)||p.journals>p.notes||!p.habits||!CATEGORIES.every(c=>integer(p.habits[c]))||!p.earned||typeof p.earned!=='object'||Array.isArray(p.earned))fail();\n  if(!Object.entries(p.earned).every(([id,day])=>ACHIEVEMENTS.some(a=>a.id===id)&&date(day)))fail();\n  if(migrateProgress)awardAchievements(s,dateKey(new Date(),s.settings.timezone));\n  s.revision=integer(s.revision)?s.revision:0;\n  return s;\n}\n\nObject.assign(exports,{CATEGORIES,TASK_GOLD,CATEGORY_META,uid,dateKey,deviceTimezone,daysBetween,level,maxHP,healingMultiplier,words,noteEntitlement,freshState,momentum,completeHabit,undoHabit,logHarm,undoHarm,TAG_PATTERN,tags,REPEATS,nextOccurrence,saveTask,toggleTask,reopenTasks,saveNote,convertNote,reviewNote,rewardReview,SHOP,isConsumable,itemCount,preparedSpell,buy,equip,prepareSpell,usePotion,rollover,monsterStats,combatStats,victoryOdds,fight,backupDue,validateState});\n},\n\"appearance.js\":function(require,exports){\nconst APPEARANCE = {\n  skin: [{id:'warm',name:'Warm',color:'#dcaa83'},{id:'light',name:'Light',color:'#f2cdb0'},{id:'olive',name:'Olive',color:'#bd906c'},{id:'brown',name:'Brown',color:'#916246'},{id:'deep',name:'Deep',color:'#634333'}],\n  hair: [{id:'umber',name:'Umber',color:'#493a37'},{id:'ink',name:'Ink',color:'#292d3c'},{id:'copper',name:'Copper',color:'#a65636'},{id:'gold',name:'Gold',color:'#d5ad62'},{id:'silver',name:'Silver',color:'#c1c9d5'}],\n  outfit: [{id:'sage',name:'Sage',color:'#60877c'},{id:'iris',name:'Iris',color:'#8976be'},{id:'rust',name:'Rust',color:'#b96950'},{id:'ocean',name:'Ocean',color:'#527c9b'},{id:'rose',name:'Rose',color:'#ac718b'}],\n  style: [{id:'swept',name:'Swept'},{id:'crop',name:'Cropped'},{id:'braids',name:'Braids'}],\n};\nconst DEFAULT_APPEARANCE = {skin:'warm',hair:'umber',outfit:'sage',style:'swept'};\nconst validAppearance = value => !!value && Object.entries(APPEARANCE).every(([key,options])=>options.some(o=>o.id===value[key]));\n\nObject.assign(exports,{APPEARANCE,DEFAULT_APPEARANCE,validAppearance});\n},\n\"achievements.js\":function(require,exports){\nconst stats=['body','mind','soul','heart'];\nconst ACHIEVEMENT_GROUPS=[['all','All seals'],['journey','Journey'],['tasks','Tasks'],['body','Body'],['mind','Mind'],['soul','Soul'],['heart','Heart'],['monsters','Monsters'],['vault','Vault'],['journal','Journal']];\nconst milestones=(group,metric,thresholds,titles,verb)=>thresholds.map((target,i)=>({id:`${group}-${target}`,group,metric,target,title:titles[i],description:verb(target),tier:Math.min(4,i+1)}));\nconst ACHIEVEMENTS=[\n  {id:'first-level',group:'journey',metric:'highestLevel',target:2,title:'The Awakening',description:'Reach level 2 in any stat',tier:1},\n  {id:'fourfold',group:'journey',metric:'lowestLevel',target:2,title:'Fourfold Adventurer',description:'Reach level 2 in all four stats',tier:3},\n  ...milestones('tasks','tasks',[1,10,50,100],['First Contract','Errand Runner','Guild Regular','Quest Keeper'],n=>`Complete ${n} ${n===1?'task':'tasks'}`),\n  ...milestones('body','body',[10,50,100],['Trail Walker','Iron Roots','Titan’s Stride'],n=>`Complete ${n} Body habits`),\n  ...milestones('mind','mind',[10,50,100],['Curious Apprentice','Lore Keeper','Archmage of Ideas'],n=>`Complete ${n} Mind habits`),\n  ...milestones('soul','soul',[10,50,100],['Stillwater Initiate','Inner Compass','Keeper of the Flame'],n=>`Complete ${n} Soul habits`),\n  ...milestones('heart','heart',[10,50,100],['Kindred Spirit','Hearth Keeper','Heart of the Realm'],n=>`Complete ${n} Heart habits`),\n  ...milestones('monsters','monsters',[1,3,8,25],['Mossbreaker','Monster Scout','Chapter Champion','Realm Guardian'],n=>`Defeat ${n} ${n===1?'monster':'monsters'}`),\n  ...milestones('vault','notes',[1,10,50],['Pocket Scribe','Idea Alchemist','Vault Curator'],n=>`Save ${n} ${n===1?'entry':'entries'} to the Vault`),\n  ...milestones('journal','journals',[1,10,30],['First Page','Mirror Mage','Chronicler'],n=>`Write ${n} journal ${n===1?'entry':'entries'}`),\n];\nfunction createProgress(){return {tasks:0,habits:Object.fromEntries(stats.map(c=>[c,0])),notes:0,journals:0,earned:{}};}\nfunction ensureProgress(s){\n  if(s.progress===undefined){\n    const p=createProgress();p.tasks=s.tasks.filter(t=>t.done).length;\n    for(const c of stats)p.habits[c]=s.habits.filter(h=>h.category===c).reduce((sum,h)=>sum+h.logs.length,0);\n    p.notes=s.notes.length;p.journals=s.notes.filter(n=>n.kind==='journal').length;s.progress=p;\n  }\n  return s.progress;\n}\nconst defeatedCount=s=>s.monster.number-1+(s.monster.defeatedOn?1:0);\nfunction achievementValue(s,badge){\n  const p=ensureProgress(s);\n  if(badge.metric==='highestLevel')return Math.max(...stats.map(c=>Math.floor(s.xp[c]/300)+1));\n  if(badge.metric==='lowestLevel')return Math.min(...stats.map(c=>Math.floor(s.xp[c]/300)+1));\n  if(badge.metric==='monsters')return defeatedCount(s);\n  return stats.includes(badge.metric)?p.habits[badge.metric]:p[badge.metric];\n}\nfunction awardAchievements(s,day){\n  const p=ensureProgress(s),earned=[];\n  for(const badge of ACHIEVEMENTS)if(!p.earned[badge.id]&&achievementValue(s,badge)>=badge.target){p.earned[badge.id]=day;earned.push(badge);}\n  return earned;\n}\nfunction monsterStatus(s,n){\n  if(n<s.monster.number||(n===s.monster.number&&s.monster.defeatedOn))return 'defeated';\n  if(n===s.monster.number)return 'available';\n  if(n===s.monster.number+1)return 'next';\n  return 'locked';\n}\n\nObject.assign(exports,{ACHIEVEMENT_GROUPS,ACHIEVEMENTS,createProgress,ensureProgress,defeatedCount,achievementValue,awardAchievements,monsterStatus});\n},\n\"habit-icons.js\":function(require,exports){\n// Named, local line icons shared by the habit picker and saved habit rows.\nconst HABIT_ICONS=[\n  {id:'category',label:'Category default',path:''},\n  {id:'water',label:'Water',path:'<path d=\"M12 3C9 7 5 11 5 15a7 7 0 0 0 14 0c0-4-4-8-7-12Z\"/><path d=\"M8 15a4 4 0 0 0 4 4\"/>'},\n  {id:'leaf',label:'Nature',path:'<path d=\"M20 3c0 13-4 17-11 14C3 14 6 5 20 3ZM4 21 17 8\"/>'},\n  {id:'moon',label:'Sleep',path:'<path d=\"M20 14a8 8 0 0 1-10-10 8 8 0 1 0 10 10Z\"/>'},\n  {id:'food',label:'Food',path:'<path d=\"M4 3v6a3 3 0 0 0 6 0V3M7 3v18M18 3c-3 3-3 7 0 9h2V3ZM20 12v9\"/>'},\n  {id:'body',label:'Exercise',path:'<path d=\"M4 8v8m3-10v12m10-12v12m3-10v8M7 12h10\"/>'},\n  {id:'walk',label:'Walking',path:'<circle cx=\"13\" cy=\"4\" r=\"2\"/><path d=\"m7 12 3-4 4 1 3 4h3M12 9l-2 6-5 5m5-5 5 2 2 4\"/>'},\n  {id:'sun',label:'Sunlight',path:'<circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2\"/>'},\n  {id:'mind',label:'Reading',path:'<path d=\"M4 5h6l2 2 2-2h6v14h-6l-2 2-2-2H4ZM12 7v14\"/>'},\n  {id:'pencil',label:'Writing',path:'<path d=\"m16 3 5 5L8 21H3v-5ZM13 6l5 5\"/>'},\n  {id:'brush',label:'Art',path:'<path d=\"m14 11 6-8 1 1-5 9ZM14 11l2 2M13 13c-5-2-3 6-9 6 5 4 12 0 11-4Z\"/>'},\n  {id:'music',label:'Music',path:'<path d=\"M9 17V5l11-2v12M9 8l11-2\"/><ellipse cx=\"6\" cy=\"18\" rx=\"3\" ry=\"2\"/><ellipse cx=\"17\" cy=\"16\" rx=\"3\" ry=\"2\"/>'},\n  {id:'language',label:'Languages',path:'<path d=\"M3 5h11M8 3v2M5 5c0 6 5 9 8 10M12 5c0 6-5 9-9 10M14 21l4-11 4 11M16 17h4\"/>'},\n  {id:'code',label:'Coding',path:'<path d=\"m8 6-6 6 6 6m8-12 6 6-6 6m-3-15-2 18\"/>'},\n  {id:'soul',label:'Mindfulness',path:'<path d=\"M12 3c1 5 4 8 9 9-5 1-8 4-9 9-1-5-4-8-9-9 5-1 8-4 9-9Z\"/>'},\n  {id:'heart',label:'Care',path:'<path d=\"M20 5c-3-3-7-1-8 1-1-2-5-4-8-1-5 5 3 11 8 15 5-4 13-10 8-15Z\"/>'},\n  {id:'people',label:'Connection',path:'<circle cx=\"9\" cy=\"7\" r=\"3\"/><path d=\"M3 21v-3a6 6 0 0 1 12 0v3M17 4a3 3 0 0 1 0 6m1 4a5 5 0 0 1 3 5v2\"/>'},\n  {id:'smile',label:'Joy',path:'<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M8 9v1m8-1v1m-9 4c2 5 8 5 10 0\"/>'},\n  {id:'plant',label:'Growth',path:'<path d=\"M12 21V10M12 14C5 14 3 11 3 6c6 0 9 2 9 8ZM12 10c0-5 3-7 9-7 0 5-3 7-9 7ZM6 21h12\"/>'},\n  {id:'coffee',label:'Coffee',path:'<path d=\"M4 8h13v8a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5ZM17 9h2a3 3 0 0 1 0 6h-2M7 3v2m4-3v3m4-2v2\"/>'},\n  {id:'phone',label:'Phone',path:'<rect x=\"6\" y=\"2\" width=\"12\" height=\"20\" rx=\"2\"/><path d=\"M10 5h4m-3 14h2\"/>'},\n  {id:'bed',label:'Rest',path:'<path d=\"M3 19V6m18 13V9M3 15h18M3 10h5V6H3m5 4h13v5M3 19v2m18-2v2\"/>'},\n  {id:'star',label:'Star',path:'<path d=\"m12 2 3 7 7 1-5 5 1 7-6-4-6 4 1-7-5-5 7-1Z\"/>'},\n  {id:'harm',label:'Harm',path:'<path d=\"m13 2-8 12h6l-1 8 9-13h-7Z\"/>'},\n];\nconst validHabitIcon=value=>HABIT_ICONS.some(i=>i.id===value);\nfunction habitIconChoice(habit){\n  if(validHabitIcon(habit.icon))return habit.icon;\n  // Keep existing saves' water/nature icon and category defaults until edited.\n  return habit.category!=='harm'&&habit.title.toLowerCase().includes('water')?'leaf':'category';\n}\nfunction resolvedHabitIcon(habit){\n  const choice=habitIconChoice(habit);return choice==='category'?habit.category:choice;\n}\n\nObject.assign(exports,{HABIT_ICONS,validHabitIcon,habitIconChoice,resolvedHabitIcon});\n}};\nconst cache=Object.create(null);function require(id){if(cache[id])return cache[id];const exports=cache[id]={};modules[id](require,exports);return exports;}require(\"combat-worker.js\");\n})();"],{type:'text/javascript'}));
-const worker=new Worker(workerUrl);
-worker.addEventListener('message',()=>URL.revokeObjectURL(workerUrl),{once:true});
-worker.onmessage = ({ data }) => {
-  if (data.key !== app.chanceKey) return;
-  app.chance = data.error ? null : data.chance;
-  const v = $('#chance-value'),
-    bar = $('#chance-bar');
-  if (v) v.textContent = app.chance === null ? 'Unavailable' : Math.round(app.chance * 100) + '%';
-  if (bar) bar.style.width = (app.chance || 0) * 100 + '%';
-};
 function updateOdds() {
-  const key = JSON.stringify([
-    app.state.hp,
-    app.state.xp,
-    app.state.equipped,
-    app.state.monster.number,
-    app.state.preparedSpell,
-  ]);
-  if (key !== app.chanceKey) {
-    app.chanceKey = key;
-    app.chance = null;
-    const v = $('#chance-value');
-    if (v) v.textContent = '…';
-    worker.postMessage({ state: app.state, key });
-  }
+  const key = oddsKey(app.state);
+  if (key === app.chanceKey) return;
+  app.chanceKey = key;
+  app.chance = null;
+  const value = $('#chance-value');
+  if (value) value.textContent = '…';
+  requestOdds(app.state).then(chance => {
+    if (key !== app.chanceKey) return;
+    app.chance = chance;
+    const v = $('#chance-value'),
+      bar = $('#chance-bar');
+    if (v) v.textContent = chance === null ? 'Unavailable' : percent(chance);
+    if (bar) bar.style.width = (chance || 0) * 100 + '%';
+  });
 }
 function renderBattleModal() {
   const r = app.modal.result,

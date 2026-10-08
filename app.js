@@ -1,16 +1,16 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.8.1';
+import * as E from './engine.js?v=0.8.2';
 import { avatarFaceArt } from './art.js?v=0.7.4';
 import { awardAchievements } from './achievements.js?v=0.7.0';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.8.1';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.8.2';
 import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.8.0';
 import { closeModal, openModal } from './ui-modal.js?v=0.8.0';
-import * as tasks from './ui-tasks.js?v=0.8.1';
-import * as habits from './ui-habits.js?v=0.8.0';
-import * as vault from './ui-vault.js?v=0.8.0';
+import * as tasks from './ui-tasks.js?v=0.8.2';
+import * as habits from './ui-habits.js?v=0.8.2';
+import * as vault from './ui-vault.js?v=0.8.2';
 import * as character from './ui-character.js?v=0.8.0';
-import * as shop from './ui-shop.js?v=0.8.0';
-import * as battle from './ui-battle.js?v=0.8.0';
+import * as shop from './ui-shop.js?v=0.8.2';
+import * as battle from './ui-battle.js?v=0.8.2';
 import * as collection from './ui-collection.js?v=0.8.0';
 import * as settings from './ui-settings.js?v=0.8.0';
 
@@ -94,6 +94,7 @@ $('#overlay').addEventListener('change', event => {
 });
 document.addEventListener('keydown', event => {
   collection.onKeydown(event);
+  vault.onKeydown(event);
   shop.onKeydown(event);
   character.onKeydown(event);
 });

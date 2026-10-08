@@ -1,7 +1,7 @@
 // Habit categories, the habit dialog, and habit/harm logging.
-import * as E from './engine.js?v=0.8.1';
+import * as E from './engine.js?v=0.8.2';
 import { HABIT_ICONS, habitIconChoice, resolvedHabitIcon, validHabitIcon } from './habit-icons.js?v=0.7.4';
-import { $, app, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.8.1';
+import { $, app, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.8.2';
 import { closeModal, commit, openModal } from './ui-modal.js?v=0.8.0';
 import { rewardEffect, sound } from './ui-effects.js?v=0.8.0';
 export function renderCategory(cat) {
@@ -64,13 +64,37 @@ function suggestionButtons(cat) {
     .map(x => `<button type="button" data-action="suggest-habit" data-title="${x}">${x}</button>`)
     .join('');
 }
+const shortDate = day =>
+  new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(
+    new Date(`${day}T12:00:00Z`),
+  );
+// Recent history, next reward, momentum, and totals shown above the habit's edit form.
+function habitDetails(h) {
+  const st = E.habitStats(h, today()),
+    unit = st.harm ? 'HP' : 'XP',
+    active = st.history.filter(d => d.count).length;
+  const momentum = st.harm
+    ? 'Harm has no momentum. Each log costs the same HP.'
+    : st.factor >= 1.5
+      ? 'Top momentum. A missed day lowers it one step; nothing already earned is taken away.'
+      : st.factor > 1
+        ? 'Complete it on consecutive days to reach 1.5×.'
+        : 'Complete it two days in a row to start building momentum.';
+  const cells = st.history
+    .map(
+      d =>
+        `<span class="history-cell ${d.count ? 'done' : ''} ${d.count > 1 ? 'many' : ''} ${d.day === today() ? 'today' : ''}" title="${shortDate(d.day)}${d.count ? ` · ${st.harm ? d.count + '× logged' : 'completed'}` : ''}"></span>`,
+    )
+    .join('');
+  return `<section class="habit-details ${h.category}"><div class="habit-stats"><div><small>${st.harm ? 'Each log' : st.doneToday ? 'Tomorrow' : 'Next completion'}</small><strong>${st.harm ? '−' : '+'}${st.next} ${unit}</strong><span>${st.harm ? 'No momentum' : `${st.factor}× momentum`}</span></div><div><small>${st.harm ? 'Today' : 'Streak'}</small><strong>${st.harm ? `${st.history.at(-1).count}×` : `${st.streak} ${st.streak === 1 ? 'day' : 'days'}`}</strong><span>${active} of the last 28 days</span></div><div><small>All time</small><strong>${st.total}×</strong><span>${st.harm ? '−' : '+'}${st.earned} ${unit}</span></div></div><div class="habit-history" role="img" aria-label="Last 28 days: ${st.harm ? 'logged' : 'completed'} on ${active} days">${cells}</div><div class="history-range"><span>${shortDate(st.history[0].day)}</span><span>Today</span></div><p class="form-help">${momentum}</p></section>`;
+}
 export const modals = {
   habit() {
     const h = app.state.habits.find(h => h.id === app.modal.id),
       cat = h?.category || app.modal.category || 'body';
     return modalShell(
-      h ? 'Edit habit' : 'Make room for a habit',
-      `<form id="habit-form" class="form-body"><label>Habit name<input name="title" required maxlength="100" placeholder="Something you’d like to do" value="${esc(h?.title || '')}" autofocus></label><div class="form-grid"><label>Category<select name="category" ${h ? 'disabled' : ''}>${[...E.CATEGORIES, 'harm'].map(c => `<option value="${c}" ${cat === c ? 'selected' : ''}>${E.CATEGORY_META[c].label}</option>`).join('')}</select></label><label id="effort-label">${cat === 'harm' ? 'HP cost' : 'Effort'}<select name="base" id="habit-base">${habitOptions(cat, h?.base)}</select></label></div><p class="form-help">${cat === 'harm' ? 'Log it whenever it happens. It costs HP, with no XP or level.' : 'Available every day, once a day. No schedule to keep.'}</p>${renderHabitIconPicker(cat, h ? habitIconChoice(h) : 'category')}${!h ? `<div class="suggestions"><span class="small-label">A FEW IDEAS</span><div id="habit-suggestions">${suggestionButtons(cat)}</div></div>` : ''}<div class="form-actions">${h ? `<button type="button" class="button danger subtle" data-action="delete-habit" data-id="${h.id}">Remove habit</button>` : '<span></span>'}<button class="button primary">${h ? 'Save changes' : 'Add habit'}${icon('plus')}</button></div></form>`,
+      h ? esc(h.title) : 'Make room for a habit',
+      `${h ? habitDetails(h) : ''}<form id="habit-form" class="form-body"><label>Habit name<input name="title" required maxlength="100" placeholder="Something you’d like to do" value="${esc(h?.title || '')}" autofocus></label><div class="form-grid"><label>Category<select name="category" ${h ? 'disabled' : ''}>${[...E.CATEGORIES, 'harm'].map(c => `<option value="${c}" ${cat === c ? 'selected' : ''}>${E.CATEGORY_META[c].label}</option>`).join('')}</select></label><label id="effort-label">${cat === 'harm' ? 'HP cost' : 'Effort'}<select name="base" id="habit-base">${habitOptions(cat, h?.base)}</select></label></div><p class="form-help">${cat === 'harm' ? 'Log it whenever it happens. It costs HP, with no XP or level.' : 'Available every day, once a day. No schedule to keep.'}</p>${renderHabitIconPicker(cat, h ? habitIconChoice(h) : 'category')}${!h ? `<div class="suggestions"><span class="small-label">A FEW IDEAS</span><div id="habit-suggestions">${suggestionButtons(cat)}</div></div>` : ''}<div class="form-actions">${h ? `<button type="button" class="button danger subtle" data-action="delete-habit" data-id="${h.id}">Remove habit</button>` : '<span></span>'}<button class="button primary">${h ? 'Save changes' : 'Add habit'}${icon('plus')}</button></div></form>`,
     );
   },
   'confirm-delete'() {

@@ -1,11 +1,11 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.7.5';
+import * as E from './engine.js?v=0.8.1';
 import { avatarFaceArt } from './art.js?v=0.7.4';
 import { awardAchievements } from './achievements.js?v=0.7.0';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.8.0';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.8.1';
 import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.8.0';
 import { closeModal, openModal } from './ui-modal.js?v=0.8.0';
-import * as tasks from './ui-tasks.js?v=0.8.0';
+import * as tasks from './ui-tasks.js?v=0.8.1';
 import * as habits from './ui-habits.js?v=0.8.0';
 import * as vault from './ui-vault.js?v=0.8.0';
 import * as character from './ui-character.js?v=0.8.0';
@@ -45,7 +45,7 @@ function render() {
     ${app.saveError ? '<div class="save-warning">' + esc(app.startupWarning || 'Browser saving is unavailable. Export a backup in Settings to keep your progress.') + '</div>' : E.backupDue(app.state, day) ? settings.backupReminder() : ''}
     <div class="dashboard">
       <section class="panel tasks-panel" aria-labelledby="tasks-heading"><div class="panel-heading"><div><span class="section-kicker">MAKE THINGS HAPPEN</span><h2 id="tasks-heading">Tasks <span class="count">${app.state.tasks.filter(t => !t.done).length}</span></h2></div>${iconButton('new-task', 'plus', 'Add a task')}</div>
-      <div class="task-tabs" role="group" aria-label="Task view"><button data-action="task-view" data-view="active" class="${app.taskView === 'active' ? 'selected' : ''}">To do</button><button data-action="task-view" data-view="done" class="${app.taskView === 'done' ? 'selected' : ''}">Completed <span>${completed}</span></button></div>
+      <div class="task-tabs" role="group" aria-label="Task view"><button data-action="task-view" data-view="active" class="${app.taskView === 'active' ? 'selected' : ''}">To do</button><button data-action="task-view" data-view="done" class="${app.taskView === 'done' ? 'selected' : ''}">Completed <span>${completed}</span></button></div>${tasks.renderProjects()}
       <div class="tasks-scroll">${tasks.renderTasks()}</div>
       <button class="vault-card" data-action="vault"><span class="vault-symbol">${icon('vault')}</span><span><strong>The Vault</strong><small>${app.state.notes.filter(n => n.status === 'inbox').length ? app.state.notes.filter(n => n.status === 'inbox').length + (app.state.notes.filter(n => n.status === 'inbox').length === 1 ? ' idea waiting to be sorted' : ' ideas waiting to be sorted') : 'A home for thoughts, before they become plans'}</small></span>${icon('arrow')}</button>
       </section>

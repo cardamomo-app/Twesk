@@ -1,5 +1,5 @@
 // Shared interface foundation: the app store, saving, small HTML helpers, and toasts.
-import * as E from './engine.js?v=0.7.5';
+import * as E from './engine.js?v=0.8.1';
 import { goldArt } from './art.js?v=0.7.4';
 import { HABIT_ICONS } from './habit-icons.js?v=0.7.4';
 export const $ = s => document.querySelector(s);
@@ -15,6 +15,7 @@ export const KEY = 'twesk.v1';
 export function viewDefaults() {
   return {
     taskView: 'active',
+    taskProject: null,
     vaultFilter: 'inbox',
     vaultSearch: '',
     modal: null,
@@ -103,6 +104,7 @@ const icons = {
   undo: '<path d="M9 4 3 10l6 6M3 10h11a6 6 0 0 1 0 12"/>',
   download: '<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>',
   upload: '<path d="M12 16V4m-5 5 5-5 5 5M4 16v5h16v-5"/>',
+  repeat: '<path d="m17 2 4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4m14-5v2a3 3 0 0 1-3 3H3"/>',
 };
 export function icon(name, cls = '') {
   return `<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || HABIT_ICONS.find(i => i.id === name)?.path || icons.soul}</svg>`;

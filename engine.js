@@ -102,13 +102,54 @@ export function undoHarm(s, id, logId, today) {
   s.hp = Math.min(maxHP(s), s.hp + l.damage); h.harmLogs = h.harmLogs.filter(x => x !== l);
   return l.damage;
 }
-export function toggleTask(s, id) {
+export const TAG_PATTERN = /#[\p{L}\p{N}_-]+/gu;
+export const tags = text => [...new Set((text.match(TAG_PATTERN) || []).map(t => t.toLowerCase()))];
+export const REPEATS = { daily: 'Every day', weekdays: 'Weekdays', weekly: 'Every week', monthly: 'Every month' };
+// The date a recurring task reopens after being completed on `day`. Missed occurrences never pile up.
+export function nextOccurrence(day, repeat) {
+  const d = new Date(`${day}T12:00:00Z`), key = () => d.toISOString().slice(0, 10);
+  if (repeat === 'daily') d.setUTCDate(d.getUTCDate() + 1);
+  else if (repeat === 'weekly') d.setUTCDate(d.getUTCDate() + 7);
+  else if (repeat === 'weekdays') do d.setUTCDate(d.getUTCDate() + 1); while ([0, 6].includes(d.getUTCDay()));
+  else if (repeat === 'monthly') {
+    const target = d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + 1);
+    d.setUTCDate(Math.min(target, new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate()));
+  } else throw new Error('Unknown repeat.');
+  return key();
+}
+export function saveTask(s, { id, title, tier, repeat = null, sort = false }, today) {
+  title = String(title || '').trim();
+  if (!title) throw new Error('Give this task a name.');
+  if (repeat !== null && !Object.hasOwn(REPEATS, repeat)) throw new Error('Unknown repeat.');
+  let task = s.tasks.find(t => t.id === id);
+  if (!task) { task = { id: uid(), title, tier, done: false, earned: 0 }; s.tasks.unshift(task); }
+  task.title = title;
+  if (!task.done) task.tier = tier;
+  if (sort) task.inbox = false;
+  if (repeat) { task.repeat = repeat; task.due = task.done ? nextOccurrence(task.doneOn || today, repeat) : null; }
+  else { delete task.repeat; delete task.due; }
+  return task;
+}
+export function toggleTask(s, id, today) {
   const task = s.tasks.find(t => t.id === id);
   if (!task) throw new Error('Task not found.');
   const progress=ensureProgress(s);
-  if (task.done) { const amount = task.earned; s.gold -= amount; task.done = false; task.earned = 0; progress.tasks=Math.max(0,progress.tasks-1);return -amount; }
+  if (task.done) {
+    const amount = task.earned; s.gold -= amount; task.done = false; task.earned = 0; progress.tasks=Math.max(0,progress.tasks-1);
+    delete task.doneOn; if (task.repeat) task.due = null;
+    return -amount;
+  }
   progress.tasks++;
-  const amount = TASK_GOLD[task.tier]; task.done = true; task.earned = amount; s.gold += amount; return amount;
+  const amount = TASK_GOLD[task.tier]; task.done = true; task.earned = amount; s.gold += amount;
+  if (today) task.doneOn = today;
+  if (task.repeat) task.due = nextOccurrence(today, task.repeat);
+  return amount;
+}
+// Recurring tasks whose next date has arrived return to the to-do list. Earned gold stays earned.
+export function reopenTasks(s, today) {
+  let reopened = 0;
+  for (const t of s.tasks) if (t.repeat && t.done && t.due && t.due <= today) { t.done = false; t.earned = 0; t.due = null; delete t.doneOn; reopened++; }
+  return reopened;
 }
 export function saveNote(s, { id, text, kind = 'note', recovery = false }, today) {
   if (!text.trim()) throw new Error('Write something first.');
@@ -135,7 +176,9 @@ export function convertNote(s, id, tier = 'quick') {
   const note = s.notes.find(n => n.id === id);
   if (!note) throw new Error('Note not found.');
   if (note.taskId) return s.tasks.find(t => t.id === note.taskId) || null;
-  const title = note.text.replace(/#[\p{L}\p{N}_-]+/gu,'').trim().split('\n')[0].slice(0,160) || 'Captured task';
+  // Hashtags carry over, so a captured task joins the note's projects.
+  const base = note.text.replace(TAG_PATTERN,'').trim().split('\n')[0].replace(/\s+/g,' ').trim(), noteTags = tags(note.text).join(' ');
+  const title = [base.slice(0, Math.max(0, 159 - noteTags.length)) || (noteTags ? '' : 'Captured task'), noteTags].filter(Boolean).join(' ').slice(0,160) || 'Captured task';
   const task = { id: uid(), title, tier, done: false, earned: 0, source: note.id, inbox: true };
   s.tasks.unshift(task); note.taskId = task.id; note.status = 'kept'; return task;
 }
@@ -205,6 +248,7 @@ export function usePotion(s,id='potion') {
   s.hp += amount; s.pendingRecovery = s.hp < maxHP(s); return amount;
 }
 export function rollover(s,today) {
+  reopenTasks(s,today);
   if (s.monster.defeatedOn && s.monster.defeatedOn < today) { s.monster.number++; s.monster.defeatedOn = null; }
 }
 export function monsterStats(number) {
@@ -316,6 +360,7 @@ export function validateState(value) {
   const unique=a=>new Set(a.map(x=>x.id)).size===a.length;
   if (![s.tasks,s.habits,s.notes].every(unique)) fail();
   for(const t of s.tasks) if(!id(t.id)||!text(t.title,500)||!Object.hasOwn(TASK_GOLD,t.tier)||typeof t.done!=='boolean'||!integer(t.earned,0,40)||(t.done?t.earned!==TASK_GOLD[t.tier]:t.earned!==0)) fail();
+  for(const t of s.tasks) if((t.repeat!==undefined&&!Object.hasOwn(REPEATS,t.repeat))||(t.due!=null&&!date(t.due))||(t.doneOn!==undefined&&!date(t.doneOn))||(t.repeat&&t.done&&!t.due)) fail();
   for(const h of s.habits) {
     if(h.icon!==undefined&&!validHabitIcon(h.icon))fail();
     if(!id(h.id)||!text(h.title,200)||![...CATEGORIES,'harm'].includes(h.category)||!(h.category==='harm'?[3,7,12]:[10,20,30]).includes(h.base)||!array(h.logs)||!array(h.harmLogs)) fail();

@@ -1,7 +1,7 @@
 // Reward sounds and the floating gold/XP animation.
 import { goldArt } from './art.js?v=0.7.4';
 import { playCoinSound } from './coin-sound.js';
-import { $, app } from './ui-core.js?v=0.8.0';
+import { $, app } from './ui-core.js?v=0.8.1';
 let audio;
 export function sound(kind = 'reward') {
   if (app.state.settings.muted) return;

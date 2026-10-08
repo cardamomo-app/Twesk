@@ -269,3 +269,15 @@ button.monster-scene:hover{background:color-mix(in srgb,var(--surface) 65%,trans
 .backup-nudge-actions{display:flex;align-items:center;gap:14px}
 .backup-nudge-actions .button{min-height:30px;padding:5px 12px;font-size:10px}
 .backup-box .backup-status{color:var(--text);font-weight:600}
+.project-chips{display:flex;flex-wrap:wrap;gap:6px;margin:-8px 0 16px}
+.project-chip{display:inline-flex;align-items:center;gap:5px;font-size:10px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--secondary)}
+.project-chip:hover{background:var(--surface-hover)}
+.project-chip.selected{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.project-chip span{font-size:9px;color:var(--muted)}
+.project-chip.selected span{color:var(--accent)}
+.task-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.task-tag{color:var(--accent);font-size:inherit;padding:0;border-radius:3px}
+.task-tag:hover{text-decoration:underline}
+.task-row.completed .task-tag{color:var(--muted)}
+.task-meta{display:inline-flex;align-items:center;gap:4px;font-size:9px;color:var(--muted)}
+.task-meta .icon{width:11px;height:11px}

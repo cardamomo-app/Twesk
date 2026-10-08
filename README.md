@@ -24,6 +24,8 @@ Regenerate `Twesk.html` after source changes with `npm run build:standalone`. Th
 
 - Three-column desktop dashboard with aligned panel tops and bottoms, internal list scrolling, the date beside the logo, and daily counts in the footer; stacked layouts on smaller screens. The character preview is compact, with extra room reclaimed when spell and replay controls are present in shorter windows.
 - Editable tasks with four reward amounts: quick, standard, hard, and quest milestone. Completed tasks can be undone.
+- Recurring tasks (every day, weekdays, every week, every month) earn gold each completion, then wait under Completed and return on their next date. Missed days never pile up or cost anything.
+- Projects: any #tag in a task title groups it. Project chips above the list filter tasks, tags in titles are clickable, and new tasks added while filtering start in that project. Tasks made from Vault notes keep the note's hashtags.
 - Body, Mind, Soul, and Heart, each with independent XP and levels. Harm is a fifth expandable section with repeatable HP-cost logging.
 - Character stat chips reveal floating combat explanations on hover, keyboard focus, or click/tap: current and next-level benefits, category XP, and Heart's healing bonus. Click/tap pins an explanation; Escape or clicking outside dismisses it. Values come from the combat rules without equipment or spell bonuses.
 - Every positive habit is available once per calendar day. There is no schedule or frequency field and no HP loss for missed habits. Background momentum can increase or gradually lower the next XP reward.
@@ -53,7 +55,7 @@ Quick capture: **Command/Ctrl-K**. Vault: **Command/Ctrl-J**. Escape closes dial
 npm test
 ```
 
-The 56 domain checks cover independent XP, the weekly progression target, momentum and missed days, reward undo, note caps, conversion/review, health, equipment, exact combat odds versus independent sampling, loot, rollover, backup validation, milestone persistence/migration, monster collection statuses, artwork bounds, habit icon compatibility/validation, personalized face portraits, reset/recovery, failed-storage preservation, device-timezone defaults, and backup-reminder timing.
+The 59 domain checks cover independent XP, the weekly progression target, momentum and missed days, reward undo, note caps, conversion/review, health, equipment, exact combat odds versus independent sampling, loot, rollover, backup validation, milestone persistence/migration, monster collection statuses, artwork bounds, habit icon compatibility/validation, personalized face portraits, reset/recovery, failed-storage preservation, device-timezone defaults, backup-reminder timing, recurring-task schedules, and project tags.
 
 The full flows were also checked in the browser: capture → convert → complete → buy/equip; habit creation and undo; reload persistence; defeat → journal → HP recovery; potion use; hashtag search and archive restoration; backup export/import; stat level-up; victory; task/category/level/journal seal unlocks; direct journal capture; and bestiary inspection/chapter navigation. Desktop and narrow-screen layouts and both themes were inspected. Collection checks use a separate localhost save so the user's progress is not changed.
 
@@ -88,4 +90,4 @@ The full flows were also checked in the browser: capture → convert → complet
 
 ## MVP boundaries
 
-No accounts, cross-device sync, projects, subtasks, task recurrence, selling, or crafting. Character customization is limited to name, skin, hair, clothing color, and earned equipment. There is no passive or missed-day damage. The first artwork set uses eight distinct monster species; encounters continue with increasing stats. On first upgrade, achievement totals are reconstructed from records still present in the save; already deleted historical records cannot be recovered. Subsequent completions are counted independently of record deletion. If all equipment in a drop tier is already owned, loot falls back to gold. Long-term progression still needs playtesting.
+No accounts, cross-device sync, subtasks, due dates, selling, or crafting. Projects are hashtag groups rather than separate objects. Character customization is limited to name, skin, hair, clothing color, and earned equipment. There is no passive or missed-day damage. The first artwork set uses eight distinct monster species; encounters continue with increasing stats. On first upgrade, achievement totals are reconstructed from records still present in the save; already deleted historical records cannot be recovered. Subsequent completions are counted independently of record deletion. If all equipment in a drop tier is already owned, loot falls back to gold. Long-term progression still needs playtesting.

@@ -1,6 +1,6 @@
 // Achievements and the bestiary.
 import { collectionBody } from './collection-view.js?v=0.7.4';
-import { $, app, modalShell, view } from './ui-core.js?v=0.8.0';
+import { $, app, modalShell, view } from './ui-core.js?v=0.8.1';
 import { closeModal, openModal } from './ui-modal.js?v=0.8.0';
 export function onKeydown(event) {
   if (

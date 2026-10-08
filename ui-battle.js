@@ -1,9 +1,9 @@
 // The monster card, victory odds, and animated encounters.
-import * as E from './engine.js?v=0.7.5';
+import * as E from './engine.js?v=0.8.1';
 import { avatarArt, monsterArt, monsterName, itemArt } from './art.js?v=0.7.4';
 import { describeCombatEvent } from './combat-presentation.js?v=0.6.0';
 import { createCombatAudio } from './combat-audio.js';
-import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.8.0';
+import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.8.1';
 import { announceBadges, commit } from './ui-modal.js?v=0.8.0';
 export function renderMonster() {
   const number = app.state.monster.number,

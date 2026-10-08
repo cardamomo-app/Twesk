@@ -1,5 +1,5 @@
 // Settings, backups, and full reset/restore.
-import * as E from './engine.js?v=0.7.5';
+import * as E from './engine.js?v=0.8.1';
 import { PREVIOUS_SAVE_KEY, resetProgress, restorePreviousProgress } from './save-recovery.js?v=0.7.4';
 import {
   $,
@@ -12,7 +12,7 @@ import {
   today,
   view,
   viewDefaults,
-} from './ui-core.js?v=0.8.0';
+} from './ui-core.js?v=0.8.1';
 import { closeModal, commit, openModal } from './ui-modal.js?v=0.8.0';
 function backupStatus() {
   const last = app.state.settings.lastBackup;

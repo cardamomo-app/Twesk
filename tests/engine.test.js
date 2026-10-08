@@ -54,9 +54,9 @@ test('note length pays incremental gold once with a daily six-gold cap',()=>{
   assert.equal(E.saveNote(s,{text:'another'},day(1)).reward,0);
   assert.equal(s.gold,6);assert.throws(()=>E.saveNote(s,{text:' '},day(1)));
 });
-test('note conversion creates one task with hashtags removed; review pays once per day',()=>{
+test('note conversion creates one task that keeps its hashtags; review pays once per day',()=>{
   const s=E.freshState(),{note}=E.saveNote(s,{text:'Buy a sketchbook #art'},day(1));
-  const t=E.convertNote(s,note.id);assert.equal(t.title,'Buy a sketchbook');assert.equal(t.inbox,true);assert.equal(note.status,'kept');
+  const t=E.convertNote(s,note.id);assert.equal(t.title,'Buy a sketchbook #art');assert.deepEqual(E.tags(t.title),['#art']);assert.equal(t.inbox,true);assert.equal(note.status,'kept');
   assert.equal(E.convertNote(s,note.id).id,t.id);
   assert.equal(E.rewardReview(s,day(1)),4);assert.equal(E.rewardReview(s,day(1)),0);
 });
@@ -137,4 +137,31 @@ test('backup reminders wait a week, need progress, and reset after export or sno
   s.settings.lastBackup=day(8);assert.equal(E.backupDue(s,day(14)),false);assert.equal(E.backupDue(s,day(15)),true);
   s.settings.backupNudge=day(15);assert.equal(E.backupDue(s,day(21)),false);assert.equal(E.backupDue(s,day(22)),true);
   const unstarted=E.freshState();unstarted.gold=50;assert.equal(E.backupDue(unstarted,day(30)),false,'clock starts when the app first opens');
+});
+
+test('recurring tasks pay each completion and reopen on their next date without piling up',()=>{
+  const s=E.freshState(),t=E.saveTask(s,{title:'Water plants #home',tier:'quick',repeat:'daily'},day(1));
+  assert.equal(E.toggleTask(s,t.id,day(1)),4);assert.equal(t.due,day(2));assert.equal(s.progress.tasks,1);
+  E.rollover(s,day(1));assert.equal(t.done,true,'stays done today');
+  E.rollover(s,day(5));assert.equal(t.done,false);assert.equal(t.earned,0);assert.equal(s.gold,4,'earned gold stays');
+  assert.equal(E.toggleTask(s,t.id,day(5)),4);assert.equal(s.gold,8);assert.equal(s.progress.tasks,2);
+  assert.equal(E.toggleTask(s,t.id,day(5)),-4);assert.equal(t.due,null);assert.equal(s.gold,4);
+  assert.doesNotThrow(()=>E.validateState(JSON.parse(JSON.stringify(s))));
+});
+test('repeat schedules handle weekends and short months',()=>{
+  assert.equal(E.nextOccurrence('2026-10-09','weekdays'),'2026-10-12');
+  assert.equal(E.nextOccurrence('2026-10-12','weekdays'),'2026-10-13');
+  assert.equal(E.nextOccurrence('2026-10-08','weekly'),'2026-10-15');
+  assert.equal(E.nextOccurrence('2026-01-31','monthly'),'2026-02-28');
+  assert.equal(E.nextOccurrence('2026-12-31','daily'),'2027-01-01');
+});
+test('editing a task sets or clears its repeat, and project tags are case-insensitive',()=>{
+  const s=E.freshState(),t=s.tasks[0];E.toggleTask(s,t.id,day(3));
+  E.saveTask(s,{id:t.id,title:t.title,tier:'hard',repeat:'weekly'},day(4));assert.equal(t.repeat,'weekly');assert.equal(t.due,day(10));assert.equal(t.tier,'quick','done tasks keep their tier');
+  E.saveTask(s,{id:t.id,title:t.title,tier:'quick',repeat:null},day(4));assert.equal(t.repeat,undefined);assert.equal(t.due,undefined);
+  assert.deepEqual(E.tags('Plan #Trip and book #trip #Hotel-2'),['#trip','#hotel-2']);
+  assert.throws(()=>E.saveTask(s,{title:'x',tier:'quick',repeat:'hourly'},day(4)));
+  for(const change of [x=>x.tasks[0].repeat='hourly',x=>x.tasks[0].due='soon',x=>{x.tasks[0].repeat='daily';x.tasks[0].done=true;x.tasks[0].earned=4;}]){
+    const bad=E.freshState();change(bad);assert.throws(()=>E.validateState(bad));
+  }
 });

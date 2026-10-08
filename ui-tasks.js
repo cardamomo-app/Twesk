@@ -1,8 +1,8 @@
 // Task list, project filter, task dialog, and task actions.
-import * as E from './engine.js?v=0.8.2';
-import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.8.2';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.8.0';
-import { rewardEffect, sound } from './ui-effects.js?v=0.8.0';
+import * as E from './engine.js?v=0.9.0';
+import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.9.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.9.0';
+import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.9.0';
 
 const inProject = t => !app.taskProject || E.tags(t.title).includes(app.taskProject);
 // Open tasks per project tag, in order of first appearance.
@@ -99,6 +99,18 @@ export const modals = {
     );
   },
 };
+const completing = new Set();
+function celebrateToggle(r, sourceRect, id, day) {
+  if (!r) return;
+  if (r < 0) return toast('Task restored and reward reversed.');
+  rewardEffect(sourceRect, r);
+  const task = app.state.tasks.find(t => t.id === id);
+  toast(`Task cleared. +${r} gold.${task?.repeat ? ` Back ${dueLabel(task.due)}.` : ''}`, () =>
+    commit(() => {
+      if (app.state.tasks.find(t => t.id === id)?.done) E.toggleTask(app.state, id, day);
+    }),
+  );
+}
 export const actions = {
   'task-view'(b) {
     app.taskView = b.dataset.view;
@@ -119,19 +131,24 @@ export const actions = {
     openModal({ type: 'task', id });
   },
   'toggle-task'(b, { id, sourceRect }) {
-    const day = today();
-    const r = commit(() => E.toggleTask(app.state, id, day));
-    if (r > 0) {
-      sound('coins');
-      rewardEffect(sourceRect, r);
-      const task = app.state.tasks.find(t => t.id === id);
-      toast(`Task cleared. +${r} gold.${task?.repeat ? ` Back ${dueLabel(task.due)}.` : ''}`, () =>
-        commit(() => {
-          if (app.state.tasks.find(t => t.id === id)?.done) E.toggleTask(app.state, id, day);
-        }),
-      );
-    } else if (r < 0) toast('Task restored and reward reversed.');
+    const day = today(),
+      task = app.state.tasks.find(t => t.id === id);
+    if (!task || completing.has(id)) return;
+    const finish = () => {
+      completing.delete(id);
+      const r = commit(() => E.toggleTask(app.state, id, day));
+      celebrateToggle(r, sourceRect, id, day);
+    };
+    if (task.done) return finish();
+    // Feedback lands on the click; the row plays its check before leaving the list.
+    sound('check');
+    burst(b, { palette: 'gold', count: 12, distance: 46, size: 5 });
+    b.closest('.task-row')?.classList.add('completing');
+    if (!motionOK()) return finish();
+    completing.add(id);
+    setTimeout(finish, 430);
   },
+
   'delete-task'(b, { id }) {
     commit(() => {
       app.state.tasks = app.state.tasks.filter(t => t.id !== id);

@@ -1,7 +1,7 @@
 // Shared interface foundation: the app store, saving, small HTML helpers, and toasts.
-import * as E from './engine.js?v=0.8.2';
-import { goldArt } from './art.js?v=0.7.4';
-import { HABIT_ICONS } from './habit-icons.js?v=0.7.4';
+import * as E from './engine.js?v=0.9.0';
+import { goldArt } from './art.js?v=0.9.0';
+import { HABIT_ICONS } from './habit-icons.js?v=0.9.0';
 export const $ = s => document.querySelector(s);
 export const $$ = s => [...document.querySelectorAll(s)];
 export const esc = v =>

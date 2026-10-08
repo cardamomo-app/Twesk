@@ -1,11 +1,11 @@
 // Shop and inventory: buying, equipping, potions, spells, and pets.
-import * as E from './engine.js?v=0.8.2';
-import { itemArt, monsterName } from './art.js?v=0.7.4';
-import { $, app, coin, esc, icon, modalShell, toast, view } from './ui-core.js?v=0.8.2';
-import { commit, openModal } from './ui-modal.js?v=0.8.0';
-import { sound } from './ui-effects.js?v=0.8.0';
-import { potionCount } from './ui-character.js?v=0.8.0';
-import { percent, requestOdds } from './ui-odds.js?v=0.8.2';
+import * as E from './engine.js?v=0.9.0';
+import { itemArt, monsterName } from './art.js?v=0.9.0';
+import { $, app, coin, esc, icon, modalShell, toast, view } from './ui-core.js?v=0.9.0';
+import { commit, openModal } from './ui-modal.js?v=0.9.0';
+import { burst, countUp, sound } from './ui-effects.js?v=0.9.0';
+import { potionCount } from './ui-character.js?v=0.9.0';
+import { percent, requestOdds } from './ui-odds.js?v=0.9.0';
 // Odds are compared against the next opponent, at full health when currently at 0 HP.
 function comparisonBase() {
   const s = app.state;
@@ -149,6 +149,13 @@ export const modals = {
     return renderShop(true);
   },
 };
+// Highlight the card that just changed after the dialog re-renders.
+function flourish(id, palette = 'gold') {
+  const card = document.querySelector(`#overlay [data-id="${CSS.escape(id)}"]`)?.closest('.shop-item');
+  if (!card) return;
+  card.classList.add('just-changed');
+  burst(card.querySelector('.item-art') || card, { palette, count: 16, distance: 70 });
+}
 export const actions = {
   shop(b, { a, id, sourceRect }) {
     openModal({ type: a });
@@ -159,7 +166,16 @@ export const actions = {
   buy(b, { a, id, sourceRect }) {
     const item = commit(() => E.buy(app.state, id));
     if (item) {
-      sound();
+      sound('purchase');
+      flourish(id);
+      countUp(
+        document.querySelector('#overlay .shop-wallet .gold-value > span'),
+        app.state.gold + item.price,
+        app.state.gold,
+        {
+          duration: 450,
+        },
+      );
       toast(`${item.name} is yours.`);
     }
   },
@@ -168,8 +184,13 @@ export const actions = {
       E.equip(app.state, id);
       return true;
     });
-    if (result)
-      toast(E.SHOP.find(i => i.id === id)?.type === 'pet' ? 'Companion updated.' : 'Equipment updated.');
+    if (result) {
+      const pet = E.SHOP.find(i => i.id === id)?.type === 'pet';
+      sound(pet ? 'reward' : 'equip');
+      if (pet ? app.state.activePet === id : Object.values(app.state.equipped).includes(id))
+        flourish(id, 'xp');
+      toast(pet ? 'Companion updated.' : 'Equipment updated.');
+    }
   },
   potion(b, { a, id, sourceRect }) {
     app.shopCategory = 'potion';
@@ -178,7 +199,8 @@ export const actions = {
   'use-potion'(b, { a, id, sourceRect }) {
     const healed = commit(() => E.usePotion(app.state, id));
     if (healed) {
-      sound();
+      sound('potion');
+      flourish(id, 'heart');
       toast(`+${healed} HP restored.`);
     }
   },
@@ -187,6 +209,10 @@ export const actions = {
       E.prepareSpell(app.state, id);
       return true;
     });
+    if (result && app.state.preparedSpell) {
+      sound('spell');
+      flourish(id, 'soul');
+    }
     if (result)
       toast(
         app.state.preparedSpell

@@ -1,8 +1,8 @@
 // The Vault: notes, journal entries, quick capture, and recovery reflections.
-import * as E from './engine.js?v=0.8.2';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.8.2';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.8.0';
-import { sound } from './ui-effects.js?v=0.8.0';
+import * as E from './engine.js?v=0.9.0';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.9.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.9.0';
+import { sound } from './ui-effects.js?v=0.9.0';
 const noteDate = n =>
   new Intl.DateTimeFormat('en', {
     month: 'short',
@@ -75,12 +75,15 @@ function convert(id) {
   });
   if (r) {
     toast('Sent to your task inbox' + (wasInbox ? ' · review saved.' : '.'));
-    sound();
+    sound('note');
   }
 }
 function performReview(id, status) {
   const reward = commit(() => E.reviewNote(app.state, id, status, today()));
-  if (reward) toast('A little clarity. +4 gold for your review.');
+  if (reward) {
+    sound('reward');
+    toast('A little clarity. +4 gold for your review.');
+  }
 }
 export const modals = {
   capture() {
@@ -235,7 +238,7 @@ export const forms = {
     });
     if (r) {
       closeModal();
-      sound();
+      sound('note');
       toast(
         previous.recovery
           ? `Reflection saved. +${r.healed} HP${r.reward ? ` · +${r.reward} gold` : ''}.`

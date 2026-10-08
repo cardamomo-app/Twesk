@@ -1,6 +1,6 @@
 import {DEFAULT_APPEARANCE,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.7.0';
-import {validHabitIcon} from './habit-icons.js?v=0.7.4';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.9.0';
+import {validHabitIcon} from './habit-icons.js?v=0.9.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {

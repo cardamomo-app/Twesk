@@ -36,6 +36,7 @@ Regenerate `Twesk.html` after source changes with `npm run build:standalone`. Th
 - Note-length and review gold, with limits and incremental payouts.
 - Equipment comparisons on every weapon, armor, and spell card in the shop and inventory: the attack or protection change versus what is equipped or prepared, and the win chance against the next opponent before → after (at full HP when currently at 0 HP).
 - Gold shop with Weapons, Armor, Potions, Spells, and Pets tabs, a matching inventory, visible avatar equipment, and original code-generated voxel artwork.
+- Celebration: ticking a task plays a bright check note, sparks, and a pop before the row slides away; coins arc to the purse, land with a coin cascade, and the balance counts up. Rewards in quick succession climb a pentatonic scale, so a run of tasks or habits sounds increasingly triumphant. Habits pop in their category color; level-ups get a fanfare, a banner, and a glowing stat chip; seals arrive with a bell run, spinning rays, and a shine; purchases ring a register and light up the card. Combat has varied sword swings, heavy blows with a stage shake, monster growls, clanging blocks, a fight-start horn, and a finishing boom. Victory adds a drum roll and brass fanfare, a stamped VICTORY banner, confetti, and a loot reveal with a gold count-up. Mute silences everything; Reduce motion keeps sounds but skips particles and movement.
 - Task rewards and the character balance show voxel gold piles beside exact amounts. Larger rewards have fuller piles; completing a task plays a coin-clinking sound and sends voxel coins toward the balance. Mute and reduced-motion settings apply.
 - Shop and inventory show modeled equipment on small display stands, using the same geometry as the avatar. A voxel potion bottle, gold-pile prices and balance, and tier-aligned desktop columns keep the shop consistent with the dashboard.
 - Three potions restore 30 HP (10 gold), 65 HP (20 gold), or all missing HP (35 gold). Heart improves the first two. Potions stack and can be used from their shop or inventory card; the dashboard shortcut opens the Potions tab.
@@ -72,8 +73,9 @@ The full flows were also checked in the browser: capture → convert → complet
 - `save-recovery.js`: transactional reset/restore with a recoverable previous save.
 - `engine.js`: state model and reward/combat rules, independently testable.
 - `combat-worker.js`, `ui-odds.js`: readiness calculations away from the main interface thread, cached per loadout and shared by the dashboard and shop comparisons. `estimateOdds` in the engine uses exact probabilities for early encounters and 15,000 deterministic samples of the same rules for larger ones.
-- `combat-presentation.js`, `combat-audio.js`: combat descriptions and locally synthesized effects.
-- `coin-sound.js`: locally synthesized metallic coin impacts for task completion.
+- `combat-presentation.js`: combat descriptions.
+- `sfx.js`: every sound effect, synthesized locally with Web Audio through one compressor and reverb, with random variants and a reward combo scale.
+- `ui-effects.js`: celebration visuals (bursts, confetti, flying coins, count-ups, level banner) and the mute/motion-aware sound hook.
 - `art.js`: original isometric voxel scenes and equipment artwork.
 - `monster-art.js`: eight detailed voxel monster models, species metadata, and defeated variants.
 - `achievements.js`, `badge-art.js`, `collection-view.js`: lifetime counters and migration, milestone rules, original seal artwork, and the achievements/bestiary interface.

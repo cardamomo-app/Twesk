@@ -1,9 +1,10 @@
 // Opening and closing dialogs, saving changes as transactions, and seal notifications.
-import { awardAchievements } from './achievements.js?v=0.7.0';
-import { badgeArt } from './badge-art.js?v=0.7.0';
-import { $, app, esc, persist, toast, today, view } from './ui-core.js?v=0.8.2';
-import { hideStatTooltip } from './ui-stat-tooltip.js?v=0.8.0';
-import * as E from './engine.js?v=0.8.2';
+import { awardAchievements } from './achievements.js?v=0.9.0';
+import { badgeArt } from './badge-art.js?v=0.9.0';
+import { $, app, esc, persist, toast, today, view } from './ui-core.js?v=0.9.0';
+import { burst, motionOK, sound } from './ui-effects.js?v=0.9.0';
+import { hideStatTooltip } from './ui-stat-tooltip.js?v=0.9.0';
+import * as E from './engine.js?v=0.9.0';
 export function commit(fn, { deferBadges = false } = {}) {
   if (app.busy) return;
   // Only commit a complete successful transaction.
@@ -51,7 +52,7 @@ export function announceBadges(badges) {
   const badge = badges[0],
     el = document.createElement('button');
   el.className = 'badge-unlock';
-  el.innerHTML = `${badgeArt(badge, true)}<span><small>SEAL EARNED${badges.length > 1 ? ' · +' + (badges.length - 1) + ' more' : ''}</small><strong>${esc(badge.title)}</strong><span>View achievements ↗</span></span>`;
+  el.innerHTML = `<span class="seal-wrap"><span class="seal-rays" aria-hidden="true"></span>${badgeArt(badge, true)}</span><span><small>SEAL EARNED${badges.length > 1 ? ' · +' + (badges.length - 1) + ' more' : ''}</small><strong>${esc(badge.title)}</strong><span>View achievements ↗</span></span>`;
   el.setAttribute('aria-label', `Seal earned: ${badge.title}. Open achievements`);
   el.onclick = () => {
     if (app.busy) return;
@@ -62,6 +63,12 @@ export function announceBadges(badges) {
     lastFocused = $('[data-action="achievements"]');
     el.remove();
   };
-  $('#toasts').append(el);
-  setTimeout(() => el.remove(), 8000);
+  // Let the reward that earned the seal land first, then make an entrance.
+  const delay = motionOK() ? 650 : 0;
+  setTimeout(() => {
+    $('#toasts').append(el);
+    sound('badge');
+    burst(el.querySelector('.seal-wrap'), { palette: 'gold', count: 20, distance: 90, size: 6 });
+    setTimeout(() => el.remove(), 9000);
+  }, delay);
 }

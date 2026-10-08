@@ -1,11 +1,12 @@
 // The monster card, victory odds, and animated encounters.
-import * as E from './engine.js?v=0.8.2';
-import { avatarArt, monsterArt, monsterName, itemArt } from './art.js?v=0.7.4';
-import { describeCombatEvent } from './combat-presentation.js?v=0.6.0';
-import { createCombatAudio } from './combat-audio.js';
-import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.8.2';
-import { announceBadges, commit } from './ui-modal.js?v=0.8.0';
-import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.8.2';
+import * as E from './engine.js?v=0.9.0';
+import { avatarArt, monsterArt, monsterName, itemArt } from './art.js?v=0.9.0';
+import { describeCombatEvent } from './combat-presentation.js?v=0.9.0';
+import { playSfx, stopSfx, unlockSfx } from './sfx.js?v=0.9.0';
+import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.9.0';
+import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.9.0';
+import { announceBadges, commit } from './ui-modal.js?v=0.9.0';
+import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.9.0';
 export function renderMonster() {
   const number = app.state.monster.number,
     won = !!app.state.monster.defeatedOn,
@@ -68,7 +69,7 @@ function renderBattleModal() {
   const stageClass = finished
     ? `outcome ${r.won ? 'victory' : 'defeat'}`
     : event
-      ? `event-${event.type}${event.enemy === 0 ? ' finishing-strike' : ''}${event.hp === 0 ? ' fatal-hit' : ''}`
+      ? `event-${event.type}${event.enemy === 0 ? ' finishing-strike' : ''}${event.hp === 0 ? ' fatal-hit' : ''}${isHeavy(event, r.monster) ? ' heavy-blow' : ''}`
       : 'ready';
   const effect = side =>
     !finished && step?.target === side
@@ -102,12 +103,13 @@ function renderBattleModal() {
     finished ? (r.won ? 'Victory!' : 'Defeated') : `Encounter · ${monsterName(r.monster)}`,
     `<div class="battle-body">
     <div class="battle-toolbar"><span>${finished ? `${round} rounds` : `${index < 0 ? 'GET READY' : `ROUND ${round} · ${event?.type === 'attack' ? 'YOUR TURN' : event?.type === 'rally' ? 'RECOVERY' : 'MONSTER’S TURN'}`}`}</span><div>${app.modal.replay ? '<span class="replay-label">REPLAY</span>' : ''}<span>${finished ? 'Encounter complete' : `Step ${Math.max(0, index + 1)} / ${r.events.length}`}</span><button class="icon-button" data-action="battle-mute" title="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}" aria-label="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}">${icon(app.state.settings.muted ? 'mute' : 'sound')}</button></div></div>
-    <div class="battle-stage ${stageClass}" id="battle-stage">
+    <div class="battle-stage ${stageClass}" id="battle-stage">${finished && r.won ? '<div class="victory-banner" aria-hidden="true"><span class="victory-rays"></span><strong>VICTORY</strong></div>' : ''}
       <div class="battle-fighter player"><div class="fighter-scene"><div class="fighter-motion">${avatarArt(weapon, armor, false, { appearance: r.appearance || app.state.appearance })}</div>${effect('player')}</div><strong>${esc(r.playerName || app.state.name)}</strong><div class="health-bar" role="progressbar" aria-label="Adventurer health" aria-valuemin="0" aria-valuemax="${maximum}" aria-valuenow="${hp}" id="battle-player-bar"><div style="width:${(hp / maximum) * 100}%"></div></div><small id="battle-player-hp">${hp} / ${maximum} HP</small></div>
       <div class="battle-divider"><span>VS</span><i></i></div>
       <div class="battle-fighter monster"><div class="fighter-scene"><div class="fighter-motion">${monsterArt(r.monster, finished && r.won)}</div>${effect('monster')}</div><strong>${monsterName(r.monster)}</strong><div class="health-bar enemy" role="progressbar" aria-label="Monster health" aria-valuemin="0" aria-valuemax="${enemyMax}" aria-valuenow="${enemy}" id="battle-enemy-bar"><div style="width:${(enemy / enemyMax) * 100}%"></div></div><small id="battle-enemy-hp">${enemy} / ${enemyMax} HP</small></div>
     </div>
     <div class="battle-step ${finished ? (r.won ? 'won' : 'lost') : step?.tone || 'ready'}" aria-live="polite"><strong>${finished ? (r.won ? `${monsterName(r.monster)} defeated` : 'Your adventurer falls') : step ? esc(step.title) : 'Ready your stance'}</strong><p>${finished ? (app.modal.replay ? 'This is a replay. Health and rewards stay unchanged.' : r.won ? 'Loot collected. Your next opponent arrives tomorrow.' : 'Reflect to recover HP, then try again when you feel ready.') : step ? esc(step.detail) : 'You attack first. Equipment and stats apply automatically.'}</p><div class="combat-badges">${(!finished && step ? step.badges : []).map(b => `<span class="combat-badge ${b.tone}">${esc(b.label)}</span>`).join('')}</div></div>
+    ${finished ? `<div class="battle-result">${r.won ? `<div class="loot-box loot-reveal">${r.loot.type === 'gold' ? icon('coin') + `<strong>+${r.loot.amount} gold</strong>` : itemArt(E.SHOP.find(i => i.id === r.loot.id)) + `<strong>${E.SHOP.find(i => i.id === r.loot.id).name}</strong>`}<span>${app.modal.replay ? 'Previously earned' : r.loot.type === 'gold' ? 'Added to your pouch' : 'Added to your equipment'}</span></div><button class="button primary wide" data-action="close-modal">Back to dashboard</button>` : `${!app.modal.replay ? `<button class="button primary wide" data-action="recover">${icon('pencil')}Reflect & recover</button>` : ''}<button class="button secondary wide" data-action="close-modal">Back to dashboard</button>`}</div>` : ''}
     <div class="combat-loadout">${chips.map(b => `<span class="${b.tone}">${esc(b.label)}</span>`).join('')}</div>
     ${
       history.length
@@ -122,13 +124,38 @@ function renderBattleModal() {
             .join('')}</ol></details>`
         : ''
     }
-    ${finished ? (r.won ? `<div class="loot-box">${r.loot.type === 'gold' ? icon('coin') + `<strong>+${r.loot.amount} gold</strong>` : itemArt(E.SHOP.find(i => i.id === r.loot.id)) + `<strong>${E.SHOP.find(i => i.id === r.loot.id).name}</strong>`}<span>${app.modal.replay ? 'Previously earned' : r.loot.type === 'gold' ? 'Added to your pouch' : 'Added to your equipment'}</span></div><button class="button primary wide" data-action="close-modal">Back to dashboard</button>` : `${!app.modal.replay ? `<button class="button primary wide" data-action="recover">${icon('pencil')}Reflect & recover</button>` : ''}<button class="button secondary wide" data-action="close-modal">Back to dashboard</button>`) : '<button class="text-button battle-skip" data-action="skip-battle">Skip to result</button>'}
+    ${finished ? '' : '<button class="text-button battle-skip" data-action="skip-battle">Skip to result</button>'}
   </div>`,
     'battle-modal',
   );
 }
 const battleTimers = new Set();
-const battleAudio = createCombatAudio(() => app.state.settings.muted);
+const battleAudio = {
+  unlock: unlockSfx,
+  play: (name, options) => playSfx(name, { ...options, channel: 'battle' }),
+  stop: () => stopSfx('battle'),
+};
+// The top quarter of attack rolls land as heavy blows: bigger sound and a stage shake.
+const isHeavy = (event, monster) =>
+  event.type === 'attack'
+    ? event.baseDamage >= 30
+    : event.type === 'hit' && event.rawDamage >= E.monsterStats(monster).attack + 6;
+// Victory: confetti, a stamped banner, a glowing loot reveal, and a gold count-up.
+function celebrateOutcome(r) {
+  if (!r.won) return;
+  const stage = $('#battle-stage');
+  confetti(stage, 80);
+  const loot = $('#overlay .loot-box');
+  if (!loot) return;
+  setTimeout(() => burst(loot, { palette: 'gold', count: 22, distance: 110, size: 7 }), motionOK() ? 900 : 0);
+  if (r.loot.type === 'gold') {
+    const amount = loot.querySelector('strong');
+    const number = document.createElement('span');
+    amount.textContent = '+';
+    amount.append(number, ' gold');
+    countUp(number, 0, r.loot.amount, { delay: 900, duration: 700 });
+  }
+}
 function scheduleBattle(fn, delay) {
   const timer = setTimeout(() => {
     battleTimers.delete(timer);
@@ -150,6 +177,7 @@ export function finishBattlePlayback(playSound = true) {
   app.modal.impact = true;
   view.renderModal();
   if (playSound) battleAudio.play(app.modal.result.won ? 'victory' : 'defeat');
+  celebrateOutcome(app.modal.result);
   if (!app.modal.replay && app.pendingBadges.length) {
     announceBadges(app.pendingBadges);
     app.pendingBadges = [];
@@ -161,6 +189,7 @@ function animateBattle(result, initialHP, replay = false) {
   app.busy = true;
   app.modal = { type: 'battle', result, index: -1, initialHP, finished: false, impact: false, replay };
   view.render();
+  scheduleBattle(() => battleAudio.play('start'), 250);
   const reduced = app.state.settings.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
   const advance = () => {
     if (app.modal?.type !== 'battle') return;
@@ -173,9 +202,11 @@ function animateBattle(result, initialHP, replay = false) {
     const event = result.events[app.modal.index],
       description = describeCombatEvent(event);
     view.renderModal();
-    if (event.type === 'attack') scheduleBattle(() => battleAudio.play('sword'), 120);
+    const heavy = isHeavy(event, result.monster),
+      finishing = event.type === 'attack' && event.enemy === 0;
+    if (event.type === 'attack') scheduleBattle(() => battleAudio.play('swing', { who: 'player' }), 120);
     if (event.type === 'hit' || event.type === 'deflect')
-      scheduleBattle(() => battleAudio.play('sword'), 120);
+      scheduleBattle(() => battleAudio.play('swing', { who: 'monster' }), 120);
     scheduleBattle(
       () => {
         if (app.modal?.type !== 'battle') return;
@@ -196,12 +227,13 @@ function animateBattle(result, initialHP, replay = false) {
           $('#battle-enemy-hp').textContent = `${event.enemy} / ${enemyMax} HP`;
         }
         if (event.type === 'attack') {
-          battleAudio.play('impact');
-          scheduleBattle(() => battleAudio.play('grunt'), 80);
+          battleAudio.play(finishing ? 'finisher' : 'impact', { target: 'monster', heavy });
+          scheduleBattle(() => battleAudio.play('grunt', { who: 'monster' }), finishing ? 140 : 80);
         }
         if (event.type === 'hit') {
-          battleAudio.play(event.blocked ? 'block' : 'impact');
-          scheduleBattle(() => battleAudio.play('grunt'), 80);
+          if (event.blocked) battleAudio.play('block');
+          battleAudio.play('impact', { target: 'player', heavy });
+          scheduleBattle(() => battleAudio.play('grunt', { who: 'player' }), 80);
         }
         if (event.type === 'deflect') battleAudio.play('deflect');
         if (event.type === 'rally') battleAudio.play('heal');

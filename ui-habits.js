@@ -1,9 +1,9 @@
 // Habit categories, the habit dialog, and habit/harm logging.
-import * as E from './engine.js?v=0.8.2';
-import { HABIT_ICONS, habitIconChoice, resolvedHabitIcon, validHabitIcon } from './habit-icons.js?v=0.7.4';
-import { $, app, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.8.2';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.8.0';
-import { rewardEffect, sound } from './ui-effects.js?v=0.8.0';
+import * as E from './engine.js?v=0.9.0';
+import { HABIT_ICONS, habitIconChoice, resolvedHabitIcon, validHabitIcon } from './habit-icons.js?v=0.9.0';
+import { $, app, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.9.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.9.0';
+import { burst, celebrateLevel, rewardEffect, sound } from './ui-effects.js?v=0.9.0';
 export function renderCategory(cat) {
   const meta = E.CATEGORY_META[cat],
     harm = cat === 'harm',
@@ -142,8 +142,17 @@ export const actions = {
       done ? E.undoHabit(app.state, id, today()) : E.completeHabit(app.state, id, today()),
     );
     if (!done && r) {
-      sound();
+      sound('xp');
       rewardEffect(sourceRect, r.amount, 'xp');
+      const row = document.querySelector(`.habit-complete[data-id="${CSS.escape(id)}"]`);
+      row?.classList.add('just-done');
+      burst(row?.querySelector('.habit-icon') || sourceRect, {
+        palette: r.category,
+        count: 12,
+        distance: 44,
+        size: 5,
+      });
+      if (r.leveled) celebrateLevel(r.category);
       toast(
         r.leveled
           ? `${E.CATEGORY_META[r.category].label} reached level ${E.level(app.state, r.category)}!`

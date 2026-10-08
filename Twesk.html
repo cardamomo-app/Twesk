@@ -329,6 +329,78 @@ button.hashtag:hover{text-decoration:underline}
 .review-done{padding:30px 25px}
 @media (max-width:600px){.habit-details,.review-progress,.review-actions,.review-help{padding-left:20px;padding-right:20px}.review-card{margin-left:20px;margin-right:20px}.habit-history{gap:3px}}
 @media(max-width:560px){.vault-tag-chips{margin:12px 18px 0}}
+/* Celebration pass */
+@keyframes coin-arc{0%{opacity:0;transform:translate(0,0) scale(.6) rotate(0)}12%{opacity:1;transform:translate(calc(var(--dx)*.08),calc(var(--arc) * .6)) scale(1.15) rotate(40deg)}45%{transform:translate(calc(var(--dx)*.45),calc(var(--dy)*.25 + var(--arc))) scale(1.1) rotate(140deg)}88%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.7) rotate(300deg)}}
+.flying-coin{animation:coin-arc .82s cubic-bezier(.45,0,.55,1) both;filter:drop-shadow(0 0 3px #f2cf6b99)}
+@keyframes burst-out{0%{opacity:1;transform:translate(-50%,-50%) scale(.4)}70%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.2) rotate(120deg)}}
+.burst-particle{position:fixed;width:var(--size);height:var(--size);border-radius:50%;background:var(--color);box-shadow:0 0 6px var(--color);animation:burst-out .75s cubic-bezier(.15,.7,.3,1) both}
+.burst-particle.star{border-radius:1px;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);width:calc(var(--size)*1.8);height:calc(var(--size)*1.8)}
+@keyframes wallet-bump{0%{transform:scale(1)}30%{transform:scale(1.14);box-shadow:0 0 0 4px color-mix(in srgb,var(--gold) 25%,transparent),0 0 18px #f2cf6b66}100%{transform:scale(1);box-shadow:none}}
+.wallet-bump{animation:wallet-bump .45s ease-out}
+.reward-pop{font-size:13px;font-weight:800;text-shadow:0 1px 0 var(--panel),0 0 10px color-mix(in srgb,currentColor 35%,transparent)}
+@keyframes reward{0%{opacity:0;transform:translate(-50%,0) scale(.6)}18%{opacity:1;transform:translate(-50%,-14px) scale(1.15)}35%{transform:translate(-50%,-20px) scale(1)}100%{opacity:0;transform:translate(-50%,-52px)}}
+/* Task check: the box pops and fills, the title strikes through, then the row slides away */
+@keyframes check-pop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+@keyframes row-leave{0%,55%{opacity:1;transform:none}100%{opacity:0;transform:translateX(18px)}}
+.task-row.completing .task-check{background:var(--accent);border-color:var(--accent);animation:check-pop .32s ease-out}
+.task-row.completing .task-check:after{content:'';width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.task-row.completing .task-title{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--accent);transition:color .2s}
+.task-row.completing{animation:row-leave .45s ease-in both}
+/* Habit completion */
+@keyframes habit-pop{0%{transform:scale(1)}35%{transform:scale(1.3) rotate(-6deg)}70%{transform:scale(.95)}100%{transform:scale(1)}}
+.habit-complete.just-done .habit-icon{animation:habit-pop .45s ease-out}
+.habit-complete.just-done .xp-badge{animation:habit-pop .45s ease-out .08s}
+/* Level up */
+@keyframes chip-glow{0%,100%{box-shadow:none;transform:scale(1)}25%{box-shadow:0 0 0 3px var(--cat),0 0 22px var(--cat);transform:scale(1.12)}}
+.stat-chip.leveled{animation:chip-glow 1.4s ease-out}
+@keyframes banner-in{0%{opacity:0;transform:translate(-50%,-30px) scale(.8)}12%{opacity:1;transform:translate(-50%,0) scale(1.05)}20%{transform:translate(-50%,0) scale(1)}85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-14px)}}
+.level-banner{position:fixed;top:84px;left:50%;display:flex;align-items:center;gap:12px;padding:10px 22px 10px 10px;border-radius:14px;background:var(--panel);border:1.5px solid var(--cat,var(--accent));box-shadow:0 12px 40px #1710202e,0 0 30px color-mix(in srgb,var(--cat,var(--accent)) 30%,transparent);animation:banner-in 2.6s ease-out both}
+.level-banner.body{--cat:var(--body)}.level-banner.mind{--cat:var(--mind)}.level-banner.soul{--cat:var(--soul)}.level-banner.heart{--cat:var(--heart)}
+.level-banner-icon{width:40px;height:40px;border-radius:10px;background:var(--cat);color:var(--panel);display:flex;align-items:center;justify-content:center}
+.level-banner-icon .icon{width:22px;height:22px}
+.level-banner small{display:block;font-size:9px;letter-spacing:2px;color:var(--cat);font-weight:700}
+.level-banner strong{font-size:16px;font-family:var(--heading)}
+/* Seal earned */
+@keyframes seal-arrive{0%{opacity:0;transform:translateY(20px) scale(.85)}60%{opacity:1;transform:translateY(-4px) scale(1.03)}100%{transform:none}}
+@keyframes seal-spin{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes seal-bounce{0%{transform:scale(.3) rotate(-25deg)}55%{transform:scale(1.18) rotate(6deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes shine-sweep{0%{transform:translateX(-120%) skewX(-20deg)}100%{transform:translateX(320%) skewX(-20deg)}}
+.badge-unlock{position:relative;overflow:hidden;animation:seal-arrive .5s cubic-bezier(.2,.9,.3,1.2) both;box-shadow:0 10px 34px #1710202a,0 0 24px color-mix(in srgb,var(--gold) 28%,transparent)}
+.badge-unlock:after{content:'';position:absolute;top:0;bottom:0;left:0;width:40%;background:linear-gradient(90deg,transparent,#ffffff55,transparent);animation:shine-sweep 1.1s ease-out .45s both;pointer-events:none}
+.seal-wrap{position:relative;display:flex;flex-shrink:0}
+.seal-wrap .seal-art{position:relative;animation:seal-bounce .6s cubic-bezier(.2,.9,.3,1.3) .1s both}
+.seal-rays{position:absolute;left:50%;top:50%;width:92px;height:92px;border-radius:50%;background:repeating-conic-gradient(color-mix(in srgb,var(--gold) 45%,transparent) 0 10deg,transparent 10deg 30deg);mask:radial-gradient(circle,#000 25%,transparent 70%);-webkit-mask:radial-gradient(circle,#000 25%,transparent 70%);animation:seal-spin 6s linear infinite}
+/* Shop */
+@keyframes card-glow{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--gold) 60%,transparent)}35%{box-shadow:0 0 0 4px color-mix(in srgb,var(--gold) 45%,transparent),0 0 26px #f2cf6b55}100%{box-shadow:0 0 0 0 transparent}}
+.shop-item.just-changed{animation:card-glow 1s ease-out}
+.shop-item.just-changed .item-art:after{content:'';position:absolute;inset:0;width:40%;background:linear-gradient(90deg,transparent,#ffffff40,transparent);animation:shine-sweep .9s ease-out both}
+.shop-item .item-art{position:relative;overflow:hidden}
+/* Combat */
+@keyframes stage-shake{0%,100%{transform:none}15%{transform:translate(-6px,2px)}30%{transform:translate(5px,-3px)}45%{transform:translate(-4px,1px)}60%{transform:translate(3px,-1px)}80%{transform:translate(-1px,0)}}
+.battle-stage.impacted.heavy-blow{animation:stage-shake .38s ease-out}
+.battle-stage.impacted.heavy-blow:before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,#ffffff55,transparent 60%);animation:flash .3s ease-out both;pointer-events:none;z-index:2}
+.battle-stage.impacted.finishing-strike{animation:stage-shake .5s ease-out}
+@keyframes flash{from{opacity:1}to{opacity:0}}
+.confetti-layer{position:absolute;inset:-30px 0 0;overflow:hidden;pointer-events:none;z-index:5}
+.confetti-layer i{position:absolute;top:-14px;left:var(--x);width:7px;height:12px;background:var(--color);border-radius:1px;animation:confetti-fall var(--fall) cubic-bezier(.25,.4,.6,1) both}
+.confetti-layer i.round{width:8px;height:8px;border-radius:50%}
+@keyframes confetti-fall{0%{opacity:1;transform:translate(0,0) rotate(0)}85%{opacity:1}100%{opacity:0;transform:translate(var(--drift),340px) rotate(var(--spin))}}
+.victory-banner{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:4;pointer-events:none;display:flex;align-items:center;justify-content:center}
+.victory-banner strong{position:relative;font-family:var(--heading);font-size:34px;font-weight:800;letter-spacing:6px;color:#f2cf6b;-webkit-text-stroke:1px #a8782a;text-shadow:0 3px 0 #a8782a,0 6px 18px #00000040,0 0 30px #f2cf6b88;animation:victory-stamp .7s cubic-bezier(.2,.9,.3,1.35) .15s both,victory-fade .6s ease-in 2.6s forwards}
+.victory-rays{position:absolute;left:50%;top:50%;width:260px;height:260px;border-radius:50%;background:repeating-conic-gradient(#f2cf6b55 0 8deg,transparent 8deg 24deg);mask:radial-gradient(circle,#000 15%,transparent 68%);-webkit-mask:radial-gradient(circle,#000 15%,transparent 68%);animation:seal-spin 9s linear infinite,rays-in .6s ease-out .1s both,victory-fade .6s ease-in 2.6s forwards}
+@keyframes victory-stamp{0%{opacity:0;transform:scale(2.6) rotate(-8deg)}60%{opacity:1;transform:scale(.92) rotate(1deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes rays-in{from{opacity:0}to{opacity:1}}
+@keyframes victory-fade{to{opacity:0}}
+@keyframes loot-in{0%{opacity:0;transform:translateY(14px) scale(.9)}60%{opacity:1;transform:translateY(-3px) scale(1.04)}100%{transform:none}}
+.loot-reveal{position:relative;overflow:hidden;animation:loot-in .55s cubic-bezier(.2,.9,.3,1.2) .75s both;box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 35%,transparent),0 0 24px #f2cf6b40}
+.loot-reveal:after{content:'';position:absolute;top:0;bottom:0;left:0;width:35%;background:linear-gradient(90deg,transparent,#ffffff66,transparent);animation:shine-sweep 1s ease-out 1.2s both}
+.loot-reveal>svg{animation:seal-bounce .6s cubic-bezier(.2,.9,.3,1.3) 1s both}
+.outcome.victory #modal-title,.battle-modal .modal-header h2{transition:color .3s}
+@media (prefers-reduced-motion:reduce){.burst-particle,.confetti-layer,.victory-rays{display:none}}
+[data-motion=reduced] .victory-rays,[data-motion=reduced] .seal-rays{display:none}
+[data-motion=reduced] .victory-banner{display:none}@media (prefers-reduced-motion:reduce){.victory-banner{display:none}}
+.battle-result{margin-top:12px}
+.battle-result .loot-box{margin-top:0}
 
   </style>
 
@@ -1758,6 +1830,7 @@ Object.assign(exports,{hideStatTooltip,toggleStatTooltip,dismissStatTooltip});
 const { awardAchievements }=require("achievements.js");
 const { badgeArt }=require("badge-art.js");
 const { $, app, esc, persist, toast, today, view }=require("ui-core.js");
+const { burst, motionOK, sound }=require("ui-effects.js");
 const { hideStatTooltip }=require("ui-stat-tooltip.js");
 const E=require("engine.js");
 function commit(fn, { deferBadges = false } = {}) {
@@ -1807,7 +1880,7 @@ function announceBadges(badges) {
   const badge = badges[0],
     el = document.createElement('button');
   el.className = 'badge-unlock';
-  el.innerHTML = `${badgeArt(badge, true)}<span><small>SEAL EARNED${badges.length > 1 ? ' · +' + (badges.length - 1) + ' more' : ''}</small><strong>${esc(badge.title)}</strong><span>View achievements ↗</span></span>`;
+  el.innerHTML = `<span class="seal-wrap"><span class="seal-rays" aria-hidden="true"></span>${badgeArt(badge, true)}</span><span><small>SEAL EARNED${badges.length > 1 ? ' · +' + (badges.length - 1) + ' more' : ''}</small><strong>${esc(badge.title)}</strong><span>View achievements ↗</span></span>`;
   el.setAttribute('aria-label', `Seal earned: ${badge.title}. Open achievements`);
   el.onclick = () => {
     if (app.busy) return;
@@ -1818,8 +1891,14 @@ function announceBadges(badges) {
     lastFocused = $('[data-action="achievements"]');
     el.remove();
   };
-  $('#toasts').append(el);
-  setTimeout(() => el.remove(), 8000);
+  // Let the reward that earned the seal land first, then make an entrance.
+  const delay = motionOK() ? 650 : 0;
+  setTimeout(() => {
+    $('#toasts').append(el);
+    sound('badge');
+    burst(el.querySelector('.seal-wrap'), { palette: 'gold', count: 20, distance: 90, size: 6 });
+    setTimeout(() => el.remove(), 9000);
+  }, delay);
 }
 
 Object.assign(exports,{commit,openModal,closeModal,announceBadges});
@@ -1845,12 +1924,618 @@ function badgeArt(badge,earned=false){
 
 Object.assign(exports,{badgeArt});
 },
+"ui-effects.js":function(require,exports){
+// Celebration: reward sounds, flying coins, particle bursts, confetti, count-ups, and level banners.
+// Sounds respect Mute; motion respects Reduce motion and the system preference.
+const { goldArt }=require("art.js");
+const E=require("engine.js");
+const { configureSfx, playSfx }=require("sfx.js");
+const { $, app, icon }=require("ui-core.js");
+
+configureSfx({ muted: () => app.state.settings.muted });
+const sound = (name = 'reward', options) => playSfx(name, options);
+const motionOK = () =>
+  !app.state.settings.reducedMotion && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const PALETTES = {
+  gold: ['#f2cf6b', '#dfae45', '#fff1b8', '#c98f2c'],
+  xp: ['#a99af0', '#7964c8', '#d9d0ff'],
+  body: ['#86b39a', '#b8dcc6', '#5f8f75'],
+  mind: ['#86afd0', '#bcd8ee', '#5d8db5'],
+  soul: ['#b8a0d8', '#ddd0f0', '#9178b8'],
+  heart: ['#e0a3b3', '#f5ccd7', '#c27b8f'],
+  confetti: ['#f2cf6b', '#7964c8', '#86b39a', '#e0a3b3', '#86afd0', '#fff1b8'],
+};
+const centerOf = target => {
+  const r = target.getBoundingClientRect ? target.getBoundingClientRect() : target;
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+};
+// Particles flying out from a point: sparks for checks, coins, and seals.
+function burst(target, { palette = 'gold', count = 14, distance = 70, size = 6 } = {}) {
+  if (!target || !motionOK()) return;
+  const { x, y } = centerOf(target),
+    colors = PALETTES[palette] || PALETTES.gold;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('span'),
+      angle = (i / count) * Math.PI * 2 + Math.random() * 0.5,
+      reach = distance * (0.55 + Math.random() * 0.6);
+    p.className = 'burst-particle' + (i % 3 ? '' : ' star');
+    p.style.left = x + 'px';
+    p.style.top = y + 'px';
+    p.style.setProperty('--dx', Math.cos(angle) * reach + 'px');
+    p.style.setProperty('--dy', Math.sin(angle) * reach + 'px');
+    p.style.setProperty('--size', size * (0.6 + Math.random() * 0.8) + 'px');
+    p.style.setProperty('--color', colors[i % colors.length]);
+    p.style.animationDelay = Math.random() * 60 + 'ms';
+    $('#effects').append(p);
+    setTimeout(() => p.remove(), 1000);
+  }
+}
+// Confetti falling through an element (used on the victory stage).
+function confetti(container, count = 70) {
+  if (!container || !motionOK()) return;
+  const layer = document.createElement('div');
+  layer.className = 'confetti-layer';
+  layer.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement('i');
+    piece.style.setProperty('--x', Math.random() * 100 + '%');
+    piece.style.setProperty('--drift', (Math.random() - 0.5) * 160 + 'px');
+    piece.style.setProperty('--spin', (Math.random() > 0.5 ? 1 : -1) * (360 + Math.random() * 540) + 'deg');
+    piece.style.setProperty('--color', PALETTES.confetti[i % PALETTES.confetti.length]);
+    piece.style.setProperty('--fall', 1.6 + Math.random() * 1.2 + 's');
+    piece.style.animationDelay = Math.random() * 450 + 'ms';
+    if (i % 4 === 0) piece.className = 'round';
+    layer.append(piece);
+  }
+  container.append(layer);
+  setTimeout(() => layer.remove(), 3400);
+}
+// Animate a number in an element from one value to another.
+function countUp(el, from, to, { delay = 0, duration = 600 } = {}) {
+  if (!el) return;
+  if (!motionOK() || from === to) {
+    el.textContent = to;
+    return;
+  }
+  el.textContent = from;
+  const start = performance.now() + delay;
+  const step = now => {
+    const progress = Math.min(1, Math.max(0, (now - start) / duration)),
+      eased = 1 - (1 - progress) ** 3;
+    el.textContent = Math.round(from + (to - from) * eased);
+    if (progress < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+const walletNumber = () => $('#gold-target .gold-value > span');
+// Floating amount, coins flying to the purse, a coin cascade on arrival, and a purse count-up.
+function rewardEffect(target, amount, kind = 'gold') {
+  if (!target) return;
+  const rect = target.getBoundingClientRect ? target.getBoundingClientRect() : target,
+    el = document.createElement('span');
+  el.className = 'reward-pop ' + kind;
+  el.textContent = `+${amount}${kind === 'gold' ? ' gold' : ' XP'}`;
+  el.style.left = rect.left + rect.width / 2 + 'px';
+  el.style.top = rect.top + 'px';
+  $('#effects').append(el);
+  setTimeout(() => el.remove(), 1100);
+  if (kind !== 'gold') return;
+  const dest = $('#gold-target')?.getBoundingClientRect();
+  if (!motionOK() || !dest?.width) {
+    sound('coins', { amount });
+    return;
+  }
+  const coins = Math.min(9, 3 + Math.floor(amount / 6));
+  for (let i = 0; i < coins; i++) {
+    const c = document.createElement('span');
+    c.className = 'flying-coin';
+    c.innerHTML = goldArt(1, true);
+    c.style.left = rect.left + rect.width / 2 + 'px';
+    c.style.top = rect.top + 'px';
+    c.style.setProperty('--dx', dest.left + dest.width / 2 - rect.left - rect.width / 2 + 'px');
+    c.style.setProperty('--dy', dest.top + dest.height / 2 - rect.top + 'px');
+    c.style.setProperty('--arc', -40 - Math.random() * 50 + 'px');
+    c.style.animationDelay = i * 55 + 'ms';
+    $('#effects').append(c);
+    setTimeout(() => c.remove(), 1400);
+  }
+  sound('coins', { amount, delay: 0.72 });
+  setTimeout(() => {
+    const wallet = $('#gold-target');
+    wallet?.classList.remove('wallet-bump');
+    void wallet?.offsetWidth;
+    wallet?.classList.add('wallet-bump');
+    burst(wallet, { palette: 'gold', count: 10, distance: 45, size: 5 });
+  }, 760);
+  countUp(walletNumber(), app.state.gold - amount, app.state.gold, { delay: 760, duration: 520 });
+}
+// A short banner and fanfare for a stat level-up. Does not block interaction.
+function celebrateLevel(category) {
+  sound('levelUp');
+  const banner = document.createElement('div');
+  banner.className = `level-banner ${category}`;
+  banner.setAttribute('role', 'status');
+  banner.innerHTML = `<span class="level-banner-icon">${icon(category)}</span><span><small>LEVEL UP</small><strong>${E.CATEGORY_META[category].label} · Level ${E.level(app.state, category)}</strong></span>`;
+  $('#effects').append(banner);
+  setTimeout(() => banner.remove(), 2600);
+  const chip = $(`.stat-chip.${category}`);
+  if (chip) {
+    chip.classList.add('leveled');
+    setTimeout(() => chip.classList.remove('leveled'), 1600);
+    burst(chip, { palette: category, count: 18, distance: 80 });
+  }
+  if (motionOK())
+    setTimeout(() => burst(banner, { palette: category, count: 22, distance: 140, size: 7 }), 350);
+}
+
+Object.assign(exports,{sound,motionOK,burst,confetti,countUp,rewardEffect,celebrateLevel});
+},
+"sfx.js":function(require,exports){
+// Twesk sound effects, synthesized locally with Web Audio (no audio files).
+// One shared context runs through a compressor with a light reverb send.
+// Repeated sounds draw from random variants, and quick successive rewards climb
+// a pentatonic scale so a run of completed tasks sounds increasingly triumphant.
+let ctx, master, reverbIn, noiseBuf;
+let isMuted = () => false;
+let channel = 'ui';
+const channels = new Map();
+const PENTATONIC = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24];
+const C5 = 523.25;
+let combo = 0,
+  lastReward = 0;
+
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = list => list[Math.floor(Math.random() * list.length)];
+const semis = n => 2 ** (n / 12);
+
+function configureSfx({ muted }) {
+  isMuted = muted;
+}
+function setup() {
+  if (ctx) return;
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const compressor = ctx.createDynamicsCompressor();
+  compressor.threshold.value = -16;
+  compressor.knee.value = 12;
+  compressor.ratio.value = 3.5;
+  compressor.attack.value = 0.004;
+  compressor.release.value = 0.2;
+  master = ctx.createGain();
+  master.gain.value = 0.85;
+  master.connect(compressor);
+  compressor.connect(ctx.destination);
+  const reverb = ctx.createConvolver(),
+    wet = ctx.createGain();
+  reverb.buffer = impulse(1.8, 2.8);
+  wet.gain.value = 0.22;
+  reverbIn = ctx.createGain();
+  reverbIn.connect(reverb);
+  reverb.connect(wet);
+  wet.connect(master);
+}
+function impulse(seconds, decay) {
+  const length = Math.floor(ctx.sampleRate * seconds),
+    buffer = ctx.createBuffer(2, length, ctx.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const data = buffer.getChannelData(c);
+    for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / length) ** decay;
+  }
+  return buffer;
+}
+function noiseBuffer() {
+  if (!noiseBuf) {
+    const length = ctx.sampleRate * 2;
+    noiseBuf = ctx.createBuffer(1, length, ctx.sampleRate);
+    const data = noiseBuf.getChannelData(0);
+    for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+  }
+  return noiseBuf;
+}
+// Connect a voice to the mix (optionally panned and sent to reverb); returns nodes to clean up.
+function output(node, { verb = 0.2, pan = 0 }) {
+  const nodes = [];
+  let last = node;
+  if (pan && ctx.createStereoPanner) {
+    const panner = ctx.createStereoPanner();
+    panner.pan.value = pan;
+    last.connect(panner);
+    last = panner;
+    nodes.push(panner);
+  }
+  last.connect(master);
+  if (verb) {
+    const send = ctx.createGain();
+    send.gain.value = verb;
+    last.connect(send);
+    send.connect(reverbIn);
+    nodes.push(send);
+  }
+  return nodes;
+}
+function finish(source, nodes) {
+  const set = channels.get(channel) || new Set();
+  channels.set(channel, set);
+  set.add(source);
+  source.onended = () => {
+    set.delete(source);
+    for (const node of nodes) node.disconnect();
+  };
+}
+function envelope(gain, t, vol, attack, dur) {
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(vol, t + attack);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+}
+function tone({
+  t,
+  f,
+  f2,
+  dur,
+  vol = 0.1,
+  type = 'sine',
+  attack = 0.005,
+  verb = 0.2,
+  pan = 0,
+  filter,
+  detune = 0,
+}) {
+  const osc = ctx.createOscillator(),
+    gain = ctx.createGain(),
+    nodes = [osc, gain];
+  osc.type = type;
+  osc.detune.value = detune;
+  osc.frequency.setValueAtTime(f, t);
+  if (f2) osc.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t + dur);
+  let last = osc;
+  if (filter) {
+    const biquad = ctx.createBiquadFilter();
+    biquad.type = filter.type;
+    biquad.Q.value = filter.q ?? 0.7;
+    biquad.frequency.setValueAtTime(filter.f, t);
+    if (filter.f2) biquad.frequency.exponentialRampToValueAtTime(filter.f2, t + (filter.time || dur));
+    osc.connect(biquad);
+    last = biquad;
+    nodes.push(biquad);
+  }
+  envelope(gain, t, vol, attack, dur);
+  last.connect(gain);
+  nodes.push(...output(gain, { verb, pan }));
+  osc.start(t);
+  osc.stop(t + dur + 0.05);
+  finish(osc, nodes);
+}
+function noise({
+  t,
+  dur,
+  vol = 0.1,
+  type = 'bandpass',
+  f = 1000,
+  f2,
+  q = 0.8,
+  attack = 0.003,
+  verb = 0.15,
+  pan = 0,
+}) {
+  const source = ctx.createBufferSource(),
+    filter = ctx.createBiquadFilter(),
+    gain = ctx.createGain();
+  source.buffer = noiseBuffer();
+  filter.type = type;
+  filter.Q.value = q;
+  filter.frequency.setValueAtTime(f, t);
+  if (f2) filter.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  envelope(gain, t, vol, attack, dur);
+  source.connect(filter);
+  filter.connect(gain);
+  const nodes = [source, filter, gain, ...output(gain, { verb, pan })];
+  source.start(t, Math.random() * 1.5);
+  source.stop(t + dur + 0.05);
+  finish(source, nodes);
+}
+// Metallic bell: inharmonic partials with staggered decay.
+function bell(f, t, vol, dur = 0.8, verb = 0.35, pan = 0) {
+  [
+    [1, 1],
+    [2.0, 0.35],
+    [2.76, 0.45],
+    [4.07, 0.18],
+    [5.4, 0.12],
+  ].forEach(([ratio, amp], i) =>
+    tone({ t, f: f * ratio, dur: dur / (1 + i * 0.6), vol: vol * amp, attack: 0.002, verb, pan }),
+  );
+}
+// Marimba-like pluck: warm fundamental plus a short bright attack.
+function pluck(f, t, vol, dur = 0.5, verb = 0.3) {
+  tone({ t, f, dur, vol, verb });
+  tone({ t, f: f * 4, dur: 0.07, vol: vol * 0.35, verb: 0 });
+  tone({ t, f: f * 2, dur: dur * 0.5, vol: vol * 0.25, type: 'triangle', verb });
+}
+// Soft brass: two detuned saws through an opening low-pass filter.
+function brass(f, t, dur, vol = 0.06, pan = 0) {
+  for (const detune of [-7, 7])
+    tone({
+      t,
+      f,
+      dur,
+      vol,
+      type: 'sawtooth',
+      attack: 0.04,
+      detune,
+      verb: 0.35,
+      pan,
+      filter: { type: 'lowpass', f: 500, f2: 2800, time: 0.09, q: 1 },
+    });
+}
+function timpani(f, t, vol = 0.25) {
+  tone({ t, f: f * 1.15, f2: f, dur: 0.6, vol, verb: 0.4 });
+  noise({ t, dur: 0.12, vol: vol * 0.4, type: 'lowpass', f: 300, verb: 0.3 });
+}
+function cymbal(t, dur = 1.4, vol = 0.09) {
+  noise({ t, dur, vol, type: 'highpass', f: 5200, q: 0.5, attack: 0.004, verb: 0.5 });
+  noise({ t, dur: dur * 0.5, vol: vol * 0.6, type: 'bandpass', f: 9000, q: 0.6, verb: 0.3 });
+}
+function sparkleRun(root, t, notes = 7, gap = 0.045, vol = 0.035) {
+  for (let i = 0; i < notes; i++)
+    bell(root * semis(PENTATONIC[i]), t + i * gap, vol, 0.5, 0.5, rand(-0.4, 0.4));
+}
+function coinCascade(t, count, vol = 0.05) {
+  let at = t;
+  for (let i = 0; i < count; i++) {
+    const v = vol * (1 - i / (count * 1.7));
+    bell(rand(2300, 3600), at, v, rand(0.18, 0.3), 0.25, rand(-0.5, 0.5));
+    noise({ t: at, dur: 0.02, vol: v * 1.2, type: 'highpass', f: 5000, verb: 0 });
+    at += rand(0.04, 0.08) * (1 - i * 0.025);
+  }
+}
+// Successive rewards within a few seconds step up the scale.
+function comboStep() {
+  const now = performance.now();
+  combo = now - lastReward < 3500 ? Math.min(combo + 1, PENTATONIC.length - 3) : 0;
+  lastReward = now;
+  return combo;
+}
+
+const SOUNDS = {
+  // Ticking a task: a bright two-note pluck that climbs with a combo.
+  check(t) {
+    const root = C5 * semis(PENTATONIC[comboStep()]);
+    pluck(root, t, 0.14);
+    pluck(root * 1.5, t + 0.075, 0.12);
+    noise({ t, dur: 0.03, vol: 0.05, type: 'highpass', f: 6000, verb: 0 });
+  },
+  // Coins landing in the purse; more coins and a flourish for bigger rewards.
+  coins(t, { amount = 4 } = {}) {
+    const count = amount >= 40 ? 11 : amount >= 18 ? 8 : amount >= 10 ? 6 : 4;
+    coinCascade(t, count, 0.055);
+    bell(2093, t + 0.02, 0.05, 0.6, 0.4);
+    if (amount >= 18) sparkleRun(C5 * 2, t + count * 0.05, 5, 0.04, 0.025);
+    if (amount >= 40) [261.6, 329.6, 392].forEach(f => brass(f, t + 0.05, 0.7, 0.04));
+  },
+  xp(t) {
+    const root = 392 * semis(PENTATONIC[comboStep()]);
+    pluck(root, t, 0.13);
+    pluck(root * 1.25, t + 0.07, 0.11);
+    pluck(root * 1.5, t + 0.14, 0.11);
+    tone({ t: t + 0.14, f: root * 4, dur: 0.7, vol: 0.02, verb: 0.6 });
+  },
+  reward(t) {
+    const root = C5 * semis(PENTATONIC[comboStep()]);
+    pluck(root, t, 0.11);
+    pluck(root * 2, t + 0.08, 0.09);
+  },
+  note(t) {
+    noise({ t, dur: 0.09, vol: 0.05, type: 'bandpass', f: 3200, f2: 1800, q: 1.2 });
+    noise({ t: t + 0.07, dur: 0.07, vol: 0.035, type: 'bandpass', f: 2600, f2: 4000, q: 1.2 });
+    SOUNDS.reward(t + 0.05);
+  },
+  levelUp(t) {
+    timpani(98, t, 0.2);
+    [261.6, 329.6, 392].forEach((f, i) => brass(f, t + i * 0.11, 0.2, 0.05));
+    [261.6, 329.6, 392, 523.25].forEach(f => brass(f, t + 0.36, 1.1, 0.04));
+    tone({ t: t + 0.36, f: 130.8, dur: 1.1, vol: 0.06, type: 'triangle', verb: 0.3 });
+    sparkleRun(C5 * 2, t + 0.4, 8, 0.04, 0.03);
+    cymbal(t + 0.36, 1.3, 0.05);
+  },
+  badge(t) {
+    sparkleRun(659.3, t, 8, 0.055, 0.04);
+    [1046.5, 1318.5, 1568, 2093].forEach((f, i) =>
+      bell(f, t + 0.48 + i * 0.012, 0.045, 1.8, 0.6, (i - 1.5) * 0.25),
+    );
+    [261.6, 392, 523.25].forEach(f =>
+      tone({ t: t + 0.45, f, dur: 1.6, vol: 0.03, attack: 0.15, type: 'triangle', verb: 0.6 }),
+    );
+    noise({ t: t + 0.2, dur: 1.4, vol: 0.025, type: 'highpass', f: 8000, attack: 0.3, verb: 0.5 });
+  },
+  purchase(t) {
+    noise({ t, dur: 0.1, vol: 0.12, type: 'lowpass', f: 260, verb: 0.1 });
+    bell(2093, t + 0.03, 0.07, 0.5);
+    bell(2637, t + 0.12, 0.08, 0.9);
+    coinCascade(t + 0.18, 4, 0.035);
+  },
+  equip(t) {
+    noise({ t, dur: 0.12, vol: 0.25, type: 'bandpass', f: 1800, q: 1.5 });
+    bell(pick([590, 640, 700]), t, 0.06, 0.4, 0.2);
+    bell(pick([880, 940, 1010]), t + 0.06, 0.04, 0.35, 0.2);
+  },
+  potion(t) {
+    for (let i = 0; i < 6; i++) {
+      const f = rand(380, 820),
+        at = t + i * rand(0.04, 0.075);
+      tone({ t: at, f, f2: f * 2.2, dur: 0.07, vol: 0.06, verb: 0.2 });
+    }
+    [523.25, 659.3, 784, 1046.5].forEach((f, i) =>
+      tone({ t: t + 0.35 + i * 0.07, f, dur: 0.6, vol: 0.04, verb: 0.6 }),
+    );
+  },
+  spell(t) {
+    noise({ t, dur: 0.6, vol: 0.06, type: 'bandpass', f: 500, f2: 4200, q: 2, attack: 0.08, verb: 0.5 });
+    tone({ t, f: 440, f2: 1320, dur: 0.55, vol: 0.04, type: 'triangle', verb: 0.5 });
+    bell(1760, t + 0.45, 0.04, 0.9, 0.6);
+  },
+  harm(t) {
+    tone({ t, f: 150, f2: 70, dur: 0.28, vol: 0.12, verb: 0.15 });
+    noise({ t, dur: 0.12, vol: 0.05, type: 'lowpass', f: 320 });
+  },
+
+  // Combat
+  start(t) {
+    timpani(110, t, 0.22);
+    brass(196, t + 0.05, 0.38, 0.05);
+    brass(293.7, t + 0.05, 0.38, 0.035);
+  },
+  swing(t, { who = 'player' } = {}) {
+    const player = who === 'player',
+      pan = player ? -0.25 : 0.25;
+    if (player) {
+      const [a, b] = pick([
+        [rand(700, 1000), rand(3200, 4600)],
+        [rand(3000, 4200), rand(900, 1300)],
+        [rand(1200, 1600), rand(5000, 6000)],
+      ]);
+      noise({ t, dur: rand(0.15, 0.24), vol: 0.45, f: a, f2: b, q: 1.4, attack: 0.03, pan, verb: 0.1 });
+      tone({ t: t + 0.05, f: rand(1700, 2300), f2: rand(900, 1200), dur: 0.1, vol: 0.02, pan, verb: 0 });
+    } else {
+      noise({
+        t,
+        dur: rand(0.24, 0.32),
+        vol: 0.5,
+        f: rand(250, 400),
+        f2: rand(1100, 1600),
+        q: 1.1,
+        attack: 0.05,
+        pan,
+        verb: 0.1,
+      });
+      noise({ t, dur: 0.3, vol: 0.18, type: 'lowpass', f: 180, attack: 0.08, pan });
+    }
+  },
+  impact(t, { target = 'monster', heavy = false } = {}) {
+    const pan = target === 'monster' ? 0.25 : -0.25,
+      f = rand(95, 125);
+    tone({ t, f, f2: 40, dur: heavy ? 0.38 : 0.2, vol: heavy ? 0.32 : 0.28, pan, verb: heavy ? 0.4 : 0.15 });
+    noise({ t, dur: 0.06, vol: 0.2, f: rand(1200, 2300), q: 1, pan, verb: 0.05 });
+    if (heavy) {
+      noise({ t, dur: 0.35, vol: 0.2, type: 'lowpass', f: 420, pan, verb: 0.35 });
+      tone({ t, f: 58, f2: 30, dur: 0.5, vol: 0.2, verb: 0.3 });
+      noise({ t: t + 0.01, dur: 0.12, vol: 0.08, type: 'highpass', f: 3500, pan });
+    }
+  },
+  grunt(t, { who = 'monster' } = {}) {
+    if (who === 'monster') {
+      const f = rand(68, 105);
+      for (const ratio of [1, 1.03, 0.5])
+        tone({
+          t,
+          f: f * ratio,
+          f2: f * ratio * 0.7,
+          dur: rand(0.26, 0.36),
+          vol: 0.11,
+          type: 'sawtooth',
+          pan: 0.25,
+          verb: 0.15,
+          filter: { type: 'lowpass', f: 700, q: 2 },
+        });
+    } else {
+      const f = rand(150, 195);
+      tone({
+        t,
+        f,
+        f2: f * 0.72,
+        dur: rand(0.15, 0.2),
+        vol: 0.4,
+        type: 'sawtooth',
+        pan: -0.25,
+        verb: 0.1,
+        filter: { type: 'bandpass', f: rand(750, 950), q: 3 },
+      });
+      noise({ t, dur: 0.1, vol: 0.07, f: 1200, q: 2, pan: -0.25 });
+    }
+  },
+  block(t) {
+    const f = rand(820, 1180);
+    bell(f, t, 0.13, 0.55, 0.3, -0.25);
+    bell(f * 1.41, t + 0.005, 0.05, 0.35, 0.3, -0.25);
+    noise({ t, dur: 0.05, vol: 0.18, type: 'highpass', f: 4000, pan: -0.25 });
+    tone({ t, f: 140, f2: 60, dur: 0.12, vol: 0.1, pan: -0.25 });
+  },
+  deflect(t) {
+    noise({ t, dur: 0.28, vol: 0.3, f: 2400, f2: 600, q: 1.3, attack: 0.02, pan: -0.25 });
+    const f = rand(1400, 1900);
+    tone({ t: t + 0.08, f, f2: f * 1.35, dur: 0.32, vol: 0.09, verb: 0.5, pan: -0.25 });
+  },
+  heal(t) {
+    [523.25, 659.3, 784, 1046.5, 1318.5].forEach((f, i) =>
+      tone({ t: t + i * 0.07, f, dur: 0.6, vol: 0.045, verb: 0.6, pan: -0.25 }),
+    );
+    noise({ t, dur: 0.8, vol: 0.02, type: 'highpass', f: 7000, attack: 0.2, verb: 0.5 });
+  },
+  finisher(t) {
+    SOUNDS.impact(t, { target: 'monster', heavy: true });
+    tone({
+      t: t + 0.02,
+      f: 320,
+      f2: 55,
+      dur: 0.75,
+      vol: 0.06,
+      type: 'sawtooth',
+      verb: 0.5,
+      filter: { type: 'lowpass', f: 900, f2: 200 },
+    });
+    cymbal(t + 0.02, 0.9, 0.04);
+  },
+  victory(t) {
+    [0, 0.07, 0.13, 0.18, 0.22, 0.26].forEach((d, i) => timpani(98, t + d, 0.1 + i * 0.03));
+    for (const d of [0.32, 0.48, 0.64]) [196, 246.9, 293.7].forEach(f => brass(f, t + d, 0.13, 0.05));
+    [261.6, 329.6, 392, 523.25].forEach((f, i) => brass(f, t + 0.82, 1.5, 0.05, (i - 1.5) * 0.2));
+    brass(130.8, t + 0.82, 1.5, 0.05);
+    timpani(65.4, t + 0.82, 0.3);
+    cymbal(t + 0.82, 1.8, 0.11);
+    sparkleRun(C5 * 2, t + 0.9, 9, 0.045, 0.035);
+    coinCascade(t + 1.5, 7, 0.04);
+  },
+  defeat(t) {
+    [440, 349.2, 293.7].forEach((f, i) => pluck(f, t + i * 0.26, 0.1, 0.8, 0.5));
+    tone({ t, f: 146.8, dur: 1.6, vol: 0.05, attack: 0.2, type: 'triangle', verb: 0.5 });
+  },
+};
+
+function unlockSfx() {
+  try {
+    setup();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  } catch {}
+}
+// Play a named sound. Options: delay (seconds), channel (for stopping a group), plus sound-specific settings.
+function playSfx(name, options = {}) {
+  if (isMuted() || !SOUNDS[name]) return;
+  try {
+    unlockSfx();
+    channel = options.channel || 'ui';
+    SOUNDS[name](ctx.currentTime + 0.01 + (options.delay || 0), options);
+  } catch {
+  } finally {
+    channel = 'ui';
+  }
+}
+function stopSfx(name = 'ui') {
+  for (const source of channels.get(name) || []) {
+    try {
+      source.stop();
+    } catch {}
+  }
+  channels.get(name)?.clear();
+}
+const SOUND_NAMES = Object.keys(SOUNDS);
+
+Object.assign(exports,{configureSfx,unlockSfx,playSfx,stopSfx,SOUND_NAMES});
+},
 "ui-tasks.js":function(require,exports){
 // Task list, project filter, task dialog, and task actions.
 const E=require("engine.js");
 const { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view }=require("ui-core.js");
 const { closeModal, commit, openModal }=require("ui-modal.js");
-const { rewardEffect, sound }=require("ui-effects.js");
+const { burst, motionOK, rewardEffect, sound }=require("ui-effects.js");
 
 const inProject = t => !app.taskProject || E.tags(t.title).includes(app.taskProject);
 // Open tasks per project tag, in order of first appearance.
@@ -1947,6 +2632,18 @@ const modals = {
     );
   },
 };
+const completing = new Set();
+function celebrateToggle(r, sourceRect, id, day) {
+  if (!r) return;
+  if (r < 0) return toast('Task restored and reward reversed.');
+  rewardEffect(sourceRect, r);
+  const task = app.state.tasks.find(t => t.id === id);
+  toast(`Task cleared. +${r} gold.${task?.repeat ? ` Back ${dueLabel(task.due)}.` : ''}`, () =>
+    commit(() => {
+      if (app.state.tasks.find(t => t.id === id)?.done) E.toggleTask(app.state, id, day);
+    }),
+  );
+}
 const actions = {
   'task-view'(b) {
     app.taskView = b.dataset.view;
@@ -1967,19 +2664,24 @@ const actions = {
     openModal({ type: 'task', id });
   },
   'toggle-task'(b, { id, sourceRect }) {
-    const day = today();
-    const r = commit(() => E.toggleTask(app.state, id, day));
-    if (r > 0) {
-      sound('coins');
-      rewardEffect(sourceRect, r);
-      const task = app.state.tasks.find(t => t.id === id);
-      toast(`Task cleared. +${r} gold.${task?.repeat ? ` Back ${dueLabel(task.due)}.` : ''}`, () =>
-        commit(() => {
-          if (app.state.tasks.find(t => t.id === id)?.done) E.toggleTask(app.state, id, day);
-        }),
-      );
-    } else if (r < 0) toast('Task restored and reward reversed.');
+    const day = today(),
+      task = app.state.tasks.find(t => t.id === id);
+    if (!task || completing.has(id)) return;
+    const finish = () => {
+      completing.delete(id);
+      const r = commit(() => E.toggleTask(app.state, id, day));
+      celebrateToggle(r, sourceRect, id, day);
+    };
+    if (task.done) return finish();
+    // Feedback lands on the click; the row plays its check before leaving the list.
+    sound('check');
+    burst(b, { palette: 'gold', count: 12, distance: 46, size: 5 });
+    b.closest('.task-row')?.classList.add('completing');
+    if (!motionOK()) return finish();
+    completing.add(id);
+    setTimeout(finish, 430);
   },
+
   'delete-task'(b, { id }) {
     commit(() => {
       app.state.tasks = app.state.tasks.filter(t => t.id !== id);
@@ -2012,113 +2714,13 @@ const forms = {
 
 Object.assign(exports,{renderProjects,renderTasks,modals,actions,forms});
 },
-"ui-effects.js":function(require,exports){
-// Reward sounds and the floating gold/XP animation.
-const { goldArt }=require("art.js");
-const { playCoinSound }=require("coin-sound.js");
-const { $, app }=require("ui-core.js");
-let audio;
-function sound(kind = 'reward') {
-  if (app.state.settings.muted) return;
-  try {
-    audio ??= new (window.AudioContext || window.webkitAudioContext)();
-    audio.resume();
-    if (kind === 'coins') {
-      playCoinSound(audio);
-      return;
-    }
-    const t = audio.currentTime;
-    [kind === 'harm' ? 200 : 660, kind === 'harm' ? 150 : 880].forEach((freq, i) => {
-      const o = audio.createOscillator(),
-        g = audio.createGain();
-      o.type = 'sine';
-      o.frequency.value = freq;
-      g.gain.setValueAtTime(0, t + i * 0.07);
-      g.gain.linearRampToValueAtTime(0.035, t + i * 0.07 + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.07 + 0.16);
-      o.connect(g);
-      g.connect(audio.destination);
-      o.start(t + i * 0.07);
-      o.stop(t + i * 0.07 + 0.17);
-    });
-  } catch {}
-}
-function rewardEffect(target, amount, kind = 'gold') {
-  if (!target) return;
-  const rect = target.getBoundingClientRect ? target.getBoundingClientRect() : target,
-    el = document.createElement('span');
-  el.className = 'reward-pop ' + kind;
-  el.textContent = `+${amount}${kind === 'gold' ? ' gold' : ' XP'}`;
-  el.style.left = rect.left + rect.width / 2 + 'px';
-  el.style.top = rect.top + 'px';
-  $('#effects').append(el);
-  setTimeout(() => el.remove(), 1100);
-  if (
-    kind !== 'gold' ||
-    app.state.settings.reducedMotion ||
-    matchMedia('(prefers-reduced-motion: reduce)').matches
-  )
-    return;
-  const dest = $('#gold-target')?.getBoundingClientRect();
-  if (!dest) return;
-  dest.width &&
-    $('#gold-target').animate(
-      [{ transform: 'scale(1)' }, { transform: 'scale(1.07)' }, { transform: 'scale(1)' }],
-      { duration: 380, delay: 750 },
-    );
-  for (let i = 0; i < 4; i++) {
-    const c = document.createElement('span');
-    c.className = 'flying-coin';
-    c.innerHTML = goldArt(1, true);
-    c.style.left = rect.left + rect.width / 2 + 'px';
-    c.style.top = rect.top + 'px';
-    c.style.setProperty('--dx', dest.left + dest.width / 2 - rect.left - rect.width / 2 + 'px');
-    c.style.setProperty('--dy', dest.top + dest.height / 2 - rect.top + 'px');
-    c.style.animationDelay = i * 55 + 'ms';
-    $('#effects').append(c);
-    setTimeout(() => c.remove(), 1200);
-  }
-}
-
-Object.assign(exports,{sound,rewardEffect});
-},
-"coin-sound.js":function(require,exports){
-// A handful of coins landing: short, irregular metallic impacts and ringing
-// overtones. Shares the reward audio context and its existing mute handling.
-function playCoinSound(context) {
-  const start=context.currentTime;
-  const landings=[0,.068,.143,.231,.348,.472];
-  const pitches=[1,1.13,.92,1.06,.98,1.19];
-  landings.forEach((delay,index)=>{
-    const t=start+delay,volume=.024*(1-index*.105),base=2380*pitches[index];
-    [1,1.47,2.09,2.73].forEach((ratio,partial)=>{
-      const oscillator=context.createOscillator(),gain=context.createGain(),duration=.12+partial*.025;
-      oscillator.type='sine';oscillator.frequency.setValueAtTime(base*ratio,t);
-      oscillator.frequency.exponentialRampToValueAtTime(base*ratio*.985,t+.035);
-      gain.gain.setValueAtTime(.0001,t);gain.gain.linearRampToValueAtTime(volume/(1+partial),t+.002);
-      gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
-      oscillator.connect(gain);gain.connect(context.destination);
-      oscillator.onended=()=>{oscillator.disconnect();gain.disconnect();};
-      oscillator.start(t);oscillator.stop(t+duration+.01);
-    });
-    const buffer=context.createBuffer(1,Math.ceil(context.sampleRate*.025),context.sampleRate),data=buffer.getChannelData(0);
-    for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*(1-i/data.length)**3;
-    const source=context.createBufferSource(),filter=context.createBiquadFilter(),gain=context.createGain();
-    source.buffer=buffer;filter.type='highpass';filter.frequency.value=1800;gain.gain.value=volume*.7;
-    source.connect(filter);filter.connect(gain);gain.connect(context.destination);
-    source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};source.start(t);
-  });
-}
-
-Object.assign(exports,{playCoinSound});
-},
 "ui-habits.js":function(require,exports){
 // Habit categories, the habit dialog, and habit/harm logging.
 const E=require("engine.js");
 const { HABIT_ICONS, habitIconChoice, resolvedHabitIcon, validHabitIcon }=require("habit-icons.js");
 const { $, app, esc, icon, iconButton, modalShell, toast, today, view }=require("ui-core.js");
 const { closeModal, commit, openModal }=require("ui-modal.js");
-const { rewardEffect, sound }=require("ui-effects.js");
+const { burst, celebrateLevel, rewardEffect, sound }=require("ui-effects.js");
 function renderCategory(cat) {
   const meta = E.CATEGORY_META[cat],
     harm = cat === 'harm',
@@ -2257,8 +2859,17 @@ const actions = {
       done ? E.undoHabit(app.state, id, today()) : E.completeHabit(app.state, id, today()),
     );
     if (!done && r) {
-      sound();
+      sound('xp');
       rewardEffect(sourceRect, r.amount, 'xp');
+      const row = document.querySelector(`.habit-complete[data-id="${CSS.escape(id)}"]`);
+      row?.classList.add('just-done');
+      burst(row?.querySelector('.habit-icon') || sourceRect, {
+        palette: r.category,
+        count: 12,
+        distance: 44,
+        size: 5,
+      });
+      if (r.leveled) celebrateLevel(r.category);
       toast(
         r.leveled
           ? `${E.CATEGORY_META[r.category].label} reached level ${E.level(app.state, r.category)}!`
@@ -2406,12 +3017,15 @@ function convert(id) {
   });
   if (r) {
     toast('Sent to your task inbox' + (wasInbox ? ' · review saved.' : '.'));
-    sound();
+    sound('note');
   }
 }
 function performReview(id, status) {
   const reward = commit(() => E.reviewNote(app.state, id, status, today()));
-  if (reward) toast('A little clarity. +4 gold for your review.');
+  if (reward) {
+    sound('reward');
+    toast('A little clarity. +4 gold for your review.');
+  }
 }
 const modals = {
   capture() {
@@ -2566,7 +3180,7 @@ const forms = {
     });
     if (r) {
       closeModal();
-      sound();
+      sound('note');
       toast(
         previous.recovery
           ? `Reflection saved. +${r.healed} HP${r.reward ? ` · +${r.reward} gold` : ''}.`
@@ -2776,7 +3390,7 @@ const E=require("engine.js");
 const { itemArt, monsterName }=require("art.js");
 const { $, app, coin, esc, icon, modalShell, toast, view }=require("ui-core.js");
 const { commit, openModal }=require("ui-modal.js");
-const { sound }=require("ui-effects.js");
+const { burst, countUp, sound }=require("ui-effects.js");
 const { potionCount }=require("ui-character.js");
 const { percent, requestOdds }=require("ui-odds.js");
 // Odds are compared against the next opponent, at full health when currently at 0 HP.
@@ -2922,6 +3536,13 @@ const modals = {
     return renderShop(true);
   },
 };
+// Highlight the card that just changed after the dialog re-renders.
+function flourish(id, palette = 'gold') {
+  const card = document.querySelector(`#overlay [data-id="${CSS.escape(id)}"]`)?.closest('.shop-item');
+  if (!card) return;
+  card.classList.add('just-changed');
+  burst(card.querySelector('.item-art') || card, { palette, count: 16, distance: 70 });
+}
 const actions = {
   shop(b, { a, id, sourceRect }) {
     openModal({ type: a });
@@ -2932,7 +3553,16 @@ const actions = {
   buy(b, { a, id, sourceRect }) {
     const item = commit(() => E.buy(app.state, id));
     if (item) {
-      sound();
+      sound('purchase');
+      flourish(id);
+      countUp(
+        document.querySelector('#overlay .shop-wallet .gold-value > span'),
+        app.state.gold + item.price,
+        app.state.gold,
+        {
+          duration: 450,
+        },
+      );
       toast(`${item.name} is yours.`);
     }
   },
@@ -2941,8 +3571,13 @@ const actions = {
       E.equip(app.state, id);
       return true;
     });
-    if (result)
-      toast(E.SHOP.find(i => i.id === id)?.type === 'pet' ? 'Companion updated.' : 'Equipment updated.');
+    if (result) {
+      const pet = E.SHOP.find(i => i.id === id)?.type === 'pet';
+      sound(pet ? 'reward' : 'equip');
+      if (pet ? app.state.activePet === id : Object.values(app.state.equipped).includes(id))
+        flourish(id, 'xp');
+      toast(pet ? 'Companion updated.' : 'Equipment updated.');
+    }
   },
   potion(b, { a, id, sourceRect }) {
     app.shopCategory = 'potion';
@@ -2951,7 +3586,8 @@ const actions = {
   'use-potion'(b, { a, id, sourceRect }) {
     const healed = commit(() => E.usePotion(app.state, id));
     if (healed) {
-      sound();
+      sound('potion');
+      flourish(id, 'heart');
       toast(`+${healed} HP restored.`);
     }
   },
@@ -2960,6 +3596,10 @@ const actions = {
       E.prepareSpell(app.state, id);
       return true;
     });
+    if (result && app.state.preparedSpell) {
+      sound('spell');
+      flourish(id, 'soul');
+    }
     if (result)
       toast(
         app.state.preparedSpell
@@ -3018,7 +3658,8 @@ Object.assign(exports,{oddsKey,requestOdds,percent});
 const E=require("engine.js");
 const { avatarArt, monsterArt, monsterName, itemArt }=require("art.js");
 const { describeCombatEvent }=require("combat-presentation.js");
-const { createCombatAudio }=require("combat-audio.js");
+const { playSfx, stopSfx, unlockSfx }=require("sfx.js");
+const { burst, confetti, countUp, motionOK }=require("ui-effects.js");
 const { $, app, esc, icon, modalShell, persist, today, view }=require("ui-core.js");
 const { announceBadges, commit }=require("ui-modal.js");
 const { oddsKey, percent, requestOdds }=require("ui-odds.js");
@@ -3084,7 +3725,7 @@ function renderBattleModal() {
   const stageClass = finished
     ? `outcome ${r.won ? 'victory' : 'defeat'}`
     : event
-      ? `event-${event.type}${event.enemy === 0 ? ' finishing-strike' : ''}${event.hp === 0 ? ' fatal-hit' : ''}`
+      ? `event-${event.type}${event.enemy === 0 ? ' finishing-strike' : ''}${event.hp === 0 ? ' fatal-hit' : ''}${isHeavy(event, r.monster) ? ' heavy-blow' : ''}`
       : 'ready';
   const effect = side =>
     !finished && step?.target === side
@@ -3118,12 +3759,13 @@ function renderBattleModal() {
     finished ? (r.won ? 'Victory!' : 'Defeated') : `Encounter · ${monsterName(r.monster)}`,
     `<div class="battle-body">
     <div class="battle-toolbar"><span>${finished ? `${round} rounds` : `${index < 0 ? 'GET READY' : `ROUND ${round} · ${event?.type === 'attack' ? 'YOUR TURN' : event?.type === 'rally' ? 'RECOVERY' : 'MONSTER’S TURN'}`}`}</span><div>${app.modal.replay ? '<span class="replay-label">REPLAY</span>' : ''}<span>${finished ? 'Encounter complete' : `Step ${Math.max(0, index + 1)} / ${r.events.length}`}</span><button class="icon-button" data-action="battle-mute" title="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}" aria-label="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}">${icon(app.state.settings.muted ? 'mute' : 'sound')}</button></div></div>
-    <div class="battle-stage ${stageClass}" id="battle-stage">
+    <div class="battle-stage ${stageClass}" id="battle-stage">${finished && r.won ? '<div class="victory-banner" aria-hidden="true"><span class="victory-rays"></span><strong>VICTORY</strong></div>' : ''}
       <div class="battle-fighter player"><div class="fighter-scene"><div class="fighter-motion">${avatarArt(weapon, armor, false, { appearance: r.appearance || app.state.appearance })}</div>${effect('player')}</div><strong>${esc(r.playerName || app.state.name)}</strong><div class="health-bar" role="progressbar" aria-label="Adventurer health" aria-valuemin="0" aria-valuemax="${maximum}" aria-valuenow="${hp}" id="battle-player-bar"><div style="width:${(hp / maximum) * 100}%"></div></div><small id="battle-player-hp">${hp} / ${maximum} HP</small></div>
       <div class="battle-divider"><span>VS</span><i></i></div>
       <div class="battle-fighter monster"><div class="fighter-scene"><div class="fighter-motion">${monsterArt(r.monster, finished && r.won)}</div>${effect('monster')}</div><strong>${monsterName(r.monster)}</strong><div class="health-bar enemy" role="progressbar" aria-label="Monster health" aria-valuemin="0" aria-valuemax="${enemyMax}" aria-valuenow="${enemy}" id="battle-enemy-bar"><div style="width:${(enemy / enemyMax) * 100}%"></div></div><small id="battle-enemy-hp">${enemy} / ${enemyMax} HP</small></div>
     </div>
     <div class="battle-step ${finished ? (r.won ? 'won' : 'lost') : step?.tone || 'ready'}" aria-live="polite"><strong>${finished ? (r.won ? `${monsterName(r.monster)} defeated` : 'Your adventurer falls') : step ? esc(step.title) : 'Ready your stance'}</strong><p>${finished ? (app.modal.replay ? 'This is a replay. Health and rewards stay unchanged.' : r.won ? 'Loot collected. Your next opponent arrives tomorrow.' : 'Reflect to recover HP, then try again when you feel ready.') : step ? esc(step.detail) : 'You attack first. Equipment and stats apply automatically.'}</p><div class="combat-badges">${(!finished && step ? step.badges : []).map(b => `<span class="combat-badge ${b.tone}">${esc(b.label)}</span>`).join('')}</div></div>
+    ${finished ? `<div class="battle-result">${r.won ? `<div class="loot-box loot-reveal">${r.loot.type === 'gold' ? icon('coin') + `<strong>+${r.loot.amount} gold</strong>` : itemArt(E.SHOP.find(i => i.id === r.loot.id)) + `<strong>${E.SHOP.find(i => i.id === r.loot.id).name}</strong>`}<span>${app.modal.replay ? 'Previously earned' : r.loot.type === 'gold' ? 'Added to your pouch' : 'Added to your equipment'}</span></div><button class="button primary wide" data-action="close-modal">Back to dashboard</button>` : `${!app.modal.replay ? `<button class="button primary wide" data-action="recover">${icon('pencil')}Reflect & recover</button>` : ''}<button class="button secondary wide" data-action="close-modal">Back to dashboard</button>`}</div>` : ''}
     <div class="combat-loadout">${chips.map(b => `<span class="${b.tone}">${esc(b.label)}</span>`).join('')}</div>
     ${
       history.length
@@ -3138,13 +3780,38 @@ function renderBattleModal() {
             .join('')}</ol></details>`
         : ''
     }
-    ${finished ? (r.won ? `<div class="loot-box">${r.loot.type === 'gold' ? icon('coin') + `<strong>+${r.loot.amount} gold</strong>` : itemArt(E.SHOP.find(i => i.id === r.loot.id)) + `<strong>${E.SHOP.find(i => i.id === r.loot.id).name}</strong>`}<span>${app.modal.replay ? 'Previously earned' : r.loot.type === 'gold' ? 'Added to your pouch' : 'Added to your equipment'}</span></div><button class="button primary wide" data-action="close-modal">Back to dashboard</button>` : `${!app.modal.replay ? `<button class="button primary wide" data-action="recover">${icon('pencil')}Reflect & recover</button>` : ''}<button class="button secondary wide" data-action="close-modal">Back to dashboard</button>`) : '<button class="text-button battle-skip" data-action="skip-battle">Skip to result</button>'}
+    ${finished ? '' : '<button class="text-button battle-skip" data-action="skip-battle">Skip to result</button>'}
   </div>`,
     'battle-modal',
   );
 }
 const battleTimers = new Set();
-const battleAudio = createCombatAudio(() => app.state.settings.muted);
+const battleAudio = {
+  unlock: unlockSfx,
+  play: (name, options) => playSfx(name, { ...options, channel: 'battle' }),
+  stop: () => stopSfx('battle'),
+};
+// The top quarter of attack rolls land as heavy blows: bigger sound and a stage shake.
+const isHeavy = (event, monster) =>
+  event.type === 'attack'
+    ? event.baseDamage >= 30
+    : event.type === 'hit' && event.rawDamage >= E.monsterStats(monster).attack + 6;
+// Victory: confetti, a stamped banner, a glowing loot reveal, and a gold count-up.
+function celebrateOutcome(r) {
+  if (!r.won) return;
+  const stage = $('#battle-stage');
+  confetti(stage, 80);
+  const loot = $('#overlay .loot-box');
+  if (!loot) return;
+  setTimeout(() => burst(loot, { palette: 'gold', count: 22, distance: 110, size: 7 }), motionOK() ? 900 : 0);
+  if (r.loot.type === 'gold') {
+    const amount = loot.querySelector('strong');
+    const number = document.createElement('span');
+    amount.textContent = '+';
+    amount.append(number, ' gold');
+    countUp(number, 0, r.loot.amount, { delay: 900, duration: 700 });
+  }
+}
 function scheduleBattle(fn, delay) {
   const timer = setTimeout(() => {
     battleTimers.delete(timer);
@@ -3166,6 +3833,7 @@ function finishBattlePlayback(playSound = true) {
   app.modal.impact = true;
   view.renderModal();
   if (playSound) battleAudio.play(app.modal.result.won ? 'victory' : 'defeat');
+  celebrateOutcome(app.modal.result);
   if (!app.modal.replay && app.pendingBadges.length) {
     announceBadges(app.pendingBadges);
     app.pendingBadges = [];
@@ -3177,6 +3845,7 @@ function animateBattle(result, initialHP, replay = false) {
   app.busy = true;
   app.modal = { type: 'battle', result, index: -1, initialHP, finished: false, impact: false, replay };
   view.render();
+  scheduleBattle(() => battleAudio.play('start'), 250);
   const reduced = app.state.settings.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
   const advance = () => {
     if (app.modal?.type !== 'battle') return;
@@ -3189,9 +3858,11 @@ function animateBattle(result, initialHP, replay = false) {
     const event = result.events[app.modal.index],
       description = describeCombatEvent(event);
     view.renderModal();
-    if (event.type === 'attack') scheduleBattle(() => battleAudio.play('sword'), 120);
+    const heavy = isHeavy(event, result.monster),
+      finishing = event.type === 'attack' && event.enemy === 0;
+    if (event.type === 'attack') scheduleBattle(() => battleAudio.play('swing', { who: 'player' }), 120);
     if (event.type === 'hit' || event.type === 'deflect')
-      scheduleBattle(() => battleAudio.play('sword'), 120);
+      scheduleBattle(() => battleAudio.play('swing', { who: 'monster' }), 120);
     scheduleBattle(
       () => {
         if (app.modal?.type !== 'battle') return;
@@ -3212,12 +3883,13 @@ function animateBattle(result, initialHP, replay = false) {
           $('#battle-enemy-hp').textContent = `${event.enemy} / ${enemyMax} HP`;
         }
         if (event.type === 'attack') {
-          battleAudio.play('impact');
-          scheduleBattle(() => battleAudio.play('grunt'), 80);
+          battleAudio.play(finishing ? 'finisher' : 'impact', { target: 'monster', heavy });
+          scheduleBattle(() => battleAudio.play('grunt', { who: 'monster' }), finishing ? 140 : 80);
         }
         if (event.type === 'hit') {
-          battleAudio.play(event.blocked ? 'block' : 'impact');
-          scheduleBattle(() => battleAudio.play('grunt'), 80);
+          if (event.blocked) battleAudio.play('block');
+          battleAudio.play('impact', { target: 'player', heavy });
+          scheduleBattle(() => battleAudio.play('grunt', { who: 'player' }), 80);
         }
         if (event.type === 'deflect') battleAudio.play('deflect');
         if (event.type === 'rally') battleAudio.play('heal');
@@ -3287,45 +3959,6 @@ function describeCombatEvent(event, { monster = 'Monster', weapon, armor, spell 
 }
 
 Object.assign(exports,{describeCombatEvent});
-},
-"combat-audio.js":function(require,exports){
-// Short synthesized effects. All audio stays local and respects the mute setting.
-function createCombatAudio(isMuted) {
-  let context;
-  const nodes=new Set();
-  function unlock(){try{context??=new(window.AudioContext||window.webkitAudioContext)();context.resume();}catch{}}
-  function track(node){nodes.add(node);node.onended=()=>{nodes.delete(node);node.disconnect();};return node;}
-  function tone(freq,end,duration,type='triangle',volume=.045,delay=0){
-    const t=context.currentTime+delay,o=track(context.createOscillator()),g=context.createGain();
-    o.type=type;o.frequency.setValueAtTime(freq,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,end),t+duration);
-    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(volume,t+.018);g.gain.exponentialRampToValueAtTime(.0001,t+duration);
-    o.connect(g);g.connect(context.destination);o.start(t);o.stop(t+duration+.02);
-  }
-  function noise(duration,frequency,volume=.06,type='bandpass'){
-    const buffer=context.createBuffer(1,Math.ceil(context.sampleRate*duration),context.sampleRate),data=buffer.getChannelData(0);
-    for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*(1-i/data.length);
-    const source=track(context.createBufferSource()),filter=context.createBiquadFilter(),gain=context.createGain();
-    source.buffer=buffer;filter.type=type;filter.frequency.value=frequency;filter.Q.value=.7;gain.gain.value=volume;
-    source.connect(filter);filter.connect(gain);gain.connect(context.destination);source.start();
-  }
-  function play(kind){
-    if(isMuted())return;unlock();if(!context)return;
-    try {
-      if(kind==='sword'){noise(.26,2600,.085,'highpass');tone(1100,380,.14,'sine',.018);}
-      if(kind==='impact'){noise(.12,450,.10,'lowpass');tone(110,45,.16,'triangle',.065);}
-      if(kind==='grunt'){tone(175,72,.24,'sawtooth',.022);tone(330,155,.19,'triangle',.012);noise(.16,700,.022);}
-      if(kind==='block'){tone(1540,1450,.19,'sine',.045);tone(2230,2100,.12,'sine',.022);noise(.09,3000,.04);}
-      if(kind==='deflect'){noise(.28,1500,.045);tone(420,1120,.24,'sine',.035);}
-      if(kind==='heal'){[440,554,660].forEach((f,i)=>tone(f,f,.32,'sine',.035,i*.11));}
-      if(kind==='victory'){[523,659,784,1047].forEach((f,i)=>tone(f,f,.4,'triangle',.035,i*.12));}
-      if(kind==='defeat'){tone(165,65,.55,'triangle',.04);noise(.2,300,.025,'lowpass');}
-    }catch{}
-  }
-  function stop(){for(const node of nodes){try{node.stop();}catch{}}nodes.clear();}
-  return {unlock,play,stop};
-}
-
-Object.assign(exports,{createCombatAudio});
 },
 "ui-collection.js":function(require,exports){
 // Achievements and the bestiary.

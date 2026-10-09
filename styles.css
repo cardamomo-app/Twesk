@@ -485,3 +485,5 @@ button.hashtag:hover{text-decoration:underline}
 .style-preview-bar .button .gold-value{display:inline-flex;align-items:center;gap:3px}
 .style-preview-bar .button .gold-pile{width:24px;height:19px}
 .style-preview-bar>span{flex:1 1 140px;min-width:0}
+.task-form-secondary{display:flex;flex-wrap:wrap;gap:6px}
+.task-form-secondary .icon{width:14px;height:14px}

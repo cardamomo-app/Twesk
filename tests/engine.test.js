@@ -191,3 +191,23 @@ test('notes can be pinned and unpinned, and pins survive backups',()=>{
   assert.equal(E.togglePin(s,note.id),false);assert.equal(note.pinned,undefined);
   note.pinned='yes';assert.throws(()=>E.validateState(s));
 });
+test('a task moved back to the Vault becomes an inbox note and returns intact',()=>{
+  const s=E.freshState(),t=E.saveTask(s,{title:'Fix the #home shelf',tier:'hard',repeat:'weekly'},day(1)),gold=s.gold,notes=s.progress.notes;
+  const {note,undo}=E.returnTaskToVault(s,t.id);
+  assert.ok(!s.tasks.some(x=>x.id===t.id));assert.equal(note.status,'inbox');assert.equal(note.text,'Fix the #home shelf');
+  assert.equal(s.gold,gold,'no note gold');assert.equal(s.progress.notes,notes,'no Vault progress');
+  assert.doesNotThrow(()=>E.validateState(JSON.parse(JSON.stringify(s))));
+  const back=E.convertNote(s,note.id);
+  assert.equal(back.title,'Fix the #home shelf');assert.equal(back.tier,'hard');assert.equal(back.repeat,'weekly');assert.equal(note.taskTitle,undefined);
+  const {undo:u2}=E.returnTaskToVault(s,back.id);E.undoReturnTaskToVault(s,u2);
+  assert.equal(s.tasks[0].id,back.id);assert.equal(s.notes.filter(n=>n.id===note.id)[0].status,'kept','the source note is linked again');
+  assert.throws(()=>E.undoReturnTaskToVault(s,undo),/changed|already/);
+});
+test('a task made from a note reopens that note, and completed tasks cannot move back',()=>{
+  const s=E.freshState(),{note}=E.saveNote(s,{text:'Plan the trip\nCheck trains and hotels #travel'},day(1));
+  const t=E.convertNote(s,note.id);E.reviewNote(s,note.id,'kept',day(1));
+  const {note:back}=E.returnTaskToVault(s,t.id);
+  assert.equal(back.id,note.id);assert.equal(back.status,'inbox');assert.equal(back.taskId,undefined);assert.match(back.text,/hotels/,'the full original note returns');
+  const done=s.tasks[0];E.toggleTask(s,done.id,day(2));assert.throws(()=>E.returnTaskToVault(s,done.id),/Completed/);
+  const bad=E.freshState();E.saveNote(bad,{text:'x'},day(1));bad.notes[0].taskTier='huge';assert.throws(()=>E.validateState(bad));
+});

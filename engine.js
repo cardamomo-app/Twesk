@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.11.0';
-import {validHabitIcon} from './habit-icons.js?v=0.11.0';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.12.0';
+import {validHabitIcon} from './habit-icons.js?v=0.12.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -228,11 +228,48 @@ export function convertNote(s, id, tier = 'quick') {
   const note = s.notes.find(n => n.id === id);
   if (!note) throw new Error('Note not found.');
   if (note.taskId) return s.tasks.find(t => t.id === note.taskId) || null;
+  // A task that was moved back to the Vault returns with its original title, size, and repeat.
+  if (note.taskTitle) {
+    const task = { id: uid(), title: note.taskTitle, tier: note.taskTier || tier, done: false, earned: 0, source: note.id, inbox: true };
+    if (note.taskRepeat) { task.repeat = note.taskRepeat; task.due = null; }
+    delete note.taskTitle; delete note.taskTier; delete note.taskRepeat;
+    s.tasks.unshift(task); note.taskId = task.id; note.status = 'kept'; return task;
+  }
   // Hashtags carry over, so a captured task joins the note's projects.
   const base = note.text.replace(TAG_PATTERN,'').trim().split('\n')[0].replace(/\s+/g,' ').trim(), noteTags = tags(note.text).join(' ');
   const title = [base.slice(0, Math.max(0, 159 - noteTags.length)) || (noteTags ? '' : 'Captured task'), noteTags].filter(Boolean).join(' ').slice(0,160) || 'Captured task';
   const task = { id: uid(), title, tier, done: false, earned: 0, source: note.id, inbox: true };
   s.tasks.unshift(task); note.taskId = task.id; note.status = 'kept'; return task;
+}
+// Send an open task back to the Vault inbox to think about later. A task that came from a note
+// reopens that note; otherwise its title becomes a new note. No note gold or Vault progress is earned.
+// Returns what is needed to undo the move exactly.
+export function returnTaskToVault(s, id) {
+  const index = s.tasks.findIndex(t => t.id === id), task = s.tasks[index];
+  if (!task) throw new Error('Task not found.');
+  if (task.done) throw new Error('Completed tasks stay in your wins.');
+  const source = s.notes.find(n => n.id === task.source && n.taskId === task.id);
+  const undo = { task: { ...task }, index, noteId: null, created: !source, previous: source ? { status: source.status } : null };
+  let note = source;
+  if (note) { delete note.taskId; note.status = 'inbox'; }
+  else {
+    note = { id: uid(), text: task.title, created: new Date().toISOString(), paid: noteEntitlement(task.title), status: 'inbox', kind: 'note', healed: false };
+    s.notes.unshift(note);
+  }
+  note.taskTitle = task.title; note.taskTier = task.tier;
+  if (task.repeat) note.taskRepeat = task.repeat; else delete note.taskRepeat;
+  s.tasks.splice(index, 1);
+  undo.noteId = note.id;
+  return { note, undo };
+}
+export function undoReturnTaskToVault(s, undo) {
+  const note = s.notes.find(n => n.id === undo.noteId);
+  if (!note || note.status !== 'inbox' || note.taskId) throw new Error('That note has changed since; convert it from the Vault instead.');
+  if (s.tasks.some(t => t.id === undo.task.id)) throw new Error('This task is already back.');
+  if (undo.created) s.notes = s.notes.filter(n => n !== note);
+  else { note.status = undo.previous.status; note.taskId = undo.task.id; delete note.taskTitle; delete note.taskTier; delete note.taskRepeat; }
+  s.tasks.splice(Math.min(undo.index, s.tasks.length), 0, undo.task);
+  return undo.task;
 }
 export function reviewNote(s, id, status, today) {
   const note = s.notes.find(n => n.id === id);
@@ -502,6 +539,7 @@ export function validateState(value) {
     if(!h.logs.every(l=>date(l.day)&&integer(l.xp,0,45))||new Set(h.logs.map(l=>l.day)).size!==h.logs.length||!h.harmLogs.every(l=>id(l.id)&&date(l.day)&&integer(l.damage,0,12))) fail();
   }
   for(const n of s.notes) if(!id(n.id)||!text(n.text)||(!text(n.created,100)||Number.isNaN(Date.parse(n.created)))||!integer(n.paid,0,3)||!['inbox','kept','archived'].includes(n.status)||!['note','journal'].includes(n.kind)||typeof n.healed!=='boolean'||(n.pinned!==undefined&&n.pinned!==true)) fail();
+  for(const n of s.notes) if((n.taskTitle!==undefined&&!text(n.taskTitle,500))||(n.taskTier!==undefined&&!Object.hasOwn(TASK_GOLD,n.taskTier))||(n.taskRepeat!==undefined&&!Object.hasOwn(REPEATS,n.taskRepeat))) fail();
   for(const battle of s.battles) {
     if(!id(battle.id)||!date(battle.day)||!integer(battle.monster,1,500)||typeof battle.won!=='boolean'||!integer(battle.hp)||!array(battle.events,2000)||!battle.events.length) fail();
     for(const event of battle.events) {

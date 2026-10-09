@@ -1,8 +1,8 @@
 // Task list, project filter, task dialog, and task actions.
-import * as E from './engine.js?v=0.11.0';
-import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.11.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.11.0';
-import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.11.0';
+import * as E from './engine.js?v=0.12.0';
+import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.12.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.12.0';
+import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.12.0';
 
 const inProject = t => !app.taskProject || E.tags(t.title).includes(app.taskProject);
 // Open tasks per project tag, in order of first appearance.
@@ -95,7 +95,7 @@ export const modals = {
       .join('');
     return modalShell(
       t ? 'Edit task' : 'A little thing to do',
-      `<form id="task-form" class="form-body"><label>What’s on your mind?<input name="title" required maxlength="160" placeholder="Give this task a name" value="${esc(t?.title || app.modal.prefill || '')}" autofocus></label><p class="form-help">Add a #tag to group tasks into a project.</p><div class="form-grid"><label>How much does it ask of you?<select name="tier" ${t?.done ? 'disabled' : ''}>${tiers}</select></label><label>Repeats<select name="repeat">${repeats}</select></label></div><p class="form-help" id="repeat-help">${t?.repeat ? 'Earns gold each time. After you complete it, it comes back on its next date. Missed days don’t pile up.' : 'A repeating task earns gold each time and comes back on its next date.'}</p>${t?.inbox ? '<label class="checkbox-label"><input type="checkbox" name="sort" checked>Move out of the task inbox</label>' : ''}<div class="form-actions">${t ? `<button type="button" class="button danger subtle" data-action="delete-task" data-id="${t.id}">Delete task</button>` : '<span></span>'}<button class="button primary" type="submit">${t ? 'Save changes' : 'Add task'}${icon('plus')}</button></div></form>`,
+      `<form id="task-form" class="form-body"><label>What’s on your mind?<input name="title" required maxlength="160" placeholder="Give this task a name" value="${esc(t?.title || app.modal.prefill || '')}" autofocus></label><p class="form-help">Add a #tag to group tasks into a project.</p><div class="form-grid"><label>How much does it ask of you?<select name="tier" ${t?.done ? 'disabled' : ''}>${tiers}</select></label><label>Repeats<select name="repeat">${repeats}</select></label></div><p class="form-help" id="repeat-help">${t?.repeat ? 'Earns gold each time. After you complete it, it comes back on its next date. Missed days don’t pile up.' : 'A repeating task earns gold each time and comes back on its next date.'}</p>${t?.inbox ? '<label class="checkbox-label"><input type="checkbox" name="sort" checked>Move out of the task inbox</label>' : ''}<div class="form-actions">${t ? `<span class="task-form-secondary"><button type="button" class="button danger subtle" data-action="delete-task" data-id="${t.id}">Delete task</button>${!t.done ? `<button type="button" class="button secondary subtle" data-action="task-to-vault" data-id="${t.id}" title="Take it off your list and keep it in the Vault to look into later">${icon('vault')}Move to Vault</button>` : ''}</span>` : '<span></span>'}<button class="button primary" type="submit">${t ? 'Save changes' : 'Add task'}${icon('plus')}</button></div></form>`,
     );
   },
 };
@@ -149,6 +149,15 @@ export const actions = {
     setTimeout(finish, 430);
   },
 
+  'task-to-vault'(b, { id }) {
+    const moved = commit(() => E.returnTaskToVault(app.state, id));
+    if (!moved) return;
+    closeModal();
+    sound('note');
+    toast('Moved to the Vault to look at later. It’s waiting in Needs review.', () =>
+      commit(() => E.undoReturnTaskToVault(app.state, moved.undo)),
+    );
+  },
   'delete-task'(b, { id }) {
     commit(() => {
       app.state.tasks = app.state.tasks.filter(t => t.id !== id);

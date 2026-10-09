@@ -143,6 +143,31 @@ uiTest('a level-up shows its banner, glowing stat chip, and toast', async page =
   assert.match(await page.text('#toasts'), /Soul reached level 2/);
 });
 
+uiTest('a task can move back to the Vault and return with its settings, with Undo', async page => {
+  await page.open();
+  const id = await page.evaluate(() => document.querySelector('#app [data-action="edit-task"]').dataset.id);
+  await page.click(`#app [data-action="edit-task"][data-id="${id}"]`);
+  await page.click('[data-action="task-to-vault"]');
+  await page.waitFor(() => !document.querySelector('#task-form'));
+  let s = await page.save();
+  assert.ok(!s.tasks.some(t => t.id === id));
+  const note = s.notes.find(n => n.status === 'inbox' && n.taskTitle);
+  assert.ok(note, 'the task is waiting in Needs review');
+  await page.click('#toasts .toast button');
+  await page.waitFor(id => JSON.parse(localStorage.getItem('twesk.v1')).tasks.some(t => t.id === id), { args: [id] });
+  assert.equal((await page.save()).notes.length, 0, 'Undo removes the note again');
+  await page.click(`#app [data-action="edit-task"][data-id="${id}"]`);
+  await page.click('[data-action="task-to-vault"]');
+  await page.press('j', ['Meta']);
+  await page.waitFor(() => document.querySelector('.vault-modal'));
+  assert.match(await page.text('#vault-results .note-card'), /WAS A TASK/);
+  await page.click('#vault-results [data-action="convert-note"]');
+  await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).tasks.length === 3);
+  s = await page.save();
+  assert.equal(s.tasks[0].title, 'Reply to that email');
+  assert.equal(s.tasks[0].tier, 'quick');
+});
+
 uiTest('quick capture with ⌘K, then one-by-one Vault review with keyboard keys', async page => {
   await page.open();
   for (const text of ['Book flights #trip', 'Idea for chapter two #thesis']) {

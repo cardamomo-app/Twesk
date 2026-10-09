@@ -1,4 +1,4 @@
-import {avatarGeometry} from './avatar-model.js?v=0.15.2';
+import {avatarGeometry} from './avatar-model.js?v=0.16.0';
 import {createCuboidScene,visibleCuboidFaces} from './cuboid-renderer.js';
 
 const weaponParts=new Set(['sword grip','pommel','crossguard','blade','blade ridge','sword point','sword tip','blade shoulders','blade rune','guard wing']);
@@ -116,23 +116,55 @@ function pet(item){
   }
   return boxes;
 }
-export function itemArt(item) {
-  const key=item.id;
+// Pet hats: unit geometry (a 12×12 footprint centered on the origin, base at z 0) placed on each pet's head.
+function hatBoxes(hat) {
+  const boxes=[],add=(x,y,z,w,d,h,color)=>boxes.push({x,y,z,w,d,h,color,part:'pet hat'});
+  if(hat.id==='party-hat'){
+    [[12,'#7964c8'],[10,'#f2c14e'],[8,'#7964c8'],[6,'#f2c14e'],[4,'#7964c8']].forEach(([w,c],i)=>add(-w/2,-w/2,i*3,w,w,3,c));
+    add(-2,-2,15,4,4,3,'#ffffff');
+  }else if(hat.id==='top-hat'){
+    add(-8,-8,0,16,16,2,'#2b2b33');add(-5,-5,2,10,10,12,'#33323d');add(-5.2,-5.2,3,10.4,10.4,2,'#c45c3b');add(-5,-5,14,10,10,1,'#3d3c48');
+  }else if(hat.id==='flower-crown'){
+    add(-7,-7,0,14,2,2,'#6c9a5a');add(-7,5,0,14,2,2,'#6c9a5a');add(-7,-5,0,2,10,2,'#6c9a5a');add(5,-5,0,2,10,2,'#6c9a5a');
+    [[-6,-7,'#f4b6c8'],[0,-8,'#f8d16a'],[5,-7,'#ffffff'],[-7,1,'#f8d16a'],[6,1,'#f4b6c8'],[0,6,'#ffffff']].forEach(([x,y,c])=>{add(x-1.5,y-1.5,1,3,3,3,c);add(x-0.5,y-0.5,4,1,1,1,'#e2a23b');});
+  }else{
+    add(-6,-6,0,12,12,3,'#e2b84f');add(-6.2,-6.2,1,12.4,12.4,1,'#c9962e');
+    for(const [x,y] of [[-6,-6],[4,-6],[-6,4],[4,4],[-1,-6.5]])add(x,y,3,2,2,4,'#e2b84f');
+    for(const [x,y] of [[-6,-6],[4,-6],[-6,4],[4,4]])add(x+0.5,y+0.5,7,1,1,1,'#fff0b8');
+    add(-1.5,-6.6,1,3,1,2,'#d0485e');
+  }
+  return boxes;
+}
+// Where a hat sits on each pet's head (between ears, tufts, or horns), and how large it is.
+const HAT_SPOTS={owl:{x:0,y:-1,z:60,scale:1},fox:{x:0,y:12,z:52,scale:.85},cat:{x:0,y:12,z:52,scale:.85},tortoise:{x:0,y:22,z:20,scale:.55},drake:{x:0,y:17,z:46,scale:.65}};
+function illustrate(key,item,boxes,{fitBoxes=boxes,label='',viewBox='20 40 200 200'}={}){
   if(illustrations.has(key))return illustrations.get(key);
-  const parts=item.type==='weapon'?weaponParts:item.type==='helmet'?helmetParts:armorParts;
-  let boxes=item.type==='potion'?potion(item):item.type==='spell'?spell(item):item.type==='pet'?pet(item):item.type==='delight'?delight(item):avatarGeometry(item.type==='weapon'?item:null,item.type==='armor'?item:null,undefined,item.type==='helmet'?item:null).filter(b=>parts.has(b.part));
-  // Showcase the actual equipped geometry, recentered on a small display stand.
-  const minX=Math.min(...boxes.map(b=>b.x)),maxX=Math.max(...boxes.map(b=>b.x+b.w));
-  const floor=Math.min(...boxes.map(b=>b.z)),ceiling=Math.max(...boxes.map(b=>b.z+b.h));
+  // Showcase the geometry recentered on a small display stand. Size comes from fitBoxes, so a hat
+  // added to a pet does not shrink the pet.
+  const minX=Math.min(...fitBoxes.map(b=>b.x)),maxX=Math.max(...fitBoxes.map(b=>b.x+b.w));
+  const floor=Math.min(...fitBoxes.map(b=>b.z)),ceiling=Math.max(...fitBoxes.map(b=>b.z+b.h));
   const scale=Math.min(78/(ceiling-floor),68/(maxX-minX));
   // The fox's offset tail should not pull its paws away from the ground's center.
-  const anchors=['fox','drake','tortoise'].includes(item.id)?boxes.filter(b=>b.part==='pet paws'):boxes;
+  const anchors=['fox','drake','tortoise'].includes(item.id)?fitBoxes.filter(b=>b.part==='pet paws'):fitBoxes;
   const centerX=(Math.min(...anchors.map(b=>b.x))+Math.max(...anchors.map(b=>b.x+b.w)))/2;
   const centerY=(Math.min(...anchors.map(b=>b.y))+Math.max(...anchors.map(b=>b.y+b.d)))/2;
   boxes=boxes.map(b=>({...b,x:(b.x-centerX)*scale,y:(b.y-centerY)*scale,z:(b.z-floor)*scale+8,w:b.w*scale,d:b.d*scale,h:b.h*scale}));
   const accent=item.type==='potion'?'#b6a4c5':item.type==='delight'?'#f2b8c6':item.tier==='legendary'?'#e2b84f':item.tier==='special'?'#b5a7d7':item.tier==='large'?'#93aaa0':'#b8a789';
   boxes.unshift({x:-25,y:-19,z:0,w:50,d:38,h:4,color:'#b8b6ad',part:'display stand'},{x:-26,y:-20,z:4,w:52,d:40,h:3,color:'#ddd9cc',part:'stand rim'},{x:-23,y:-17,z:7,w:46,d:34,h:1,color:accent,part:'stand inset'});
   const faces=visibleCuboidFaces(createCuboidScene(boxes),-.55);
-  const illustration=`<svg class="equipment-art voxel-art ${item.type}" viewBox="20 40 200 200" aria-hidden="true"><ellipse cx="120" cy="226" rx="50" ry="9" fill="currentColor" opacity=".07"/>${faces.map(f=>`<polygon points="${f.projected.map(p=>p.map(n=>n.toFixed(2)).join(',')).join(' ')}" fill="${tint(f.color,f.light)}"/>`).join('')}</svg>`;
+  const illustration=`<svg class="equipment-art voxel-art ${item.type}" viewBox="${viewBox}" aria-hidden="true"${label}><ellipse cx="120" cy="226" rx="50" ry="9" fill="currentColor" opacity=".07"/>${faces.map(f=>`<polygon points="${f.projected.map(p=>p.map(n=>n.toFixed(2)).join(',')).join(' ')}" fill="${tint(f.color,f.light)}"/>`).join('')}</svg>`;
   illustrations.set(key,illustration);return illustration;
+}
+export function itemArt(item) {
+  if(illustrations.has(item.id))return illustrations.get(item.id);
+  const parts=item.type==='weapon'?weaponParts:item.type==='helmet'?helmetParts:armorParts;
+  const boxes=item.type==='potion'?potion(item):item.type==='spell'?spell(item):item.type==='pet'?pet(item):item.type==='delight'?delight(item):item.type==='pethat'?hatBoxes(item).map(b=>({...b,x:b.x*2.4,y:b.y*2.4,z:b.z*2.4,w:b.w*2.4,d:b.d*2.4,h:b.h*2.4})):avatarGeometry(item.type==='weapon'?item:null,item.type==='armor'?item:null,undefined,item.type==='helmet'?item:null).filter(b=>parts.has(b.part));
+  return illustrate(item.id,item,boxes);
+}
+// A companion wearing a hat: the pet keeps its usual size and the hat sits on its head.
+export function petArt(companion,hat=null) {
+  if(!hat)return itemArt(companion);
+  const body=pet(companion),spot=HAT_SPOTS[companion.id]||{x:0,y:0,z:Math.max(...body.map(b=>b.z+b.h)),scale:1};
+  const crown=hatBoxes(hat).map(b=>({...b,x:spot.x+b.x*spot.scale,y:spot.y+b.y*spot.scale,z:spot.z+b.z*spot.scale,w:b.w*spot.scale,d:b.d*spot.scale,h:b.h*spot.scale}));
+  return illustrate(`${companion.id}+${hat.id}`,companion,[...body,...crown],{fitBoxes:body,viewBox:'20 22 200 218'});
 }

@@ -393,15 +393,21 @@ uiTest(
       const b = [...document.querySelectorAll('.balloon')].find(b => b.getBoundingClientRect().top < innerHeight - 60);
       b.dataset.target = '1';
     });
-    await page.click('.balloon[data-target="1"]');
+    await page.click('.balloon[data-target="1"]', { moving: true });
     assert.equal(await page.count('.balloon'), 13, 'a clicked balloon pops');
     await page.press('Escape');
     assert.ok(!(await page.exists('#delight-layer')), 'Escape ends the delight');
     await openDelights();
     await page.click('[data-action="use-delight"][data-id="disco"]');
-    await page.waitFor(() => document.querySelector('.disco-ball') && document.querySelector('#app .avatar-scene.dancing'));
+    await page.waitFor(() => document.querySelector('.disco-ball') && document.body.classList.contains('disco-dancing'));
+    const dancing = await page.evaluate(() =>
+      ['#app .avatar-scene svg.avatar-art', '#app .monster-scene .monster-art'].map(sel => getComputedStyle(document.querySelector(sel)).animationName),
+    );
+    assert.deepEqual(dancing, ['dance', 'monster-dance'], 'the character and the monster both dance');
+    await page.click('#app [data-action="toggle-task"]');
+    await page.waitFor(() => getComputedStyle(document.querySelector('#app .monster-scene .monster-art')).animationName === 'monster-dance', { message: 'still dancing after a redraw' });
     await page.press('Escape');
-    assert.ok(!(await page.exists('.dancing')), 'the dance stops with the party');
+    assert.ok(!(await page.evaluate(() => document.body.classList.contains('disco-dancing'))), 'the dance stops with the party');
     await openDelights();
     await page.click('[data-action="use-delight"][data-id="drift"]');
     await page.waitFor(() => document.querySelector('#ambience i'));
@@ -423,6 +429,24 @@ uiTest('with Reduce motion, a delight becomes a gentle glow', async page => {
   await page.click('[data-action="use-delight"][data-id="fireworks"]');
   await page.waitFor(() => document.querySelector('#delight-layer.gentle'));
   assert.equal(await page.count('.rocket, .spark'), 0);
+});
+
+uiTest('pet hats are sold in the Pets tab and show on the companion', async page => {
+  const s = E.freshState();
+  s.gold = 500;
+  s.inventory = ['fox'];
+  s.activePet = 'fox';
+  await page.open({ save: s });
+  const bare = await page.evaluate(() => document.querySelector('#app .pet-companion').innerHTML);
+  await page.click('#app .character-actions [data-action="shop"]');
+  await page.click('[data-action="shop-tab"][data-category="pet"]');
+  assert.equal(await page.count('.shop-item.pethat'), 4);
+  await page.click('[data-action="buy"][data-id="party-hat"]');
+  await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).petHat === 'party-hat');
+  assert.match(await page.evaluate(() => document.querySelector('#app .pet-companion').getAttribute('aria-label')), /Fern fox companion wearing a party hat/);
+  assert.notEqual(await page.evaluate(() => document.querySelector('#app .pet-companion').innerHTML), bare, 'the hat is drawn');
+  await page.click('[data-action="equip"][data-id="party-hat"]');
+  await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).petHat === null);
 });
 
 uiTest('the character studio previews a locked style without saving, then buys it', async page => {

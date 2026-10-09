@@ -180,7 +180,8 @@ async function openPage({ send, listeners }, { origin, width = 1280, height = 90
     text: selector => evaluate(s => document.querySelector(s)?.textContent.trim() ?? null, selector),
     count: selector => evaluate(s => document.querySelectorAll(s).length, selector),
     // A real mouse click at the element's center, so overlays and hit-testing count.
-    async click(selector) {
+    // moving: true clicks a target that never holds still (like a rising balloon) once it is under the pointer.
+    async click(selector, { moving = false } = {}) {
       // Click only once the element is really what sits under the pointer (not covered, not mid-animation),
       // as a person would. Two matching measurements in a row mean it has stopped moving.
       let last = null;
@@ -193,7 +194,7 @@ async function openPage({ send, listeners }, { origin, width = 1280, height = 90
         const x = r.left + r.width / 2, y = r.top + r.height / 2, hit = document.elementFromPoint(x, y);
         return el === hit || el.contains(hit) ? { x: Math.round(x), y: Math.round(y) } : { covered: hit?.outerHTML.slice(0, 80) || 'nothing' };
       }, { message: `clickable ${selector}`, args: [selector], accept: value => {
-        const stable = value && !value.covered && last && last.x === value.x && last.y === value.y;
+        const stable = value && !value.covered && (moving || (last && last.x === value.x && last.y === value.y));
         last = value;
         return stable;
       } });

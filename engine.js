@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.15.2';
-import {validHabitIcon} from './habit-icons.js?v=0.15.2';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.16.0';
+import {validHabitIcon} from './habit-icons.js?v=0.16.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -46,7 +46,7 @@ export function freshState() {
       habit('Mindless scrolling', 'harm', 3), habit('Fast food', 'harm', 7),
     ],
     notes: [], noteGold: {}, reviewDates: [], inventory: [], equipped: { weapon: null, armor: null, helmet: null }, potions: 0,
-    supplies: {}, preparedSpell: null, tonic: null, activePet: null, wardrobe: [], history: {}, ambience: null,
+    supplies: {}, preparedSpell: null, tonic: null, activePet: null, wardrobe: [], history: {}, ambience: null, petHat: null,
     progress: createProgress(),
     monster: { number: 1, defeatedOn: null }, battles: [], pendingRecovery: false,
     settings: { theme: 'light', muted: false, reducedMotion: false, timezone: deviceTimezone(), lastBackup: null, backupNudge: null },
@@ -379,6 +379,10 @@ export const SHOP = [
   { id: 'drift', name: 'Seasonal drift', type: 'delight', tier: 'large', price: 20, bonus: 0, description: 'Blossoms, leaves, or snow drift over your dashboard for the rest of the day' },
   { id: 'fireworks', name: 'Fireworks show', type: 'delight', tier: 'special', price: 35, bonus: 0, description: 'Night falls for a moment of rockets, bursts, and crackles' },
   { id: 'disco', name: 'Disco party', type: 'delight', tier: 'legendary', price: 60, bonus: 0, description: 'A disco ball, sweeping lights, a little groove, and a dance' },
+  { id: 'party-hat', name: 'Party hat', type: 'pethat', tier: 'basic', price: 40, bonus: 0, description: 'A striped cone with a pompom · fits every companion' },
+  { id: 'flower-crown', name: 'Flower crown', type: 'pethat', tier: 'large', price: 60, bonus: 0, description: 'A ring of little blossoms · fits every companion' },
+  { id: 'top-hat', name: 'Top hat', type: 'pethat', tier: 'large', price: 80, bonus: 0, description: 'Very distinguished · fits every companion' },
+  { id: 'tiny-crown', name: 'Tiny crown', type: 'pethat', tier: 'special', price: 120, bonus: 0, description: 'Gold, with a single ruby · fits every companion' },
 ];
 export const isConsumable = item => ['potion','spell','delight'].includes(item.type);
 export const itemCount = (s,id) => id==='potion' ? s.potions : (s.supplies?.[id] || (s.inventory.includes(id)?1:0));
@@ -402,6 +406,7 @@ export function buy(s, id) {
   else {
     s.inventory.push(id);
     if(item.type==='pet') { if(!s.activePet)s.activePet=id; }
+    else if(item.type==='pethat') { if(!s.petHat)s.petHat=id; }
     else if (!s.equipped[item.type]) setGear(s,item.type,id);
   }
   return item;
@@ -411,6 +416,8 @@ export function equip(s,id) {
   const item = SHOP.find(i => i.id === id);
   if(!item||isConsumable(item))throw new Error('Choose equipment or a companion.');
   if(item.type==='pet') { s.activePet=s.activePet===id?null:id; return; }
+  // Pet hats are cosmetic, one at a time, and stay on when you switch companions.
+  if(item.type==='pethat') { s.petHat=s.petHat===id?null:id; return; }
   setGear(s,item.type,s.equipped[item.type] === id ? null : id);
 }
 // Cosmetics: priced appearance options are bought once into the wardrobe, as "key:id".
@@ -603,9 +610,10 @@ export function validateState(value) {
   if (!s.monster||!integer(s.monster.number,1,500)||(s.monster.defeatedOn!==null&&!date(s.monster.defeatedOn))) fail();
   if (!integer(s.potions)||typeof s.pendingRecovery!=='boolean'||!s.noteGold||typeof s.noteGold!=='object'||Array.isArray(s.noteGold)) fail();
   if (!Object.entries(s.noteGold).every(([k,v])=>date(k)&&integer(v,0,6))||!s.reviewDates.every(date)) fail();
-  s.supplies ??= {};s.ambience ??= null;s.preparedSpell ??= null;s.activePet ??= null;s.tonic ??= null;s.wardrobe ??= [];if(s.equipped&&s.equipped.helmet===undefined)s.equipped.helmet=null;
+  s.supplies ??= {};s.ambience ??= null;s.petHat ??= null;s.preparedSpell ??= null;s.activePet ??= null;s.tonic ??= null;s.wardrobe ??= [];if(s.equipped&&s.equipped.helmet===undefined)s.equipped.helmet=null;
   if(typeof s.supplies!=='object'||Array.isArray(s.supplies)||!Object.entries(s.supplies).every(([id,n])=>id!=='potion'&&SHOP.some(i=>i.id===id&&isConsumable(i))&&integer(n)))fail();
   if(s.preparedSpell!==null&&(!preparedSpell(s)||!itemCount(s,s.preparedSpell)))fail();
+  if(s.petHat!==null&&(!s.inventory.includes(s.petHat)||!SHOP.some(i=>i.id===s.petHat&&i.type==='pethat')))fail();
   if(s.activePet!==null&&(!s.inventory.includes(s.activePet)||!SHOP.some(i=>i.id===s.activePet&&i.type==='pet')))fail();
   if (!s.equipped||!s.inventory.every(id=>SHOP.some(i=>i.id===id&&!isConsumable(i)))||new Set(s.inventory).size!==s.inventory.length) fail();
   if(s.tonic!==null&&!activeTonic(s))fail();

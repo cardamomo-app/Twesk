@@ -1,13 +1,13 @@
 // Shop and inventory: buying, equipping, potions, spells, and pets.
-import * as E from './engine.js?v=0.15.2';
-import { avatarFaceArt, itemArt, monsterName } from './art.js?v=0.15.2';
+import * as E from './engine.js?v=0.16.0';
+import { avatarFaceArt, itemArt, monsterName, petArt } from './art.js?v=0.16.0';
 import { APPEARANCE, APPEARANCE_LABELS } from './appearance.js';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.15.2';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.15.2';
-import { burst, countUp, sound } from './ui-effects.js?v=0.15.2';
-import { potionCount } from './ui-character.js?v=0.15.2';
-import { playDelight } from './ui-delights.js?v=0.15.2';
-import { percent, requestOdds } from './ui-odds.js?v=0.15.2';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.16.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.16.0';
+import { burst, countUp, sound } from './ui-effects.js?v=0.16.0';
+import { potionCount } from './ui-character.js?v=0.16.0';
+import { playDelight } from './ui-delights.js?v=0.16.0';
+import { percent, requestOdds } from './ui-odds.js?v=0.16.0';
 // Odds are compared against the next opponent, at full health when currently at 0 HP.
 function comparisonBase() {
   const s = app.state;
@@ -24,7 +24,9 @@ const inUse = item =>
       ? app.state.tonic === item.id
       : item.type === 'pet'
         ? app.state.activePet === item.id
-        : app.state.equipped[item.type] === item.id;
+        : item.type === 'pethat'
+          ? app.state.petHat === item.id
+          : app.state.equipped[item.type] === item.id;
 const STAT_LABELS = [
   ['attack', 'attack', n => n],
   ['armor', 'blocked per hit', n => n],
@@ -119,8 +121,10 @@ function renderStyle(inventory) {
 function renderShop(inventory) {
   queueMicrotask(fillComparisons);
   const items = E.SHOP.filter(
-    i => i.type === app.shopCategory && (!inventory || E.itemCount(app.state, i.id) > 0),
-  ).sort((a, b) => a.price - b.price);
+    i =>
+      (i.type === app.shopCategory || (app.shopCategory === 'pet' && i.type === 'pethat')) &&
+      (!inventory || E.itemCount(app.state, i.id) > 0),
+  ).sort((a, b) => (a.type === 'pethat') - (b.type === 'pethat') || a.price - b.price);
   const labels = {
     weapon: 'One weapon at a time. New weapons fill an empty slot automatically.',
     armor: 'One armor at a time. New armor fills an empty slot automatically.',
@@ -180,14 +184,25 @@ function renderShop(inventory) {
                           ? selected
                             ? 'Prepared · put away'
                             : 'Prepare for fight'
-                          : i.type === 'pet'
+                          : i.type === 'pethat'
                             ? selected
-                              ? 'Companion · remove'
-                              : 'Choose companion'
-                            : selected
-                              ? 'Equipped · remove'
-                              : 'Equip';
-                return `<article class="shop-item ${i.tier} ${i.type} ${owned ? 'owned' : ''} ${selected ? 'item-selected' : ''}">${count ? `<span class="item-count">${consumable ? count + ' owned' : selected ? icon('check') + 'Selected' : 'Owned'}</span>` : ''}<div class="item-art">${itemArt(i)}</div><div class="item-copy"><span class="item-tier">${i.type === 'pet' ? `COMPANION · ${i.tier.toUpperCase()}` : i.type === 'spell' || i.tonic ? 'ONE FIGHT' : i.tier.toUpperCase()}</span><h3>${esc(i.name)}</h3><p>${esc(i.description)}</p></div>${comparison(i)}${!inventory ? `<button class="button secondary" data-action="buy" data-id="${i.id}" aria-label="${owned ? esc(i.name) + ' owned' : 'Buy ' + esc(i.name) + ' for ' + i.price + ' gold'}" ${owned || app.state.gold < i.price ? 'disabled' : ''}>${owned ? icon('check') + 'Owned' : `Buy ${coin(i.price, true)}`}</button>` : ''}${count ? `<button class="button ${inventory ? 'primary' : 'item-use'}" data-action="${action}" data-id="${i.id}" aria-label="${i.type === 'delight' ? 'Set off' : i.type === 'potion' ? 'Use' : i.type === 'spell' ? (selected ? 'Put away' : 'Prepare') : selected ? 'Remove' : 'Equip'} ${esc(i.name)}" ${(i.type === 'delight' ? !!delightBlocked : i.tonic ? !!app.state.tonic : i.type === 'potion' && app.state.hp === E.maxHP(app.state)) ? 'disabled' : ''}>${!i.tonic && i.type === 'potion' && app.state.hp === E.maxHP(app.state) ? 'Full health' : useLabel}</button>` : ''}</article>`;
+                              ? 'Wearing · take off'
+                              : 'Put on companion'
+                            : i.type === 'pet'
+                              ? selected
+                                ? 'Companion · remove'
+                                : 'Choose companion'
+                              : selected
+                                ? 'Equipped · remove'
+                                : 'Equip';
+                return `<article class="shop-item ${i.tier} ${i.type} ${owned ? 'owned' : ''} ${selected ? 'item-selected' : ''}">${count ? `<span class="item-count">${consumable ? count + ' owned' : selected ? icon('check') + 'Selected' : 'Owned'}</span>` : ''}<div class="item-art">${
+                  i.type === 'pet' && app.state.petHat
+                    ? petArt(
+                        i,
+                        E.SHOP.find(h => h.id === app.state.petHat),
+                      )
+                    : itemArt(i)
+                }</div><div class="item-copy"><span class="item-tier">${i.type === 'pethat' ? 'PET HAT' : i.type === 'pet' ? `COMPANION · ${i.tier.toUpperCase()}` : i.type === 'spell' || i.tonic ? 'ONE FIGHT' : i.tier.toUpperCase()}</span><h3>${esc(i.name)}</h3><p>${esc(i.description)}</p></div>${comparison(i)}${!inventory ? `<button class="button secondary" data-action="buy" data-id="${i.id}" aria-label="${owned ? esc(i.name) + ' owned' : 'Buy ' + esc(i.name) + ' for ' + i.price + ' gold'}" ${owned || app.state.gold < i.price ? 'disabled' : ''}>${owned ? icon('check') + 'Owned' : `Buy ${coin(i.price, true)}`}</button>` : ''}${count ? `<button class="button ${inventory ? 'primary' : 'item-use'}" data-action="${action}" data-id="${i.id}" aria-label="${i.type === 'delight' ? 'Set off' : i.type === 'potion' ? 'Use' : i.type === 'spell' ? (selected ? 'Put away' : 'Prepare') : selected ? 'Remove' : 'Equip'} ${esc(i.name)}" ${(i.type === 'delight' ? !!delightBlocked : i.tonic ? !!app.state.tonic : i.type === 'potion' && app.state.hp === E.maxHP(app.state)) ? 'disabled' : ''}>${!i.tonic && i.type === 'potion' && app.state.hp === E.maxHP(app.state) ? 'Full health' : useLabel}</button>` : ''}</article>`;
               })
               .join('')
           : `<div class="empty-state"><span class="empty-symbol">${icon(shopTabs.find(t => t[0] === app.shopCategory)[2])}</span><h3>No ${shopTabs.find(t => t[0] === app.shopCategory)[1].toLowerCase()} in inventory</h3><button class="button primary" data-action="shop">Browse shop</button></div>`
@@ -287,11 +302,26 @@ export const actions = {
       return true;
     });
     if (result) {
-      const pet = E.SHOP.find(i => i.id === id)?.type === 'pet';
+      const kind = E.SHOP.find(i => i.id === id)?.type,
+        pet = kind === 'pet' || kind === 'pethat';
       sound(pet ? 'reward' : 'equip');
-      if (pet ? app.state.activePet === id : Object.values(app.state.equipped).includes(id))
+      if (
+        kind === 'pethat'
+          ? app.state.petHat === id
+          : pet
+            ? app.state.activePet === id
+            : Object.values(app.state.equipped).includes(id)
+      )
         flourish(id, 'xp');
-      toast(pet ? 'Companion updated.' : 'Equipment updated.');
+      toast(
+        kind === 'pethat'
+          ? app.state.petHat === id
+            ? 'Hat on. Very dapper.'
+            : 'Hat off.'
+          : pet
+            ? 'Companion updated.'
+            : 'Equipment updated.',
+      );
     }
   },
   potion(b, { a, id, sourceRect }) {

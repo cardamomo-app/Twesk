@@ -1,9 +1,9 @@
 // Delights: single-use moments of fun bought in the shop. They play over the app without blocking it
 // (only balloons can be clicked, to pop them) and Escape ends one early. Sounds follow Mute; with
 // Reduce motion, each becomes a gentle glow instead of moving particles.
-import { $, app, today } from './ui-core.js?v=0.15.2';
-import { burst, motionOK, sound } from './ui-effects.js?v=0.15.2';
-import { stopSfx } from './sfx.js?v=0.15.2';
+import { $, app, today } from './ui-core.js?v=0.16.0';
+import { burst, motionOK, sound } from './ui-effects.js?v=0.16.0';
+import { stopSfx } from './sfx.js?v=0.16.0';
 
 const COLORS = ['#e86f7f', '#6fa8e8', '#f2c14e', '#7fc9a0', '#b48be8', '#f29b6b'];
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -14,7 +14,8 @@ export function stopDelight() {
   for (const timer of current.timers) clearTimeout(timer);
   current.layer.remove();
   stopSfx('delight');
-  document.querySelectorAll('.dancing,.treat-hop').forEach(el => el.classList.remove('dancing', 'treat-hop'));
+  document.body.classList.remove('disco-dancing');
+  document.querySelectorAll('.treat-hop').forEach(el => el.classList.remove('treat-hop'));
   current = null;
 }
 export const delightPlaying = () => !!current;
@@ -109,8 +110,8 @@ function disco(layer, after) {
       .map((c, i) => `<div class="beam" style="--color:${c};--i:${i}"></div>`)
       .join('') +
     '<div class="disco-sparkles"></div>';
-  $('#app .avatar-scene')?.classList.add('dancing');
-  $('#app .pet-companion')?.classList.add('dancing');
+  // On the page rather than on elements, so the dance survives dashboard redraws.
+  document.body.classList.add('disco-dancing');
   sound('disco', { channel: 'delight', bars: 6 });
   after(12800);
 }

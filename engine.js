@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.13.2';
-import {validHabitIcon} from './habit-icons.js?v=0.13.2';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.13.3';
+import {validHabitIcon} from './habit-icons.js?v=0.13.3';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -287,15 +287,15 @@ export function undoReturnTaskToVault(s, undo) {
   s.tasks.splice(Math.min(undo.index, s.tasks.length), 0, undo.task);
   return undo.task;
 }
-// Keep each hashtag only where it first appears (case-insensitive). Lines that lose a tag are tidied,
-// and a line left empty is dropped; untouched lines stay exactly as written.
+// Keep each hashtag only at its last appearance (case-insensitive), so tags gather toward the end.
+// Lines that lose a tag are tidied, and a line left empty is dropped; untouched lines stay exactly as written.
 export function dedupeTags(text) {
-  const seen = new Set();
-  const lines = text.split('\n').flatMap(line => {
-    let changed = false;
-    const next = line.replace(/(^|[ \t])(#[\p{L}\p{N}_-]+)/gu, (match, space, tag) => {
-      const key = tag.toLowerCase();
-      if (!seen.has(key)) { seen.add(key); return match; }
+  const TAG = /(^|[ \t])(#[\p{L}\p{N}_-]+)/gu, lines = text.split('\n'), last = new Map();
+  lines.forEach((line, row) => { let n = 0; for (const m of line.matchAll(TAG)) last.set(m[2].toLowerCase(), `${row}:${n++}`); });
+  const kept = lines.flatMap((line, row) => {
+    let n = 0, changed = false;
+    const next = line.replace(TAG, (match, space, tag) => {
+      if (last.get(tag.toLowerCase()) === `${row}:${n++}`) return match;
       changed = true;
       return space;
     });
@@ -303,7 +303,7 @@ export function dedupeTags(text) {
     const tidy = next.replace(/[ \t]{2,}/g, ' ').replace(/[ \t]+([.,;:!?])/g, '$1').trim();
     return tidy ? [tidy] : [];
   });
-  return lines.join('\n').replace(/\n{3,}/g, '\n\n').replace(/^\n+|\n+$/g, '');
+  return kept.join('\n').replace(/\n{3,}/g, '\n\n').replace(/^\n+|\n+$/g, '');
 }
 // Merge several notes into the oldest one: their texts in order, oldest first, separated by a blank line.
 // The survivor keeps its date and task link; it stays pinned if any was. No new note gold is earned.

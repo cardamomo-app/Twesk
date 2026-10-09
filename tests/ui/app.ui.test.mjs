@@ -264,7 +264,7 @@ uiTest('selected notes merge into one with paragraph breaks, and Undo restores t
   await page.click('.vault-merge');
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).notes.length === 2);
   const merged = (await page.save()).notes.find(n => n.text.startsWith('Paint'));
-  assert.equal(merged.text, 'Paint the shed #garden\n\nUse the sage green');
+  assert.equal(merged.text, 'Paint the shed\n\nUse the sage green #garden');
   assert.equal(await page.count('#vault-results .note-card.selected'), 0, 'the selection clears after merging');
   await page.click('#toasts .toast button');
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).notes.length === 3);

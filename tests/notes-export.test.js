@@ -17,6 +17,12 @@ test('note text is tidied without losing its paragraphs',()=>{
   assert.equal(tidyText('  Line one   \r\nLine two\r\n\r\n\r\n\r\nNew paragraph  \n'),'Line one\nLine two\n\nNew paragraph');
   assert.match(notesToText([note('Only one','2026-10-01T09:00:00Z')],{timeZone:'UTC'}),/^Twesk notes · 1 note ·/);
 });
+test('a journal-only export reads as a journal',()=>{
+  const text=notesToText([note('Calm morning','2026-10-02T08:00:00Z','journal'),note('Long day','2026-10-01T20:00:00Z','journal')],{timeZone:'UTC',exportedAt:'2026-10-09T10:00:00Z'});
+  assert.match(text,/^Twesk journal · 2 entries · exported/);
+  assert.doesNotMatch(text,/· Journal/,'no redundant per-entry label');
+  assert.ok(text.indexOf('Long day')<text.indexOf('Calm morning'));
+});
 test('dates follow the chosen timezone',()=>{
   const late=note('Late night','2026-10-01T23:30:00Z');
   assert.match(notesToText([late],{timeZone:'UTC'}),/October 1, 2026/);

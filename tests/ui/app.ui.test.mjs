@@ -175,6 +175,7 @@ uiTest('reviewed notes can be selected and downloaded together as one text file'
     note.created = created;
     note.status = 'kept';
   }
+  E.saveNote(s, { text: 'Rainy walk, clear head', kind: 'journal' }, '2026-10-02');
   await page.open({ save: s });
   // Capture the downloaded file's text (downloads are blocked during tests).
   await page.evaluate(() => {
@@ -198,6 +199,15 @@ uiTest('reviewed notes can be selected and downloaded together as one text file'
   assert.doesNotMatch(text, /Unrelated/);
   await page.click('[data-action="vault-select-done"]');
   assert.ok(await page.exists('#vault-results [data-action="edit-note"]'), 'normal note actions return');
+  // The Journal tab offers the same, and exports read as a journal.
+  await page.click('[data-action="vault-filter"][data-filter="journal"]');
+  await page.click('[data-action="vault-select"]');
+  await page.click('[data-action="vault-select-all"]');
+  await page.evaluate(() => (window.__exported = null));
+  await page.click('[data-action="vault-export"]');
+  const journal = await page.waitFor(() => window.__exported);
+  assert.match(journal, /^Twesk journal · 1 entry ·/);
+  assert.match(journal, /Rainy walk, clear head/);
 });
 
 uiTest('quick capture with ⌘K, then one-by-one Vault review with keyboard keys', async page => {

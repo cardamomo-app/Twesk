@@ -1,9 +1,9 @@
 // Habit categories, the habit dialog, and habit/harm logging.
-import * as E from './engine.js?v=0.12.1';
-import { HABIT_ICONS, habitIconChoice, resolvedHabitIcon, validHabitIcon } from './habit-icons.js?v=0.12.1';
-import { $, app, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.12.1';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.12.1';
-import { burst, celebrateLevel, rewardEffect, sound } from './ui-effects.js?v=0.12.1';
+import * as E from './engine.js?v=0.12.2';
+import { HABIT_ICONS, habitIconChoice, resolvedHabitIcon, validHabitIcon } from './habit-icons.js?v=0.12.2';
+import { $, app, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.12.2';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.12.2';
+import { burst, celebrateLevel, rewardEffect, sound } from './ui-effects.js?v=0.12.2';
 export function renderCategory(cat) {
   const meta = E.CATEGORY_META[cat],
     harm = cat === 'harm',

@@ -21,11 +21,21 @@ export function tidyText(text) {
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
+export const isJournalExport = notes => notes.length > 0 && notes.every(n => n.kind === 'journal');
 export function notesToText(notes, { timeZone = 'UTC', exportedAt = new Date().toISOString() } = {}) {
   const ordered = [...notes].sort((a, b) => a.created.localeCompare(b.created));
-  const header = `Twesk notes · ${ordered.length} ${ordered.length === 1 ? 'note' : 'notes'} · exported ${dateLabel(exportedAt, timeZone)}`;
+  // A journal-only export reads as a journal; a mixed one labels its journal entries.
+  const journal = isJournalExport(ordered);
+  const noun = journal
+    ? ordered.length === 1
+      ? 'entry'
+      : 'entries'
+    : ordered.length === 1
+      ? 'note'
+      : 'notes';
+  const header = `Twesk ${journal ? 'journal' : 'notes'} · ${ordered.length} ${noun} · exported ${dateLabel(exportedAt, timeZone)}`;
   const sections = ordered.map(note => {
-    const kind = note.kind === 'journal' ? ' · Journal' : '';
+    const kind = note.kind === 'journal' && !journal ? ' · Journal' : '';
     return `${dateLabel(note.created, timeZone)}${kind}\n\n${tidyText(note.text)}`;
   });
   return `${header}\n\n\n${sections.join(`\n\n\n${NOTE_DIVIDER}\n\n\n`)}\n`;

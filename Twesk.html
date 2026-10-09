@@ -3331,7 +3331,7 @@ Object.assign(exports,{renderCategory,modals,actions,forms,onChange});
 const E=require("engine.js");
 const { $, app, coin, esc, icon, modalShell, toast, today, view }=require("ui-core.js");
 const { closeModal, commit, openModal }=require("ui-modal.js");
-const { notesToText }=require("notes-export.js");
+const { isJournalExport, notesToText }=require("notes-export.js");
 const { sound }=require("ui-effects.js");
 const noteDate = n =>
   new Intl.DateTimeFormat('en', {
@@ -3379,11 +3379,11 @@ const visibleNotes = () =>
     )
     .sort((a, b) => !!b.pinned - !!a.pinned);
 // Reviewed notes can be selected and downloaded together as one text file.
-const canSelect = () => app.vaultFilter === 'kept';
+const canSelect = () => ['kept', 'journal'].includes(app.vaultFilter);
 function selectBar(notes) {
   if (!canSelect() || !notes.length) return '';
   if (!app.vaultSelecting)
-    return `<div class="vault-select-bar"><span>Download notes as a text file</span><button class="button secondary" data-action="vault-select">${icon('check')}Select</button></div>`;
+    return `<div class="vault-select-bar"><span>Download ${app.vaultFilter === 'journal' ? 'journal entries' : 'notes'} as a text file</span><button class="button secondary" data-action="vault-select">${icon('check')}Select</button></div>`;
   const count = notes.filter(n => app.vaultSelected.has(n.id)).length;
   return `<div class="vault-select-bar selecting" role="toolbar" aria-label="Selected notes"><span><strong>${count}</strong> selected</span><div><button class="text-button" data-action="vault-select-all">Select all</button>${count ? '<button class="text-button" data-action="vault-select-clear">Clear</button>' : ''}<button class="button primary" data-action="vault-export" ${count ? '' : 'disabled'}>${icon('download')}Download .txt</button><button class="button secondary" data-action="vault-select-done">Done</button></div></div>`;
 }
@@ -3537,11 +3537,19 @@ const actions = {
       url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' })),
       link = document.createElement('a');
     link.href = url;
-    link.download = `twesk-notes-${today()}.txt`;
+    const journal = isJournalExport(notes);
+    link.download = `twesk-${journal ? 'journal' : 'notes'}-${today()}.txt`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     sound('note');
-    toast(`Downloaded ${notes.length} ${notes.length === 1 ? 'note' : 'notes'} as one text file.`);
+    const noun = journal
+      ? notes.length === 1
+        ? 'journal entry'
+        : 'journal entries'
+      : notes.length === 1
+        ? 'note'
+        : 'notes';
+    toast(`Downloaded ${notes.length} ${noun} as one text file.`);
   },
   'vault-filter'(b, { a, id, sourceRect }) {
     app.vaultFilter = b.dataset.filter;
@@ -3705,17 +3713,27 @@ function tidyText(text) {
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
+const isJournalExport = notes => notes.length > 0 && notes.every(n => n.kind === 'journal');
 function notesToText(notes, { timeZone = 'UTC', exportedAt = new Date().toISOString() } = {}) {
   const ordered = [...notes].sort((a, b) => a.created.localeCompare(b.created));
-  const header = `Twesk notes · ${ordered.length} ${ordered.length === 1 ? 'note' : 'notes'} · exported ${dateLabel(exportedAt, timeZone)}`;
+  // A journal-only export reads as a journal; a mixed one labels its journal entries.
+  const journal = isJournalExport(ordered);
+  const noun = journal
+    ? ordered.length === 1
+      ? 'entry'
+      : 'entries'
+    : ordered.length === 1
+      ? 'note'
+      : 'notes';
+  const header = `Twesk ${journal ? 'journal' : 'notes'} · ${ordered.length} ${noun} · exported ${dateLabel(exportedAt, timeZone)}`;
   const sections = ordered.map(note => {
-    const kind = note.kind === 'journal' ? ' · Journal' : '';
+    const kind = note.kind === 'journal' && !journal ? ' · Journal' : '';
     return `${dateLabel(note.created, timeZone)}${kind}\n\n${tidyText(note.text)}`;
   });
   return `${header}\n\n\n${sections.join(`\n\n\n${NOTE_DIVIDER}\n\n\n`)}\n`;
 }
 
-Object.assign(exports,{NOTE_DIVIDER,tidyText,notesToText});
+Object.assign(exports,{NOTE_DIVIDER,tidyText,isJournalExport,notesToText});
 },
 "ui-character.js":function(require,exports){
 // The adventurer: dashboard card, rotatable model, appearance studio.

@@ -1,9 +1,9 @@
 // The Vault: notes, journal entries, quick capture, and recovery reflections.
-import * as E from './engine.js?v=0.12.1';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.12.1';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.12.1';
-import { notesToText } from './notes-export.js?v=0.12.1';
-import { sound } from './ui-effects.js?v=0.12.1';
+import * as E from './engine.js?v=0.12.2';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.12.2';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.12.2';
+import { isJournalExport, notesToText } from './notes-export.js?v=0.12.2';
+import { sound } from './ui-effects.js?v=0.12.2';
 const noteDate = n =>
   new Intl.DateTimeFormat('en', {
     month: 'short',
@@ -50,11 +50,11 @@ const visibleNotes = () =>
     )
     .sort((a, b) => !!b.pinned - !!a.pinned);
 // Reviewed notes can be selected and downloaded together as one text file.
-const canSelect = () => app.vaultFilter === 'kept';
+const canSelect = () => ['kept', 'journal'].includes(app.vaultFilter);
 function selectBar(notes) {
   if (!canSelect() || !notes.length) return '';
   if (!app.vaultSelecting)
-    return `<div class="vault-select-bar"><span>Download notes as a text file</span><button class="button secondary" data-action="vault-select">${icon('check')}Select</button></div>`;
+    return `<div class="vault-select-bar"><span>Download ${app.vaultFilter === 'journal' ? 'journal entries' : 'notes'} as a text file</span><button class="button secondary" data-action="vault-select">${icon('check')}Select</button></div>`;
   const count = notes.filter(n => app.vaultSelected.has(n.id)).length;
   return `<div class="vault-select-bar selecting" role="toolbar" aria-label="Selected notes"><span><strong>${count}</strong> selected</span><div><button class="text-button" data-action="vault-select-all">Select all</button>${count ? '<button class="text-button" data-action="vault-select-clear">Clear</button>' : ''}<button class="button primary" data-action="vault-export" ${count ? '' : 'disabled'}>${icon('download')}Download .txt</button><button class="button secondary" data-action="vault-select-done">Done</button></div></div>`;
 }
@@ -208,11 +208,19 @@ export const actions = {
       url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' })),
       link = document.createElement('a');
     link.href = url;
-    link.download = `twesk-notes-${today()}.txt`;
+    const journal = isJournalExport(notes);
+    link.download = `twesk-${journal ? 'journal' : 'notes'}-${today()}.txt`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     sound('note');
-    toast(`Downloaded ${notes.length} ${notes.length === 1 ? 'note' : 'notes'} as one text file.`);
+    const noun = journal
+      ? notes.length === 1
+        ? 'journal entry'
+        : 'journal entries'
+      : notes.length === 1
+        ? 'note'
+        : 'notes';
+    toast(`Downloaded ${notes.length} ${noun} as one text file.`);
   },
   'vault-filter'(b, { a, id, sourceRect }) {
     app.vaultFilter = b.dataset.filter;

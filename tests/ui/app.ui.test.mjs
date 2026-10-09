@@ -215,6 +215,67 @@ uiTest('reviewed notes can be selected and downloaded together as one text file'
   assert.match(journal, /Rainy walk, clear head/);
 });
 
+uiTest('Select all picks only the notes shown, so one hashtag can be exported', async page => {
+  const s = E.freshState();
+  for (const text of ['Seeds to order #garden', 'Compost notes #garden', 'Book list', 'Shed paint colors #garden #home']) {
+    const { note } = E.saveNote(s, { text }, '2026-10-01');
+    note.status = 'kept';
+  }
+  await page.open({ save: s });
+  await page.evaluate(() => {
+    const original = URL.createObjectURL;
+    URL.createObjectURL = blob => { blob.text().then(t => (window.__exported = t)); return original(blob); };
+  });
+  await page.press('j', ['Meta']);
+  await page.click('[data-action="vault-filter"][data-filter="kept"]');
+  const bookList = (await page.save()).notes.find(n => n.text === 'Book list').id;
+  await page.click(`#vault-results article[data-id="${bookList}"] .note-text`);
+  await page.click('#vault-tags [data-tag="#garden"]');
+  assert.equal(await page.count('#vault-results .note-card'), 3);
+  assert.ok(!(await page.exists('#vault-download .vault-download')), 'a selection hidden by the filter is dropped');
+  await page.click('[data-action="vault-select-all"]');
+  assert.equal(await page.count('#vault-results .note-card.selected'), 3);
+  assert.equal(await page.text('#vault-download .vault-download'), '3');
+  assert.equal(await page.text('[data-action="vault-select-all"]'), 'Deselect all');
+  await page.click('#vault-download .vault-download');
+  const text = await page.waitFor(() => window.__exported);
+  assert.match(text, /^Twesk notes · 3 notes/);
+  assert.doesNotMatch(text, /Book list/);
+  await page.click('[data-action="vault-select-all"]');
+  assert.equal(await page.count('#vault-results .note-card.selected'), 0, 'Deselect all clears the shown notes');
+});
+
+uiTest('hashtags autocomplete in task titles and captured notes', async page => {
+  const s = E.freshState();
+  E.saveTask(s, { title: 'Draft outline #thesis', tier: 'quick' }, '2026-10-01');
+  E.saveNote(s, { text: 'Garden plan #home' }, '2026-10-01');
+  await page.open({ save: s });
+  // Task title: suggestions from tasks and notes; Enter accepts instead of submitting.
+  await page.click('#app .tasks-panel [data-action="new-task"]');
+  await page.waitFor(() => document.querySelector('#task-form [name="title"]') === document.activeElement);
+  await page.type('Read papers #th');
+  await page.waitFor(() => document.querySelector('.tag-suggest'));
+  assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.tag-option span')].map(o => o.textContent)), ['#thesis']);
+  await page.press('Enter');
+  assert.equal(await page.evaluate(() => document.querySelector('#task-form [name="title"]').value), 'Read papers #thesis ');
+  assert.ok(await page.exists('#task-form'), 'Enter picked the tag instead of submitting');
+  // Escape closes the suggestions first, then the dialog.
+  await page.type('#h');
+  await page.waitFor(() => document.querySelector('.tag-suggest'));
+  await page.press('Escape');
+  assert.ok(!(await page.exists('.tag-suggest')));
+  assert.ok(await page.exists('#task-form'), 'the dialog stays open');
+  await page.press('Escape');
+  await page.waitFor(() => !document.querySelector('.modal'));
+  // Captured note: click a suggestion; the word count sees the change.
+  await page.press('k', ['Meta']);
+  await page.waitFor(() => document.querySelector('#capture-text') === document.activeElement);
+  await page.type('Ideas for the #ho');
+  await page.click('.tag-option');
+  assert.equal(await page.evaluate(() => document.querySelector('#capture-text').value), 'Ideas for the #home ');
+  assert.equal(await page.text('#word-count'), '4 words');
+});
+
 uiTest('quick capture with ⌘K, then one-by-one Vault review with keyboard keys', async page => {
   await page.open();
   for (const text of ['Book flights #trip', 'Idea for chapter two #thesis']) {

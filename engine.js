@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.12.3';
-import {validHabitIcon} from './habit-icons.js?v=0.12.3';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.13.0';
+import {validHabitIcon} from './habit-icons.js?v=0.13.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -148,6 +148,22 @@ export function undoHarm(s, id, logId, today) {
 }
 export const TAG_PATTERN = /#[\p{L}\p{N}_-]+/gu;
 export const tags = text => [...new Set((text.match(TAG_PATTERN) || []).map(t => t.toLowerCase()))];
+// Hashtag autocomplete: every tag in tasks and non-archived notes, most used first.
+export function knownTags(s) {
+  const counts = new Map();
+  for (const text of [...s.tasks.map(t => t.title), ...s.notes.filter(n => n.status !== 'archived').map(n => n.text)])
+    for (const tag of tags(text)) counts.set(tag, (counts.get(tag) || 0) + 1);
+  return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([tag, count]) => ({ tag, count }));
+}
+// The hashtag being typed just before the caret, if any.
+export function tagAtCaret(value, caret) {
+  const match = value.slice(0, caret).match(/(^|\s)(#[\p{L}\p{N}_-]*)$/u);
+  return match ? { start: caret - match[2].length, text: match[2] } : null;
+}
+export function suggestionsFor(prefix, known, limit = 6) {
+  const lower = prefix.toLowerCase();
+  return known.filter(({ tag }) => tag.startsWith(lower) && tag !== lower).slice(0, limit);
+}
 export const REPEATS = { daily: 'Every day', weekdays: 'Weekdays', weekly: 'Every week', monthly: 'Every month' };
 // The date a recurring task reopens after being completed on `day`. Missed occurrences never pile up.
 export function nextOccurrence(day, repeat) {

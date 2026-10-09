@@ -211,3 +211,14 @@ test('a task made from a note reopens that note, and completed tasks cannot move
   const done=s.tasks[0];E.toggleTask(s,done.id,day(2));assert.throws(()=>E.returnTaskToVault(s,done.id),/Completed/);
   const bad=E.freshState();E.saveNote(bad,{text:'x'},day(1));bad.notes[0].taskTier='huge';assert.throws(()=>E.validateState(bad));
 });
+test('hashtag autocomplete finds the tag at the caret and suggests known tags, most used first',()=>{
+  const s=E.freshState();
+  E.saveTask(s,{title:'Draft outline #thesis',tier:'quick'},day(1));E.saveTask(s,{title:'Read papers #thesis #reading',tier:'quick'},day(1));
+  E.saveNote(s,{text:'Garden plan #home'},day(1));const {note}=E.saveNote(s,{text:'Old idea #theatre'},day(1));note.status='archived';
+  assert.deepEqual(E.knownTags(s).map(t=>t.tag),['#thesis','#home','#reading'],'archived notes are left out');
+  assert.deepEqual(E.tagAtCaret('Read #th',8),{start:5,text:'#th'});
+  assert.equal(E.tagAtCaret('Read #th more',13),null,'only the word being typed');
+  assert.equal(E.tagAtCaret('email@#x',8),null,'a hashtag starts a word');
+  assert.deepEqual(E.suggestionsFor('#TH',E.knownTags(s)).map(t=>t.tag),['#thesis'],'case-insensitive');
+  assert.deepEqual(E.suggestionsFor('#thesis',E.knownTags(s)),[],'no suggestion once fully typed');
+});

@@ -1,19 +1,20 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.12.3';
-import { avatarFaceArt } from './art.js?v=0.12.3';
-import { awardAchievements } from './achievements.js?v=0.12.3';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.12.3';
-import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.12.3';
-import { closeModal, openModal } from './ui-modal.js?v=0.12.3';
-import * as tasks from './ui-tasks.js?v=0.12.3';
-import * as habits from './ui-habits.js?v=0.12.3';
-import * as vault from './ui-vault.js?v=0.12.3';
-import * as character from './ui-character.js?v=0.12.3';
-import * as shop from './ui-shop.js?v=0.12.3';
-import * as battle from './ui-battle.js?v=0.12.3';
-import * as collection from './ui-collection.js?v=0.12.3';
-import * as settings from './ui-settings.js?v=0.12.3';
-import * as history from './ui-history.js?v=0.12.3';
+import * as E from './engine.js?v=0.13.0';
+import { avatarFaceArt } from './art.js?v=0.13.0';
+import { awardAchievements } from './achievements.js?v=0.13.0';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.13.0';
+import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.13.0';
+import { closeModal, openModal } from './ui-modal.js?v=0.13.0';
+import * as tasks from './ui-tasks.js?v=0.13.0';
+import * as habits from './ui-habits.js?v=0.13.0';
+import * as vault from './ui-vault.js?v=0.13.0';
+import * as character from './ui-character.js?v=0.13.0';
+import * as shop from './ui-shop.js?v=0.13.0';
+import * as battle from './ui-battle.js?v=0.13.0';
+import * as collection from './ui-collection.js?v=0.13.0';
+import * as settings from './ui-settings.js?v=0.13.0';
+import * as history from './ui-history.js?v=0.13.0';
+import { installTagSuggest } from './ui-tag-suggest.js?v=0.13.0';
 
 const features = [tasks, habits, vault, character, shop, battle, collection, settings, history];
 const modals = Object.assign({}, ...features.map(f => f.modals));
@@ -84,6 +85,7 @@ function renderModal() {
   document.body.classList.add('modal-open');
   $('#overlay').innerHTML = modals[app.modal.type]?.() ?? '';
 }
+installTagSuggest();
 Object.assign(view, { render, renderModal, finishBattlePlayback: battle.finishBattlePlayback });
 
 function handleClick(event) {

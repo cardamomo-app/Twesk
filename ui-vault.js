@@ -1,9 +1,9 @@
 // The Vault: notes, journal entries, quick capture, and recovery reflections.
-import * as E from './engine.js?v=0.12.3';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.12.3';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.12.3';
-import { isJournalExport, notesToText } from './notes-export.js?v=0.12.3';
-import { sound } from './ui-effects.js?v=0.12.3';
+import * as E from './engine.js?v=0.13.0';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.13.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.13.0';
+import { isJournalExport, notesToText } from './notes-export.js?v=0.13.0';
+import { sound } from './ui-effects.js?v=0.13.0';
 const noteDate = n =>
   new Intl.DateTimeFormat('en', {
     month: 'short',
@@ -53,12 +53,21 @@ const visibleNotes = () =>
 const canSelect = () => ['kept', 'journal'].includes(app.vaultFilter);
 const selectedVisible = () => (canSelect() ? visibleNotes().filter(n => app.vaultSelected.has(n.id)) : []);
 // The download button sits at the end of the tab row and appears only while notes are selected.
+// "Select all" picks only the notes currently shown (after search and hashtag filters).
 function downloadButton() {
-  const count = selectedVisible().length;
-  if (!count) return '';
-  const noun =
-    app.vaultFilter === 'journal' ? (count === 1 ? 'entry' : 'entries') : count === 1 ? 'note' : 'notes';
-  return `<button class="vault-download" data-action="vault-export" title="Download ${count} selected ${noun} as one text file" aria-label="Download ${count} selected ${noun} as one text file">${icon('download')}<span>${count}</span></button>`;
+  if (!canSelect()) return '';
+  const shown = visibleNotes().length,
+    count = selectedVisible().length;
+  if (!shown) return '';
+  const all = count === shown,
+    noun = n =>
+      app.vaultFilter === 'journal' ? (n === 1 ? 'entry' : 'entries') : n === 1 ? 'note' : 'notes';
+  const filtered = app.vaultSearch || app.vaultTag;
+  const toggle = `<button class="text-button vault-select-all" data-action="vault-select-all" title="${all ? 'Deselect' : 'Select'} the ${shown} ${noun(shown)} shown${filtered ? ' with this filter' : ''}">${all ? 'Deselect all' : 'Select all'}</button>`;
+  const download = count
+    ? `<button class="vault-download" data-action="vault-export" title="Download ${count} selected ${noun(count)} as one text file" aria-label="Download ${count} selected ${noun(count)} as one text file">${icon('download')}<span>${count}</span></button>`
+    : '';
+  return toggle + download;
 }
 const refreshDownload = () => {
   const slot = $('#vault-download');
@@ -77,6 +86,9 @@ function renderNotes() {
     .join('');
 }
 const refreshVault = () => {
+  // Notes hidden by a new search or filter drop out of the selection, so downloads match what is shown.
+  const shown = new Set(visibleNotes().map(n => n.id));
+  for (const id of app.vaultSelected) if (!shown.has(id)) app.vaultSelected.delete(id);
   $('#vault-tags').innerHTML = renderTagChips();
   $('#vault-results').innerHTML = renderNotes();
   refreshDownload();
@@ -111,7 +123,7 @@ export const modals = {
       recovery = app.modal.recovery;
     return modalShell(
       recovery ? 'A moment to reflect' : note ? 'Your captured thought' : 'Catch a thought',
-      `<form id="capture-form" class="form-body">${!note && !recovery ? `<div class="segmented capture-kind"><button type="button" data-action="capture-kind" data-kind="note" class="${app.modal.kind === 'note' ? 'selected' : ''}">${icon('pencil')}Note</button><button type="button" data-action="capture-kind" data-kind="journal" class="${app.modal.kind === 'journal' ? 'selected' : ''}">${icon('mind')}Journal</button><button type="button" data-action="capture-kind" data-kind="task" class="${app.modal.kind === 'task' ? 'selected' : ''}">${icon('check')}Task</button></div>` : ''}${recovery ? `<p class="reflection-prompt">What needs more care right now? What’s one thing you could do next?</p><div class="recovery-preview"><span>${icon('heart')}<strong id="preview-hp">${app.state.hp}</strong> / ${E.maxHP(app.state)} HP</span><span id="preview-heal">+0 HP</span></div><div class="health-bar"><div id="preview-bar" style="width:${(app.state.hp / E.maxHP(app.state)) * 100}%"></div></div>` : ''}<label class="sr-only" for="capture-text">${recovery ? 'Reflection' : 'Your note or task'}</label><textarea id="capture-text" name="text" required maxlength="50000" rows="${recovery ? 8 : 7}" placeholder="${recovery ? 'Take a breath, and write whatever comes to mind…' : 'Drop an idea, a reminder, a little something…\nAdd #tags to find it later.'}" autofocus>${esc(note?.text || '')}</textarea><div class="capture-meta"><span id="word-count">${E.words(note?.text || '')} words</span><span>${recovery ? '2 words ≈ 1 HP · Heart improves healing' : 'Notes earn 1–3 gold · up to 6 per day'}</span></div><div class="form-actions">${note ? `<button type="button" class="button subtle danger" data-action="delete-note" data-id="${note.id}">Archive</button>` : '<span></span>'}<button class="button primary" type="submit">${recovery ? 'Save & recover' : note ? 'Save note' : app.modal.kind === 'task' ? 'Send to task inbox' : app.modal.kind === 'journal' ? 'Save journal' : 'Save to Vault'}${icon('arrow')}</button></div></form>`,
+      `<form id="capture-form" class="form-body">${!note && !recovery ? `<div class="segmented capture-kind"><button type="button" data-action="capture-kind" data-kind="note" class="${app.modal.kind === 'note' ? 'selected' : ''}">${icon('pencil')}Note</button><button type="button" data-action="capture-kind" data-kind="journal" class="${app.modal.kind === 'journal' ? 'selected' : ''}">${icon('mind')}Journal</button><button type="button" data-action="capture-kind" data-kind="task" class="${app.modal.kind === 'task' ? 'selected' : ''}">${icon('check')}Task</button></div>` : ''}${recovery ? `<p class="reflection-prompt">What needs more care right now? What’s one thing you could do next?</p><div class="recovery-preview"><span>${icon('heart')}<strong id="preview-hp">${app.state.hp}</strong> / ${E.maxHP(app.state)} HP</span><span id="preview-heal">+0 HP</span></div><div class="health-bar"><div id="preview-bar" style="width:${(app.state.hp / E.maxHP(app.state)) * 100}%"></div></div>` : ''}<label class="sr-only" for="capture-text">${recovery ? 'Reflection' : 'Your note or task'}</label><textarea id="capture-text" name="text" data-tag-suggest aria-autocomplete="list" required maxlength="50000" rows="${recovery ? 8 : 7}" placeholder="${recovery ? 'Take a breath, and write whatever comes to mind…' : 'Drop an idea, a reminder, a little something…\nAdd #tags to find it later.'}" autofocus>${esc(note?.text || '')}</textarea><div class="capture-meta"><span id="word-count">${E.words(note?.text || '')} words</span><span>${recovery ? '2 words ≈ 1 HP · Heart improves healing' : 'Notes earn 1–3 gold · up to 6 per day'}</span></div><div class="form-actions">${note ? `<button type="button" class="button subtle danger" data-action="delete-note" data-id="${note.id}">Archive</button>` : '<span></span>'}<button class="button primary" type="submit">${recovery ? 'Save & recover' : note ? 'Save note' : app.modal.kind === 'task' ? 'Send to task inbox' : app.modal.kind === 'journal' ? 'Save journal' : 'Save to Vault'}${icon('arrow')}</button></div></form>`,
       recovery ? 'reflection-modal' : '',
       recovery ? 'A little writing, a little healing. Saved privately in your Vault.' : '',
     );
@@ -120,7 +132,7 @@ export const modals = {
     const inboxCount = app.state.notes.filter(n => n.status === 'inbox').length;
     return modalShell(
       'The Vault',
-      `<div class="vault-toolbar"><label class="search-box">${icon('search')}<input id="vault-search" aria-label="Search notes and hashtags" placeholder="Search thoughts or #tags" value="${esc(app.vaultSearch)}"></label>${inboxCount ? `<button class="button secondary" data-action="review-notes">${icon('check')}Review ${inboxCount} one by one</button>` : ''}<button class="button secondary" data-action="capture">${icon('plus')}Capture</button></div><div class="vault-tab-row"><div class="vault-tabs segmented">${[
+      `<div class="vault-toolbar"><label class="search-box">${icon('search')}<input id="vault-search" data-tag-suggest aria-autocomplete="list" autocomplete="off" aria-label="Search notes and hashtags" placeholder="Search thoughts or #tags" value="${esc(app.vaultSearch)}"></label>${inboxCount ? `<button class="button secondary" data-action="review-notes">${icon('check')}Review ${inboxCount} one by one</button>` : ''}<button class="button secondary" data-action="capture">${icon('plus')}Capture</button></div><div class="vault-tab-row"><div class="vault-tabs segmented">${[
         ['inbox', 'Needs review'],
         ['kept', 'Notes'],
         ['journal', 'Journal'],
@@ -184,6 +196,15 @@ export const actions = {
     app.vaultTag = null;
     app.vaultSelected = new Set();
     openModal({ type: 'vault' });
+  },
+  'vault-select-all'() {
+    const shown = visibleNotes(),
+      all = shown.every(n => app.vaultSelected.has(n.id));
+    for (const n of shown) all ? app.vaultSelected.delete(n.id) : app.vaultSelected.add(n.id);
+    for (const card of document.querySelectorAll('#vault-results .note-card.selectable'))
+      card.classList.toggle('selected', app.vaultSelected.has(card.dataset.id));
+    refreshDownload();
+    $('#vault-download [data-action="vault-select-all"]')?.focus();
   },
   'toggle-note-select'(b) {
     // Dragging across text to copy it should not toggle the card.

@@ -487,15 +487,17 @@ button.hashtag:hover{text-decoration:underline}
 .style-preview-bar>span{flex:1 1 140px;min-width:0}
 .task-form-secondary{display:flex;flex-wrap:wrap;gap:6px}
 .task-form-secondary .icon{width:14px;height:14px}
-/* Vault note selection and export */
-.vault-select-bar{position:sticky;top:-18px;z-index:2;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:-4px 0 12px;padding:8px 10px;border-radius:10px;background:var(--surface);border:1px solid var(--line);font-size:11px;color:var(--secondary)}
-.vault-select-bar.selecting{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 35%,transparent);color:var(--text)}
-.vault-select-bar>div{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
-.vault-select-bar .button{min-height:30px;padding:5px 12px;font-size:10px}
-.vault-select-bar .icon{width:13px;height:13px}
-.note-card.selectable{cursor:pointer;transition:border-color .15s,background .15s}
-.note-card.selectable:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
-.note-card.selected{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
-.note-check{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--line);display:inline-flex;align-items:center;justify-content:center;margin-right:8px;vertical-align:-4px;background:var(--panel)}
-.note-card.selected .note-check{background:var(--accent);border-color:var(--accent);color:#fff}
-.note-check .icon{width:11px;height:11px;stroke-width:2.5}
+/* Vault note selection and export: click a note to select it; a download button joins the tab row */
+.vault-tab-row{display:flex;align-items:center;gap:10px;margin:0 25px;padding-bottom:15px;border-bottom:1px solid var(--line)}
+.vault-tab-row .vault-tabs{margin:0;padding-bottom:0;border-bottom:0;flex:1;min-width:0}
+#vault-download{display:flex;flex-shrink:0}
+.vault-download{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 11px;border-radius:8px;background:var(--accent);color:#fff;font-size:11px;font-weight:650;animation:pop-in .18s ease-out}
+.vault-download:hover{background:var(--accent-hover)}
+.vault-download .icon{width:14px;height:14px}
+@keyframes pop-in{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+.note-card.selectable{cursor:pointer;transition:border-color .15s,box-shadow .15s,background .15s}
+.note-card.selectable:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.note-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);background:color-mix(in srgb,var(--accent) 5%,var(--panel))}
+.note-card.selectable:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.note-card.selectable .note-text{user-select:text}
+@media(max-width:560px){.vault-tab-row{margin:0 18px}}

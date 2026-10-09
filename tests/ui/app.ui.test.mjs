@@ -201,6 +201,14 @@ uiTest('the character studio previews a locked style without saving, then buys i
   await page.waitFor(() => document.querySelector('.style-preview-bar'));
   assert.ok(await page.exists('.avatar-turntable [data-part="beard"]'), 'the model wears the beard');
   assert.equal((await page.save()).appearance.beard, 'none', 'nothing saved while trying on');
+  // Unsized SVGs render full-width in some browsers (e.g. Safari), so every gold pile needs a CSS size.
+  const bar = await page.evaluate(() => {
+    const el = document.querySelector('.style-preview-bar'),
+      unsized = [...document.querySelectorAll('.gold-pile')].filter(p => !/px$/.test(getComputedStyle(p).width) || parseFloat(getComputedStyle(p).width) > 60);
+    return { height: el.getBoundingClientRect().height, unsized: unsized.length };
+  });
+  assert.equal(bar.unsized, 0, 'every gold pile has an explicit size');
+  assert.ok(bar.height < 80, `the try-on bar stays compact (${bar.height}px)`);
   await page.click('[data-action="buy-preview"]');
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).appearance.beard === 'full');
   assert.equal((await page.save()).gold, 430);

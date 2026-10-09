@@ -1,21 +1,21 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.15.1';
-import { avatarFaceArt } from './art.js?v=0.15.1';
-import { awardAchievements } from './achievements.js?v=0.15.1';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.15.1';
-import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.15.1';
-import { closeModal, openModal } from './ui-modal.js?v=0.15.1';
-import * as tasks from './ui-tasks.js?v=0.15.1';
-import * as habits from './ui-habits.js?v=0.15.1';
-import * as vault from './ui-vault.js?v=0.15.1';
-import * as character from './ui-character.js?v=0.15.1';
-import * as shop from './ui-shop.js?v=0.15.1';
-import * as battle from './ui-battle.js?v=0.15.1';
-import * as collection from './ui-collection.js?v=0.15.1';
-import * as settings from './ui-settings.js?v=0.15.1';
-import * as history from './ui-history.js?v=0.15.1';
-import { installDelights, renderAmbience } from './ui-delights.js?v=0.15.1';
-import { installTagSuggest } from './ui-tag-suggest.js?v=0.15.1';
+import * as E from './engine.js?v=0.15.2';
+import { avatarFaceArt } from './art.js?v=0.15.2';
+import { awardAchievements } from './achievements.js?v=0.15.2';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.15.2';
+import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.15.2';
+import { closeModal, openModal } from './ui-modal.js?v=0.15.2';
+import * as tasks from './ui-tasks.js?v=0.15.2';
+import * as habits from './ui-habits.js?v=0.15.2';
+import * as vault from './ui-vault.js?v=0.15.2';
+import * as character from './ui-character.js?v=0.15.2';
+import * as shop from './ui-shop.js?v=0.15.2';
+import * as battle from './ui-battle.js?v=0.15.2';
+import * as collection from './ui-collection.js?v=0.15.2';
+import * as settings from './ui-settings.js?v=0.15.2';
+import * as history from './ui-history.js?v=0.15.2';
+import { installDelights, renderAmbience } from './ui-delights.js?v=0.15.2';
+import { installTagSuggest } from './ui-tag-suggest.js?v=0.15.2';
 
 const features = [tasks, habits, vault, character, shop, battle, collection, settings, history];
 const modals = Object.assign({}, ...features.map(f => f.modals));
@@ -197,7 +197,15 @@ if (!app.protectSave) persist();
 // Offline support for the installed app (Add to Dock / Install). Skipped in the single-file Twesk.html.
 if ('serviceWorker' in navigator && !window.__TWESK_STANDALONE__ && location.protocol.startsWith('http')) {
   const hadController = !!navigator.serviceWorker.controller;
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
+  navigator.serviceWorker
+    .register('./sw.js', { updateViaCache: 'none' })
+    .then(registration => {
+      // Check for a newer version whenever the app comes back into view (it updates only if the server is up).
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') registration.update().catch(() => {});
+      });
+    })
+    .catch(() => {});
   // A new version took over while this page was open: offer a reload instead of switching mid-task.
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadController || $('#update-ready')) return;

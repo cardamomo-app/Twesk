@@ -42,7 +42,13 @@ const CACHE = 'twesk-${version}';
 const PRECACHE = ${JSON.stringify(list, null, 2)};
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(PRECACHE)).then(() => self.skipWaiting()));
+  // cache: 'reload' skips the browser's HTTP cache, so the offline copy is always the current version.
+  event.waitUntil(
+    caches
+      .open(CACHE)
+      .then(cache => cache.addAll(PRECACHE.map(url => new Request(url, { cache: 'reload' }))))
+      .then(() => self.skipWaiting()),
+  );
 });
 self.addEventListener('activate', event => {
   event.waitUntil(
@@ -57,7 +63,8 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET' || new URL(request.url).origin !== location.origin) return;
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      // Always ask the server for the page (never a stale HTTP-cached copy); fall back offline.
+      fetch(request, { cache: 'no-cache' })
         .then(response => {
           const copy = response.clone();
           if (response.ok) caches.open(CACHE).then(cache => cache.put('./index.html', copy));

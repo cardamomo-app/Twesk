@@ -150,15 +150,16 @@ async function openPage({ send, listeners }, { origin, width = 1280, height = 90
     if (result.exceptionDetails) throw new Error('In page: ' + (result.exceptionDetails.exception?.description || result.exceptionDetails.text));
     return result.result.value;
   }
-  async function waitFor(fn, { timeout = 8000, message, args = [] } = {}) {
+  async function waitFor(fn, { timeout = 8000, message, args = [], accept = value => value && !(value instanceof Error) } = {}) {
     const start = Date.now();
     let last;
     while (Date.now() - start < timeout) {
-      last = await evaluate(fn, ...args).catch(error => (last = error, undefined));
-      if (last && !(last instanceof Error)) return last;
+      last = await evaluate(fn, ...args).catch(error => error);
+      if (accept(last)) return last;
       await new Promise(done => setTimeout(done, 40));
     }
-    throw new Error(`Timed out: ${message || fn.toString().slice(0, 140)}${last instanceof Error ? ` (${last.message})` : ''}`);
+    const detail = last instanceof Error ? ` (${last.message})` : last?.covered ? ` (covered by ${last.covered})` : '';
+    throw new Error(`Timed out: ${message || fn.toString().slice(0, 140)}${detail}`);
   }
   const page = {
     errors, evaluate, waitFor, cmd,
@@ -180,13 +181,22 @@ async function openPage({ send, listeners }, { origin, width = 1280, height = 90
     count: selector => evaluate(s => document.querySelectorAll(s).length, selector),
     // A real mouse click at the element's center, so overlays and hit-testing count.
     async click(selector) {
+      // Click only once the element is really what sits under the pointer (not covered, not mid-animation),
+      // as a person would. Two matching measurements in a row mean it has stopped moving.
+      let last = null;
       const point = await waitFor(s => {
         const el = document.querySelector(s);
         if (!el || el.disabled) return null;
         el.scrollIntoView({ block: 'center', inline: 'center' });
         const r = el.getBoundingClientRect();
-        return r.width && r.height ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null;
-      }, { message: `clickable ${selector}`, args: [selector] });
+        if (!r.width || !r.height) return null;
+        const x = r.left + r.width / 2, y = r.top + r.height / 2, hit = document.elementFromPoint(x, y);
+        return el === hit || el.contains(hit) ? { x: Math.round(x), y: Math.round(y) } : { covered: hit?.outerHTML.slice(0, 80) || 'nothing' };
+      }, { message: `clickable ${selector}`, args: [selector], accept: value => {
+        const stable = value && !value.covered && last && last.x === value.x && last.y === value.y;
+        last = value;
+        return stable;
+      } });
       for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased'])
         await cmd('Input.dispatchMouseEvent', { type, x: point.x, y: point.y, button: 'left', clickCount: 1 });
     },

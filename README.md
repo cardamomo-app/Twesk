@@ -10,7 +10,7 @@ From this folder, run:
 npm start
 ```
 
-Then open **http://127.0.0.1:4187**. Node and Python 3 are needed for these development commands. There are no packages to install and no remote asset dependencies. Keep the server running while using the app; press Control-C in its terminal to stop it.
+Then open **http://127.0.0.1:4187**. Only Node is needed; there are no packages to install and no remote asset dependencies. The small local server (`scripts/serve.mjs`) tells browsers to recheck files on every load, so a new version is never hidden behind a stale cached copy. Keep the server running while using the app; press Control-C in its terminal to stop it.
 
 Use the same browser and address each time. Browser storage belongs to an origin: `localhost:4187` and `127.0.0.1:4187` have separate progress. Settings contains JSON backup export/import for moving progress. Import validates the file and asks before replacing the current save. Clearing browser data removes progress unless backed up. Settings shows when you last exported a backup. If a week passes with progress and no backup, a small dashboard banner offers an export or a reminder in another week.
 
@@ -28,7 +28,7 @@ Twesk is an installable web app: it gets its own window and Dock icon and keeps 
 
 **Chrome, Edge, or Brave:** open the same address and use the install icon in the address bar (or the menu's **Install Twesk**). These share storage with the browser, so progress carries over.
 
-When a newer version is available and the server is running, the app updates in the background and shows **A new version of Twesk is ready · Reload**. Keep exporting backups occasionally: installed or not, progress lives in browser storage.
+When a newer version is available and the server is running, the app updates in the background and shows **A new version of Twesk is ready · Reload**. Settings shows the running version; if the installed app ever seems out of date, start the server and use **Settings → Refresh offline copy**. Keep exporting backups occasionally: installed or not, progress lives in browser storage.
 
 After changing app files, run `npm run build` to regenerate `sw.js` (its offline file list and version) and `Twesk.html`; a test fails if `sw.js` is out of date.
 
@@ -79,7 +79,7 @@ Quick capture: **Command/Ctrl-K**. Vault: **Command/Ctrl-J**. Escape closes dial
 npm test
 ```
 
-The 89 domain checks cover independent XP, the weekly progression target, momentum and missed days, reward undo, note caps, conversion/review, health, equipment, exact combat odds versus independent sampling, loot, rollover, backup validation, milestone persistence/migration, monster collection statuses, artwork bounds, habit icon compatibility/validation, personalized face portraits, reset/recovery, failed-storage preservation, device-timezone defaults, backup-reminder timing, recurring-task schedules, project tags, loadout comparisons, habit details, pinned notes, capped Soul deflection and monster gold, helmets, pet/spell/tonic bonuses, the wardrobe, rendering of every style and helmet from every side, and the daily history record (undo, level-up removal, migration, bounds).
+The 90 domain checks cover independent XP, the weekly progression target, momentum and missed days, reward undo, note caps, conversion/review, health, equipment, exact combat odds versus independent sampling, loot, rollover, backup validation, milestone persistence/migration, monster collection statuses, artwork bounds, habit icon compatibility/validation, personalized face portraits, reset/recovery, failed-storage preservation, device-timezone defaults, backup-reminder timing, recurring-task schedules, project tags, loadout comparisons, habit details, pinned notes, capped Soul deflection and monster gold, helmets, pet/spell/tonic bonuses, the wardrobe, rendering of every style and helmet from every side, and the daily history record (undo, level-up removal, migration, bounds).
 
 ### Interface tests
 

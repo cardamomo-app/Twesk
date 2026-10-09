@@ -1,6 +1,6 @@
 // Settings, backups, and full reset/restore.
-import * as E from './engine.js?v=0.15.1';
-import { PREVIOUS_SAVE_KEY, resetProgress, restorePreviousProgress } from './save-recovery.js?v=0.15.1';
+import * as E from './engine.js?v=0.15.2';
+import { PREVIOUS_SAVE_KEY, resetProgress, restorePreviousProgress } from './save-recovery.js?v=0.15.2';
 import {
   $,
   app,
@@ -12,8 +12,8 @@ import {
   today,
   view,
   viewDefaults,
-} from './ui-core.js?v=0.15.1';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.15.1';
+} from './ui-core.js?v=0.15.2';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.15.2';
 function backupStatus() {
   const last = app.state.settings.lastBackup;
   if (!last) return 'No backup exported from this browser yet.';
@@ -25,6 +25,16 @@ export function backupReminder() {
     ? `It’s been ${E.daysBetween(app.state.settings.lastBackup, today())} days since your last backup.`
     : 'Your progress lives only in this browser. Export a backup file to keep it safe.';
   return `<div class="backup-nudge" role="status"><p>${icon('download')}<span>${message}</span></p><div class="backup-nudge-actions"><button class="button secondary" data-action="export">Export backup</button><button class="text-button" data-action="backup-later">Remind me next week</button></div></div>`;
+}
+// The running version, read from the entry script's version tag ("single file" for Twesk.html).
+export const appVersion = () => {
+  const tag = document.querySelector('script[src*="app.js"]')?.src.split('?v=')[1];
+  return tag ? `VERSION ${tag}` : 'SINGLE FILE';
+};
+// Installed app: replace the offline copy with the current version from the server.
+function offlineSettings() {
+  if (!navigator.serviceWorker?.controller) return '';
+  return `<div class="backup-box"><h3>Offline copy</h3><p>The installed app keeps a copy of itself so it works without the server. If it ever seems out of date, start the server and refresh the copy.</p><div class="backup-actions"><button type="button" class="button secondary" data-action="refresh-offline">${icon('undo')}Refresh offline copy</button></div></div>`;
 }
 function resetSettings() {
   let canRestore = false;
@@ -84,7 +94,7 @@ export const modals = {
   settings() {
     return modalShell(
       'Make yourself at home',
-      `<form id="settings-form" class="form-body"><label>Your adventurer’s name<input name="name" required maxlength="40" value="${esc(app.state.name)}"></label><label>Your timezone<input name="timezone" list="timezones" required value="${esc(app.state.settings.timezone)}"><datalist id="timezones">${[...new Set([E.deviceTimezone(), 'Atlantic/Madeira', 'Europe/London', 'Europe/Lisbon', 'Europe/Berlin', 'America/New_York', 'America/Los_Angeles', 'Asia/Tokyo', 'Australia/Sydney', 'UTC'])].map(z => `<option value="${z}">`).join('')}</datalist></label><p class="form-help">Habits become available again at midnight here. No schedules and no damage for missed days.${app.state.settings.timezone !== E.deviceTimezone() ? ` <button type="button" class="text-button" data-action="use-device-timezone">Use this device’s timezone (${esc(E.deviceTimezone())})</button>` : ''}</p><label class="checkbox-label"><input type="checkbox" name="muted" ${app.state.settings.muted ? 'checked' : ''}>Mute little reward sounds</label><label class="checkbox-label"><input type="checkbox" name="reduced" ${app.state.settings.reducedMotion ? 'checked' : ''}>Reduce motion</label><div class="backup-box"><h3>Your progress stays on this device</h3><p>Back it up before clearing browser data or moving to another browser. There are no accounts or syncing yet.</p><p class="backup-status" id="backup-status">${backupStatus()}</p><div class="backup-actions"><button type="button" class="button secondary" data-action="export">${icon('download')}Export backup</button><button type="button" class="button secondary" data-action="import">${icon('upload')}Import backup</button></div><input type="file" id="import-file" accept="application/json,.json" hidden></div>${resetSettings()}${app.protectSave ? '<p class="save-warning">The old save is protected. Saving these settings will begin a new save and replace it.</p>' : ''}<div class="form-actions"><span class="small-label">TWESK · MVP 0.1</span><button class="button primary">Save settings</button></div></form>`,
+      `<form id="settings-form" class="form-body"><label>Your adventurer’s name<input name="name" required maxlength="40" value="${esc(app.state.name)}"></label><label>Your timezone<input name="timezone" list="timezones" required value="${esc(app.state.settings.timezone)}"><datalist id="timezones">${[...new Set([E.deviceTimezone(), 'Atlantic/Madeira', 'Europe/London', 'Europe/Lisbon', 'Europe/Berlin', 'America/New_York', 'America/Los_Angeles', 'Asia/Tokyo', 'Australia/Sydney', 'UTC'])].map(z => `<option value="${z}">`).join('')}</datalist></label><p class="form-help">Habits become available again at midnight here. No schedules and no damage for missed days.${app.state.settings.timezone !== E.deviceTimezone() ? ` <button type="button" class="text-button" data-action="use-device-timezone">Use this device’s timezone (${esc(E.deviceTimezone())})</button>` : ''}</p><label class="checkbox-label"><input type="checkbox" name="muted" ${app.state.settings.muted ? 'checked' : ''}>Mute little reward sounds</label><label class="checkbox-label"><input type="checkbox" name="reduced" ${app.state.settings.reducedMotion ? 'checked' : ''}>Reduce motion</label><div class="backup-box"><h3>Your progress stays on this device</h3><p>Back it up before clearing browser data or moving to another browser. There are no accounts or syncing yet.</p><p class="backup-status" id="backup-status">${backupStatus()}</p><div class="backup-actions"><button type="button" class="button secondary" data-action="export">${icon('download')}Export backup</button><button type="button" class="button secondary" data-action="import">${icon('upload')}Import backup</button></div><input type="file" id="import-file" accept="application/json,.json" hidden></div>${offlineSettings()}${resetSettings()}${app.protectSave ? '<p class="save-warning">The old save is protected. Saving these settings will begin a new save and replace it.</p>' : ''}<div class="form-actions"><span class="small-label">TWESK · ${appVersion()}</span><button class="button primary">Save settings</button></div></form>`,
     );
   },
   'confirm-import'() {
@@ -145,6 +155,20 @@ export const actions = {
   },
   import(b, { a, id, sourceRect }) {
     $('#import-file').click();
+  },
+  async 'refresh-offline'() {
+    // Fetch a fresh copy first, so going offline right after still works; then reload into it.
+    try {
+      const response = await fetch('./sw.js', { cache: 'no-store' });
+      if (!response.ok) throw new Error();
+    } catch {
+      toast('Start the server (npm start) first, then refresh the offline copy.');
+      return;
+    }
+    for (const registration of await navigator.serviceWorker.getRegistrations())
+      await registration.unregister();
+    for (const key of await caches.keys()) if (key.startsWith('twesk-')) await caches.delete(key);
+    location.reload();
   },
   'confirm-import'(b, { a, id, sourceRect }) {
     app.state = app.pendingImport;

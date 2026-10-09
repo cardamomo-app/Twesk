@@ -548,6 +548,9 @@ uiTest('once installed, the app opens and saves with no server or network', asyn
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).gold === 4);
   await page.cmd('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   page.errors.length = 0; // offline network errors for non-app requests are expected
+  await page.click('.topbar [data-action="settings"]');
+  assert.match(await page.text('#settings-form .form-actions .small-label'), /^TWESK · VERSION \d/);
+  assert.ok(await page.exists('[data-action="refresh-offline"]'), 'the installed app can refresh its offline copy');
 });
 
 uiTest('the standalone Twesk.html runs, including its built-in odds worker', async page => {

@@ -168,6 +168,38 @@ uiTest('a task can move back to the Vault and return with its settings, with Und
   assert.equal(s.tasks[0].tier, 'quick');
 });
 
+uiTest('reviewed notes can be selected and downloaded together as one text file', async page => {
+  const s = E.freshState();
+  for (const [text, created] of [['Plan the garden #home', '2026-10-01T09:00:00Z'], ['Book club ideas\n\nRead slower books', '2026-10-03T09:00:00Z'], ['Unrelated', '2026-10-05T09:00:00Z']]) {
+    const { note } = E.saveNote(s, { text }, '2026-10-01');
+    note.created = created;
+    note.status = 'kept';
+  }
+  await page.open({ save: s });
+  // Capture the downloaded file's text (downloads are blocked during tests).
+  await page.evaluate(() => {
+    const original = URL.createObjectURL;
+    URL.createObjectURL = blob => { blob.text().then(t => (window.__exported = t)); return original(blob); };
+  });
+  await page.press('j', ['Meta']);
+  await page.click('[data-action="vault-filter"][data-filter="kept"]');
+  await page.click('[data-action="vault-select"]');
+  const notes = (await page.save()).notes;
+  for (const text of ['Plan the garden', 'Book club']) {
+    const id = notes.find(n => n.text.startsWith(text)).id;
+    await page.click(`#vault-results article[data-id="${id}"] .note-text`);
+  }
+  assert.match(await page.text('.vault-select-bar'), /2 selected/);
+  assert.equal(await page.count('#vault-results .note-card.selected'), 2);
+  await page.click('[data-action="vault-export"]');
+  const text = await page.waitFor(() => window.__exported);
+  assert.match(text, /^Twesk notes · 2 notes/);
+  assert.match(text, /Plan the garden #home\n\n\n\* \* \*\n\n\n.*\n\nBook club ideas\n\nRead slower books\n$/);
+  assert.doesNotMatch(text, /Unrelated/);
+  await page.click('[data-action="vault-select-done"]');
+  assert.ok(await page.exists('#vault-results [data-action="edit-note"]'), 'normal note actions return');
+});
+
 uiTest('quick capture with ⌘K, then one-by-one Vault review with keyboard keys', async page => {
   await page.open();
   for (const text of ['Book flights #trip', 'Idea for chapter two #thesis']) {

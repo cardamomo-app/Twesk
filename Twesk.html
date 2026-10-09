@@ -497,6 +497,18 @@ button.hashtag:hover{text-decoration:underline}
 .style-preview-bar>span{flex:1 1 140px;min-width:0}
 .task-form-secondary{display:flex;flex-wrap:wrap;gap:6px}
 .task-form-secondary .icon{width:14px;height:14px}
+/* Vault note selection and export */
+.vault-select-bar{position:sticky;top:-18px;z-index:2;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:-4px 0 12px;padding:8px 10px;border-radius:10px;background:var(--surface);border:1px solid var(--line);font-size:11px;color:var(--secondary)}
+.vault-select-bar.selecting{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 35%,transparent);color:var(--text)}
+.vault-select-bar>div{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.vault-select-bar .button{min-height:30px;padding:5px 12px;font-size:10px}
+.vault-select-bar .icon{width:13px;height:13px}
+.note-card.selectable{cursor:pointer;transition:border-color .15s,background .15s}
+.note-card.selectable:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.note-card.selected{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
+.note-check{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--line);display:inline-flex;align-items:center;justify-content:center;margin-right:8px;vertical-align:-4px;background:var(--panel)}
+.note-card.selected .note-check{background:var(--accent);border-color:var(--accent);color:#fff}
+.note-check .icon{width:11px;height:11px;stroke-width:2.5}
 
   </style>
 
@@ -1922,6 +1934,8 @@ function viewDefaults() {
     vaultFilter: 'inbox',
     vaultSearch: '',
     vaultTag: null,
+    vaultSelecting: false,
+    vaultSelected: new Set(),
     modal: null,
     pendingImport: null,
     pendingBadges: [],
@@ -3317,6 +3331,7 @@ Object.assign(exports,{renderCategory,modals,actions,forms,onChange});
 const E=require("engine.js");
 const { $, app, coin, esc, icon, modalShell, toast, today, view }=require("ui-core.js");
 const { closeModal, commit, openModal }=require("ui-modal.js");
+const { notesToText }=require("notes-export.js");
 const { sound }=require("ui-effects.js");
 const noteDate = n =>
   new Intl.DateTimeFormat('en', {
@@ -3354,8 +3369,8 @@ function renderTagChips() {
     )
     .join('')}</div>`;
 }
-function renderNotes() {
-  const notes = app.state.notes
+const visibleNotes = () =>
+  app.state.notes
     .filter(
       n =>
         inTab(n) &&
@@ -3363,14 +3378,34 @@ function renderNotes() {
         searchable(n).includes(app.vaultSearch.toLowerCase()),
     )
     .sort((a, b) => !!b.pinned - !!a.pinned);
+// Reviewed notes can be selected and downloaded together as one text file.
+const canSelect = () => app.vaultFilter === 'kept';
+function selectBar(notes) {
+  if (!canSelect() || !notes.length) return '';
+  if (!app.vaultSelecting)
+    return `<div class="vault-select-bar"><span>Download notes as a text file</span><button class="button secondary" data-action="vault-select">${icon('check')}Select</button></div>`;
+  const count = notes.filter(n => app.vaultSelected.has(n.id)).length;
+  return `<div class="vault-select-bar selecting" role="toolbar" aria-label="Selected notes"><span><strong>${count}</strong> selected</span><div><button class="text-button" data-action="vault-select-all">Select all</button>${count ? '<button class="text-button" data-action="vault-select-clear">Clear</button>' : ''}<button class="button primary" data-action="vault-export" ${count ? '' : 'disabled'}>${icon('download')}Download .txt</button><button class="button secondary" data-action="vault-select-done">Done</button></div></div>`;
+}
+function selectableCard(n) {
+  const selected = app.vaultSelected.has(n.id);
+  return `<article class="note-card selectable ${selected ? 'selected' : ''}" data-action="toggle-note-select" data-id="${n.id}"><div class="note-top"><span><button class="note-check" role="checkbox" aria-checked="${selected}" aria-label="Select note from ${esc(noteDate(n))}" data-action="toggle-note-select" data-id="${n.id}">${selected ? icon('check') : ''}</button>${n.kind === 'journal' ? 'REFLECTION' : 'NOTE'} · ${esc(noteDate(n))}</span></div><p class="note-text">${esc(n.text).replace(/(^|\s)(#[\p{L}\p{N}_-]+)/gu, '$1<span class="hashtag">$2</span>')}</p></article>`;
+}
+function renderNotes() {
+  const notes = visibleNotes();
+  if (notes.length && app.vaultSelecting && canSelect())
+    return selectBar(notes) + notes.map(selectableCard).join('');
   if (!notes.length)
     return `<div class="empty-state"><span class="empty-symbol">${icon('vault')}</span><h3>${app.vaultSearch || app.vaultTag ? 'Nothing found just yet' : app.vaultFilter === 'inbox' ? 'Room for a new thought' : 'A little space for your ideas'}</h3><p>${app.vaultSearch || app.vaultTag ? 'Try another word, hashtag, or tab.' : 'Capture something now. You can make sense of it later.'}</p><button class="button secondary" data-action="capture">${icon('plus')}Quick capture</button></div>`;
-  return notes
-    .map(
-      n =>
-        `<article class="note-card ${n.pinned ? 'pinned' : ''}"><div class="note-top"><span>${n.pinned ? icon('pin') + ' PINNED · ' : ''}${n.taskTitle ? icon('undo') + ' WAS A TASK · ' : ''}${n.kind === 'journal' ? icon('pencil') + ' REFLECTION' : 'NOTE'} · ${esc(noteDate(n))}</span>${coin(n.paid)}</div><p class="note-text">${noteText(n.text)}</p><div class="note-actions"><button class="text-button" data-action="edit-note" data-id="${n.id}">${icon('pencil')}Edit</button>${n.status !== 'archived' ? `<button class="text-button" data-action="pin-note" data-id="${n.id}" aria-pressed="${!!n.pinned}">${icon('pin')}${n.pinned ? 'Unpin' : 'Pin'}</button>` : ''}${n.taskId ? '<span class="converted">' + icon('check') + 'Sent to tasks</span>' : `<button class="text-button" data-action="convert-note" data-id="${n.id}">${icon('arrow')}${n.taskTitle ? 'Back to tasks' : 'Make a task'}</button>`}${n.status === 'inbox' ? `<button class="text-button" data-action="keep-note" data-id="${n.id}">Keep note</button>` : ''}<button class="text-button archive" data-action="${n.status === 'archived' ? 'restore-note' : 'archive-note'}" data-id="${n.id}">${n.status === 'archived' ? 'Restore' : 'Archive'}</button></div></article>`,
-    )
-    .join('');
+  return (
+    selectBar(notes) +
+    notes
+      .map(
+        n =>
+          `<article class="note-card ${n.pinned ? 'pinned' : ''}"><div class="note-top"><span>${n.pinned ? icon('pin') + ' PINNED · ' : ''}${n.taskTitle ? icon('undo') + ' WAS A TASK · ' : ''}${n.kind === 'journal' ? icon('pencil') + ' REFLECTION' : 'NOTE'} · ${esc(noteDate(n))}</span>${coin(n.paid)}</div><p class="note-text">${noteText(n.text)}</p><div class="note-actions"><button class="text-button" data-action="edit-note" data-id="${n.id}">${icon('pencil')}Edit</button>${n.status !== 'archived' ? `<button class="text-button" data-action="pin-note" data-id="${n.id}" aria-pressed="${!!n.pinned}">${icon('pin')}${n.pinned ? 'Unpin' : 'Pin'}</button>` : ''}${n.taskId ? '<span class="converted">' + icon('check') + 'Sent to tasks</span>' : `<button class="text-button" data-action="convert-note" data-id="${n.id}">${icon('arrow')}${n.taskTitle ? 'Back to tasks' : 'Make a task'}</button>`}${n.status === 'inbox' ? `<button class="text-button" data-action="keep-note" data-id="${n.id}">Keep note</button>` : ''}<button class="text-button archive" data-action="${n.status === 'archived' ? 'restore-note' : 'archive-note'}" data-id="${n.id}">${n.status === 'archived' ? 'Restore' : 'Archive'}</button></div></article>`,
+      )
+      .join('')
+  );
 }
 const refreshVault = () => {
   $('#vault-tags').innerHTML = renderTagChips();
@@ -3463,10 +3498,57 @@ const actions = {
   vault(b, { a, id, sourceRect }) {
     app.vaultSearch = '';
     app.vaultTag = null;
+    app.vaultSelecting = false;
+    app.vaultSelected = new Set();
     openModal({ type: 'vault' });
+  },
+  'vault-select'() {
+    app.vaultSelecting = true;
+    app.vaultSelected = new Set();
+    refreshVault();
+    $('#vault-results [data-action="toggle-note-select"].note-check')?.focus();
+  },
+  'vault-select-done'() {
+    app.vaultSelecting = false;
+    app.vaultSelected = new Set();
+    refreshVault();
+    $('#vault-results [data-action="vault-select"]')?.focus();
+  },
+  'toggle-note-select'(b) {
+    const id = b.dataset.id;
+    app.vaultSelected.has(id) ? app.vaultSelected.delete(id) : app.vaultSelected.add(id);
+    refreshVault();
+    $(`#vault-results .note-check[data-id="${CSS.escape(id)}"]`)?.focus();
+  },
+  'vault-select-all'() {
+    for (const n of visibleNotes()) app.vaultSelected.add(n.id);
+    refreshVault();
+    $('#vault-results [data-action="vault-export"]')?.focus();
+  },
+  'vault-select-clear'() {
+    app.vaultSelected = new Set();
+    refreshVault();
+    $('#vault-results [data-action="vault-select-all"]')?.focus();
+  },
+  'vault-export'() {
+    const notes = app.state.notes.filter(n => app.vaultSelected.has(n.id));
+    if (!notes.length) return;
+    const text = notesToText(notes, { timeZone: app.state.settings.timezone }),
+      url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' })),
+      link = document.createElement('a');
+    link.href = url;
+    link.download = `twesk-notes-${today()}.txt`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    sound('note');
+    toast(`Downloaded ${notes.length} ${notes.length === 1 ? 'note' : 'notes'} as one text file.`);
   },
   'vault-filter'(b, { a, id, sourceRect }) {
     app.vaultFilter = b.dataset.filter;
+    if (!canSelect()) {
+      app.vaultSelecting = false;
+      app.vaultSelected = new Set();
+    }
     view.renderModal();
     $(`[data-action="vault-filter"][data-filter="${app.vaultFilter}"]`)?.focus();
   },
@@ -3598,6 +3680,42 @@ function onKeydown(event) {
 }
 
 Object.assign(exports,{modals,actions,forms,onInput,onKeydown});
+},
+"notes-export.js":function(require,exports){
+// Merge Vault notes into one readable plain-text document.
+// Notes are ordered oldest first. Each note gets its date as a heading; its own paragraphs are kept,
+// and a "* * *" divider with blank lines separates one note from the next.
+const NOTE_DIVIDER = '* * *';
+
+const dateLabel = (iso, timeZone) =>
+  new Intl.DateTimeFormat('en', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone,
+  }).format(new Date(iso));
+// Normalize line endings and trailing spaces, and keep at most one blank line between paragraphs.
+function tidyText(text) {
+  return String(text)
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map(line => line.replace(/[ \t]+$/, ''))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+function notesToText(notes, { timeZone = 'UTC', exportedAt = new Date().toISOString() } = {}) {
+  const ordered = [...notes].sort((a, b) => a.created.localeCompare(b.created));
+  const header = `Twesk notes · ${ordered.length} ${ordered.length === 1 ? 'note' : 'notes'} · exported ${dateLabel(exportedAt, timeZone)}`;
+  const sections = ordered.map(note => {
+    const kind = note.kind === 'journal' ? ' · Journal' : '';
+    return `${dateLabel(note.created, timeZone)}${kind}\n\n${tidyText(note.text)}`;
+  });
+  return `${header}\n\n\n${sections.join(`\n\n\n${NOTE_DIVIDER}\n\n\n`)}\n`;
+}
+
+Object.assign(exports,{NOTE_DIVIDER,tidyText,notesToText});
 },
 "ui-character.js":function(require,exports){
 // The adventurer: dashboard card, rotatable model, appearance studio.

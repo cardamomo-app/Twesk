@@ -1,8 +1,9 @@
 // The Vault: notes, journal entries, quick capture, and recovery reflections.
-import * as E from './engine.js?v=0.12.0';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.12.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.12.0';
-import { sound } from './ui-effects.js?v=0.12.0';
+import * as E from './engine.js?v=0.12.1';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.12.1';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.12.1';
+import { notesToText } from './notes-export.js?v=0.12.1';
+import { sound } from './ui-effects.js?v=0.12.1';
 const noteDate = n =>
   new Intl.DateTimeFormat('en', {
     month: 'short',
@@ -39,8 +40,8 @@ function renderTagChips() {
     )
     .join('')}</div>`;
 }
-function renderNotes() {
-  const notes = app.state.notes
+const visibleNotes = () =>
+  app.state.notes
     .filter(
       n =>
         inTab(n) &&
@@ -48,14 +49,34 @@ function renderNotes() {
         searchable(n).includes(app.vaultSearch.toLowerCase()),
     )
     .sort((a, b) => !!b.pinned - !!a.pinned);
+// Reviewed notes can be selected and downloaded together as one text file.
+const canSelect = () => app.vaultFilter === 'kept';
+function selectBar(notes) {
+  if (!canSelect() || !notes.length) return '';
+  if (!app.vaultSelecting)
+    return `<div class="vault-select-bar"><span>Download notes as a text file</span><button class="button secondary" data-action="vault-select">${icon('check')}Select</button></div>`;
+  const count = notes.filter(n => app.vaultSelected.has(n.id)).length;
+  return `<div class="vault-select-bar selecting" role="toolbar" aria-label="Selected notes"><span><strong>${count}</strong> selected</span><div><button class="text-button" data-action="vault-select-all">Select all</button>${count ? '<button class="text-button" data-action="vault-select-clear">Clear</button>' : ''}<button class="button primary" data-action="vault-export" ${count ? '' : 'disabled'}>${icon('download')}Download .txt</button><button class="button secondary" data-action="vault-select-done">Done</button></div></div>`;
+}
+function selectableCard(n) {
+  const selected = app.vaultSelected.has(n.id);
+  return `<article class="note-card selectable ${selected ? 'selected' : ''}" data-action="toggle-note-select" data-id="${n.id}"><div class="note-top"><span><button class="note-check" role="checkbox" aria-checked="${selected}" aria-label="Select note from ${esc(noteDate(n))}" data-action="toggle-note-select" data-id="${n.id}">${selected ? icon('check') : ''}</button>${n.kind === 'journal' ? 'REFLECTION' : 'NOTE'} · ${esc(noteDate(n))}</span></div><p class="note-text">${esc(n.text).replace(/(^|\s)(#[\p{L}\p{N}_-]+)/gu, '$1<span class="hashtag">$2</span>')}</p></article>`;
+}
+function renderNotes() {
+  const notes = visibleNotes();
+  if (notes.length && app.vaultSelecting && canSelect())
+    return selectBar(notes) + notes.map(selectableCard).join('');
   if (!notes.length)
     return `<div class="empty-state"><span class="empty-symbol">${icon('vault')}</span><h3>${app.vaultSearch || app.vaultTag ? 'Nothing found just yet' : app.vaultFilter === 'inbox' ? 'Room for a new thought' : 'A little space for your ideas'}</h3><p>${app.vaultSearch || app.vaultTag ? 'Try another word, hashtag, or tab.' : 'Capture something now. You can make sense of it later.'}</p><button class="button secondary" data-action="capture">${icon('plus')}Quick capture</button></div>`;
-  return notes
-    .map(
-      n =>
-        `<article class="note-card ${n.pinned ? 'pinned' : ''}"><div class="note-top"><span>${n.pinned ? icon('pin') + ' PINNED · ' : ''}${n.taskTitle ? icon('undo') + ' WAS A TASK · ' : ''}${n.kind === 'journal' ? icon('pencil') + ' REFLECTION' : 'NOTE'} · ${esc(noteDate(n))}</span>${coin(n.paid)}</div><p class="note-text">${noteText(n.text)}</p><div class="note-actions"><button class="text-button" data-action="edit-note" data-id="${n.id}">${icon('pencil')}Edit</button>${n.status !== 'archived' ? `<button class="text-button" data-action="pin-note" data-id="${n.id}" aria-pressed="${!!n.pinned}">${icon('pin')}${n.pinned ? 'Unpin' : 'Pin'}</button>` : ''}${n.taskId ? '<span class="converted">' + icon('check') + 'Sent to tasks</span>' : `<button class="text-button" data-action="convert-note" data-id="${n.id}">${icon('arrow')}${n.taskTitle ? 'Back to tasks' : 'Make a task'}</button>`}${n.status === 'inbox' ? `<button class="text-button" data-action="keep-note" data-id="${n.id}">Keep note</button>` : ''}<button class="text-button archive" data-action="${n.status === 'archived' ? 'restore-note' : 'archive-note'}" data-id="${n.id}">${n.status === 'archived' ? 'Restore' : 'Archive'}</button></div></article>`,
-    )
-    .join('');
+  return (
+    selectBar(notes) +
+    notes
+      .map(
+        n =>
+          `<article class="note-card ${n.pinned ? 'pinned' : ''}"><div class="note-top"><span>${n.pinned ? icon('pin') + ' PINNED · ' : ''}${n.taskTitle ? icon('undo') + ' WAS A TASK · ' : ''}${n.kind === 'journal' ? icon('pencil') + ' REFLECTION' : 'NOTE'} · ${esc(noteDate(n))}</span>${coin(n.paid)}</div><p class="note-text">${noteText(n.text)}</p><div class="note-actions"><button class="text-button" data-action="edit-note" data-id="${n.id}">${icon('pencil')}Edit</button>${n.status !== 'archived' ? `<button class="text-button" data-action="pin-note" data-id="${n.id}" aria-pressed="${!!n.pinned}">${icon('pin')}${n.pinned ? 'Unpin' : 'Pin'}</button>` : ''}${n.taskId ? '<span class="converted">' + icon('check') + 'Sent to tasks</span>' : `<button class="text-button" data-action="convert-note" data-id="${n.id}">${icon('arrow')}${n.taskTitle ? 'Back to tasks' : 'Make a task'}</button>`}${n.status === 'inbox' ? `<button class="text-button" data-action="keep-note" data-id="${n.id}">Keep note</button>` : ''}<button class="text-button archive" data-action="${n.status === 'archived' ? 'restore-note' : 'archive-note'}" data-id="${n.id}">${n.status === 'archived' ? 'Restore' : 'Archive'}</button></div></article>`,
+      )
+      .join('')
+  );
 }
 const refreshVault = () => {
   $('#vault-tags').innerHTML = renderTagChips();
@@ -148,10 +169,57 @@ export const actions = {
   vault(b, { a, id, sourceRect }) {
     app.vaultSearch = '';
     app.vaultTag = null;
+    app.vaultSelecting = false;
+    app.vaultSelected = new Set();
     openModal({ type: 'vault' });
+  },
+  'vault-select'() {
+    app.vaultSelecting = true;
+    app.vaultSelected = new Set();
+    refreshVault();
+    $('#vault-results [data-action="toggle-note-select"].note-check')?.focus();
+  },
+  'vault-select-done'() {
+    app.vaultSelecting = false;
+    app.vaultSelected = new Set();
+    refreshVault();
+    $('#vault-results [data-action="vault-select"]')?.focus();
+  },
+  'toggle-note-select'(b) {
+    const id = b.dataset.id;
+    app.vaultSelected.has(id) ? app.vaultSelected.delete(id) : app.vaultSelected.add(id);
+    refreshVault();
+    $(`#vault-results .note-check[data-id="${CSS.escape(id)}"]`)?.focus();
+  },
+  'vault-select-all'() {
+    for (const n of visibleNotes()) app.vaultSelected.add(n.id);
+    refreshVault();
+    $('#vault-results [data-action="vault-export"]')?.focus();
+  },
+  'vault-select-clear'() {
+    app.vaultSelected = new Set();
+    refreshVault();
+    $('#vault-results [data-action="vault-select-all"]')?.focus();
+  },
+  'vault-export'() {
+    const notes = app.state.notes.filter(n => app.vaultSelected.has(n.id));
+    if (!notes.length) return;
+    const text = notesToText(notes, { timeZone: app.state.settings.timezone }),
+      url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' })),
+      link = document.createElement('a');
+    link.href = url;
+    link.download = `twesk-notes-${today()}.txt`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    sound('note');
+    toast(`Downloaded ${notes.length} ${notes.length === 1 ? 'note' : 'notes'} as one text file.`);
   },
   'vault-filter'(b, { a, id, sourceRect }) {
     app.vaultFilter = b.dataset.filter;
+    if (!canSelect()) {
+      app.vaultSelecting = false;
+      app.vaultSelected = new Set();
+    }
     view.renderModal();
     $(`[data-action="vault-filter"][data-filter="${app.vaultFilter}"]`)?.focus();
   },

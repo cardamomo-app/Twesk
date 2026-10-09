@@ -1,7 +1,7 @@
 // Shared interface foundation: the app store, saving, small HTML helpers, and toasts.
-import * as E from './engine.js?v=0.12.0';
-import { goldArt } from './art.js?v=0.12.0';
-import { HABIT_ICONS } from './habit-icons.js?v=0.12.0';
+import * as E from './engine.js?v=0.12.1';
+import { goldArt } from './art.js?v=0.12.1';
+import { HABIT_ICONS } from './habit-icons.js?v=0.12.1';
 export const $ = s => document.querySelector(s);
 export const $$ = s => [...document.querySelectorAll(s)];
 export const esc = v =>
@@ -19,6 +19,8 @@ export function viewDefaults() {
     vaultFilter: 'inbox',
     vaultSearch: '',
     vaultTag: null,
+    vaultSelecting: false,
+    vaultSelected: new Set(),
     modal: null,
     pendingImport: null,
     pendingBadges: [],

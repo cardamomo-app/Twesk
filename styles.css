@@ -487,3 +487,15 @@ button.hashtag:hover{text-decoration:underline}
 .style-preview-bar>span{flex:1 1 140px;min-width:0}
 .task-form-secondary{display:flex;flex-wrap:wrap;gap:6px}
 .task-form-secondary .icon{width:14px;height:14px}
+/* Vault note selection and export */
+.vault-select-bar{position:sticky;top:-18px;z-index:2;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:-4px 0 12px;padding:8px 10px;border-radius:10px;background:var(--surface);border:1px solid var(--line);font-size:11px;color:var(--secondary)}
+.vault-select-bar.selecting{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 35%,transparent);color:var(--text)}
+.vault-select-bar>div{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.vault-select-bar .button{min-height:30px;padding:5px 12px;font-size:10px}
+.vault-select-bar .icon{width:13px;height:13px}
+.note-card.selectable{cursor:pointer;transition:border-color .15s,background .15s}
+.note-card.selectable:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.note-card.selected{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
+.note-check{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--line);display:inline-flex;align-items:center;justify-content:center;margin-right:8px;vertical-align:-4px;background:var(--panel)}
+.note-card.selected .note-check{background:var(--accent);border-color:var(--accent);color:#fff}
+.note-check .icon{width:11px;height:11px;stroke-width:2.5}

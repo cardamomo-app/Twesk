@@ -32,6 +32,7 @@ Regenerate `Twesk.html` after source changes with `npm run build:standalone`. Th
 - Every positive habit is available once per calendar day. There is no schedule or frequency field and no HP loss for missed habits. Background momentum can increase or gradually lower the next XP reward.
 - Starter habits and editable starter tasks, plus custom habits and suggestions. Creating or editing a habit offers 24 icon choices, including a category default; choices persist through renaming, reloads, and backups.
 - Vault with hashtags, search, pending review, kept notes, journal entries, archive/restore, and one-click task conversion. Captured tasks immediately appear in the task inbox.
+- Note export: on the Vault's Notes tab, Select turns on selection mode; click notes (or Select all, which respects search and hashtag filters) and Download .txt merges them into one plain-text file, oldest first. Each note gets its date as a heading, keeps its own paragraphs, and is separated from the next by a `* * *` divider with blank lines.
 - Vault organization: pin notes to the top, filter by hashtag chips or by clicking a tag in a note, and review inbox captures one at a time (oldest first) with Keep / Make a task / Archive / Skip buttons or the K, T, A, S keys.
 - Habit details: the ⋯ menu shows the next reward and momentum (or tomorrow's, once done today), the current streak, all-time totals, and a 28-day history grid above the edit form.
 - Note-length and review gold, with limits and incremental payouts.
@@ -63,7 +64,7 @@ Quick capture: **Command/Ctrl-K**. Vault: **Command/Ctrl-J**. Escape closes dial
 npm test
 ```
 
-The 77 domain checks cover independent XP, the weekly progression target, momentum and missed days, reward undo, note caps, conversion/review, health, equipment, exact combat odds versus independent sampling, loot, rollover, backup validation, milestone persistence/migration, monster collection statuses, artwork bounds, habit icon compatibility/validation, personalized face portraits, reset/recovery, failed-storage preservation, device-timezone defaults, backup-reminder timing, recurring-task schedules, project tags, loadout comparisons, habit details, pinned notes, capped Soul deflection and monster gold, helmets, pet/spell/tonic bonuses, the wardrobe, rendering of every style and helmet from every side, and the daily history record (undo, level-up removal, migration, bounds).
+The 80 domain checks cover independent XP, the weekly progression target, momentum and missed days, reward undo, note caps, conversion/review, health, equipment, exact combat odds versus independent sampling, loot, rollover, backup validation, milestone persistence/migration, monster collection statuses, artwork bounds, habit icon compatibility/validation, personalized face portraits, reset/recovery, failed-storage preservation, device-timezone defaults, backup-reminder timing, recurring-task schedules, project tags, loadout comparisons, habit details, pinned notes, capped Soul deflection and monster gold, helmets, pet/spell/tonic bonuses, the wardrobe, rendering of every style and helmet from every side, and the daily history record (undo, level-up removal, migration, bounds).
 
 ### Interface tests
 
@@ -71,7 +72,7 @@ The 77 domain checks cover independent XP, the weekly progression target, moment
 npm run test:ui
 ```
 
-17 tests drive the real interface in a headless Chromium-based browser with real mouse clicks and key presses: loading and reload persistence, task completion and undo, moving a task back to the Vault and returning it (including the animated path with motion on), recurring tasks and project filters, habit scroll position, level-up celebration, ⌘K capture and keyboard Vault review, shop comparisons/helmets/tonics/styles, studio try-on and purchase, a won fight with its loot, the history calendar, backup export plus reset and restore, Escape and focus trapping, the phone layout, migration of older saves, and the standalone `Twesk.html` with its built-in worker. Each test runs in an isolated browser profile, so real saves are never touched; a failing test saves a screenshot to `tests/ui/artifacts/`.
+18 tests drive the real interface in a headless Chromium-based browser with real mouse clicks and key presses: loading and reload persistence, task completion and undo, moving a task back to the Vault and returning it, selecting and downloading notes as text (including the animated path with motion on), recurring tasks and project filters, habit scroll position, level-up celebration, ⌘K capture and keyboard Vault review, shop comparisons/helmets/tonics/styles, studio try-on and purchase, a won fight with its loot, the history calendar, backup export plus reset and restore, Escape and focus trapping, the phone layout, migration of older saves, and the standalone `Twesk.html` with its built-in worker. Each test runs in an isolated browser profile, so real saves are never touched; a failing test saves a screenshot to `tests/ui/artifacts/`.
 
 The driver (`tests/ui/browser.mjs`) has no dependencies: it uses the browser's DevTools protocol over Node's built-in WebSocket. It looks for Chrome, then Chromium, Edge, or Brave; set `CHROME_PATH` to choose one. Without a browser, the interface tests are skipped. `npm run test:all` runs both suites. The suite takes about 15 seconds.
 
@@ -98,6 +99,7 @@ The full flows were also checked in the browser: capture → convert → complet
 - `habit-icons.js`: habit icon catalog, legacy defaults, and saved-choice validation.
 - `cuboid-renderer.js`: cached spatial partitioning of model faces, so overlapping parts draw correctly through a full rotation.
 - `planning/BALANCE.md`, `planning/long-term-sim.mjs`: the economy and its year-long simulation through the real engine, with the latest findings at the top.
+- `notes-export.js`, `tests/notes-export.test.js`: merging selected notes into one readable text file.
 - `ui-history.js`, `tests/history.test.js`: the progress calendar and its daily record.
 - `tests/ui/browser.mjs`, `tests/ui/app.ui.test.mjs`: dependency-free browser driver and the interface tests.
 - `tests/depth.test.js`: balance caps, helmets, stacking bonuses, tonics, the wardrobe, and avatar rendering for every style.

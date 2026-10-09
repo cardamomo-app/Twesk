@@ -391,3 +391,24 @@ button.hashtag:hover{text-decoration:underline}
 [data-motion=reduced] .victory-banner{display:none}@media (prefers-reduced-motion:reduce){.victory-banner{display:none}}
 .battle-result{margin-top:12px}
 .battle-result .loot-box{margin-top:0}
+/* Game depth: helmets, tonics, styles */
+.shop-tabs{overflow-x:auto;scrollbar-width:none}
+.shop-tabs::-webkit-scrollbar{display:none}
+.shop-tabs button{padding-left:10px;padding-right:10px}
+.shop-item.legendary .item-tier{color:var(--gold)}
+.shop-item.legendary{border-color:color-mix(in srgb,var(--gold) 35%,var(--line))}
+.shop-item.legendary .item-art{background:radial-gradient(ellipse at 50% 60%,var(--gold-bg),transparent 73%)}
+.style-art{display:flex;align-items:center;justify-content:center}
+.style-art .avatar-face{width:92px;height:92px}
+.style-swatch{width:64px;height:64px;border-radius:50%;background:var(--swatch);border:4px solid var(--panel);outline:1px solid var(--line);box-shadow:0 6px 18px #0000001a}
+.style-item>.text-button{margin-top:6px}
+.appearance-swatch.locked{opacity:.55;background:repeating-linear-gradient(45deg,var(--swatch) 0 5px,color-mix(in srgb,var(--swatch) 70%,#fff) 5px 7px)}
+.appearance-swatch.locked .icon{width:11px;height:11px}
+.appearance-swatch.locked.selected{opacity:1}
+.style-option.locked{border-style:dashed;color:var(--muted)}
+.style-option small{display:inline-flex;align-items:center;gap:2px;margin-left:5px;color:var(--gold);font-size:9px}
+.style-option small .icon{width:9px;height:9px}
+.style-preview-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding:9px 11px;border-radius:10px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);font-size:11px}
+.style-preview-bar>div{display:flex;align-items:center;gap:10px}
+.style-preview-bar .button{min-height:30px;padding:5px 12px;font-size:10px}
+.appearance-save-note .icon{width:10px;height:10px;vertical-align:-1px}

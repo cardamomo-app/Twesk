@@ -1,6 +1,6 @@
 // Floating explanations for the character's stat chips.
-import * as E from './engine.js?v=0.9.0';
-import { app, icon } from './ui-core.js?v=0.9.0';
+import * as E from './engine.js?v=0.10.0';
+import { app, icon } from './ui-core.js?v=0.10.0';
 const statTooltip = document.createElement('div');
 statTooltip.id = 'stat-tooltip';
 statTooltip.className = 'stat-tooltip';
@@ -14,7 +14,13 @@ function statExplanation(category) {
   const current = E.level(app.state, category),
     next = current + 1;
   // Read benefits from the combat rules, excluding equipment and spell bonuses.
-  const intrinsic = { ...app.state, equipped: { weapon: null, armor: null }, preparedSpell: null };
+  const intrinsic = {
+    ...app.state,
+    equipped: { weapon: null, armor: null, helmet: null },
+    preparedSpell: null,
+    tonic: null,
+    activePet: null,
+  };
   const stronger = { ...intrinsic, xp: { ...app.state.xp, [category]: app.state.xp[category] + 300 } };
   const now = E.combatStats(intrinsic),
     then = E.combatStats(stronger);

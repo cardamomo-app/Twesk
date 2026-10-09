@@ -13,7 +13,7 @@ test('old backups gain appearance defaults and invalid appearance is rejected',(
 test('appearance is saved without affecting character combat stats',()=>{
   const state=freshState(),before=combatStats(state);
   state.appearance={skin:'deep',hair:'silver',outfit:'rose',style:'braids'};
-  assert.deepEqual(validateState(state).appearance,state.appearance);
+  assert.deepEqual(validateState(state).appearance,{skin:'deep',hair:'silver',outfit:'rose',style:'braids',beard:'none',accessory:'none'},'older saves gain default beard and accessory');
   assert.deepEqual(combatStats(state),before);
 });
 test('character geometry rotates through every side without invalid coordinates or clipping',()=>{

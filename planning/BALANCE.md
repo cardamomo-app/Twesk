@@ -2,6 +2,33 @@
 
 Initial balance draft, now used for the MVP prototype. All numbers below are initial tuning parameters. The model targets a desktop dashboard with tasks, a shared Vault/scratchpad, five expandable habit sections, and a character/monster panel. Body, Mind, Soul, and Heart each have independent XP and levels. Harm costs HP and has no level. There is no overall character XP or level.
 
+## Long-term balance pass (October 2026)
+
+`node planning/long-term-sim.mjs` plays a year through the real engine for three profiles: light (45% of habits, one quick task on weekdays), steady (75% of habits, three quick tasks and one hard task on weekdays, a note a day), and intense (95% of habits, more tasks, a weekly quest). Each buys the best affordable gear and pets, heals with potions or journaling, and fights when the displayed chance is at least 55–60%.
+
+Findings before the pass:
+
+- Soul deflection (1 − 0.88^(level − 1)) approached 100%: around 90% by Soul 19, so fights became trivial within two to three months.
+- Monster gold (8 + 2 × (n − 1)) grew without limit: about 400 gold per win by monster #200, and balances in the tens of thousands after a year.
+- The shop ran out by day 21–57; equipment drops covered much of it.
+
+Changes:
+
+- Soul deflection = 50% × (1 − 0.76^(level − 1)): 12% at Soul 2 as before, about 45% at Soul 10, never above 50%. Pets and tonics may add on top, capped at 75% total.
+- Monster gold = 8 + 2 × min(n − 1, 16): rises to 40 by monster #17, then holds.
+- Drops include helmets, never legendary items (those are gold-only).
+- New sinks: helmets (+5/+12/+20/+32 max HP for 35/125/250/600), legendary weapon and armor (+8, 600 each), combat pets (fox +4% deflect 80, owl +3 attack 125, tortoise +3 block 150, cat +20 rally 250, drake +5 attack 600), tonics (Swiftness +10% deflect 35, Fortitude +15 rally 25; one per fight, alongside a spell), spells (Storm lance +6 attack 45, Starfall +4 attack/+2 block 60), and 16 cosmetic styles (30–100 each, 905 total).
+
+After the pass (one year):
+
+| Profile | Routine gold/day | Monsters beaten | Losses | Odds vs next monster | Owns all gear and pets |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Light | ~4 | 113 | 25 | 82% | not within the year |
+| Steady | ~25 | 239 | 49 | 80% | day ~109 |
+| Intense | ~43 | 296 | 59 | 85% | day ~71 |
+
+Fights stay meaningful all year (roughly 80–85% when fighting at a sensible pace, with about one loss a week for active players). Steady and intense players still build a surplus late in the year; the recurring sinks are spells and tonics, which the simulation does not buy (a spell plus a tonic every fight costs more than a steady player earns). Item power was checked against the exact odds: at level 1, basic items add about 7–10 points, sturdy items about 20–24, special about 32–40, and legendary about 47–57.
+
 ## Confirmed MVP changes
 
 The latest user decisions supersede the scheduling and missed-habit-damage proposals below:

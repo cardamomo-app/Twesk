@@ -1,17 +1,18 @@
 // The monster card, victory odds, and animated encounters.
-import * as E from './engine.js?v=0.9.0';
-import { avatarArt, monsterArt, monsterName, itemArt } from './art.js?v=0.9.0';
-import { describeCombatEvent } from './combat-presentation.js?v=0.9.0';
-import { playSfx, stopSfx, unlockSfx } from './sfx.js?v=0.9.0';
-import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.9.0';
-import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.9.0';
-import { announceBadges, commit } from './ui-modal.js?v=0.9.0';
-import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.9.0';
+import * as E from './engine.js?v=0.10.0';
+import { avatarArt, monsterArt, monsterName, itemArt } from './art.js?v=0.10.0';
+import { describeCombatEvent } from './combat-presentation.js?v=0.10.0';
+import { playSfx, stopSfx, unlockSfx } from './sfx.js?v=0.10.0';
+import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.10.0';
+import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.10.0';
+import { announceBadges, commit } from './ui-modal.js?v=0.10.0';
+import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.10.0';
 export function renderMonster() {
   const number = app.state.monster.number,
     won = !!app.state.monster.defeatedOn,
-    spell = E.preparedSpell(app.state);
-  return `<section class="panel monster-panel ${won ? 'cleared' : ''}"><div class="monster-heading"><span class="section-kicker">${won ? 'A LITTLE VICTORY' : 'A CHALLENGE AWAITS'}</span><span class="chapter">#${String(number).padStart(2, '0')}</span></div><button class="monster-scene" data-action="bestiary" aria-label="Inspect ${esc(monsterName(number))} in the monster collection" title="Open monster collection">${monsterArt(number, won)}</button><h3>${monsterName(number)}</h3><p>${won ? 'Defeated. Enjoy your well-earned pause.' : 'Waiting here until you feel ready.'}</p>${won ? `<div class="victory-note">${icon('check')}Next opponent arrives tomorrow</div>` : `<div class="readiness"><span>Estimated victory chance</span><strong id="chance-value">${app.chance === null ? '…' : Math.round(app.chance * 100) + '%'}</strong></div><div class="readiness-bar"><div id="chance-bar" style="width:${(app.chance || 0) * 100}%"></div></div>${spell ? `<button class="prepared-spell" data-action="open-spells">${icon('soul')}<span>${spell.name} prepared<small>Consumed in your next fight</small></span></button>` : ''}<button class="button primary fight-button" data-action="fight" ${app.state.hp === 0 ? 'disabled' : ''}>${icon('sword')}Challenge ${monsterName(number)}</button>${app.state.hp === 0 ? '<button class="text-button" data-action="recover">Recover HP to fight</button>' : '<small class="fight-hint">Your stats, gear, spells & health shape your chances.</small>'}`}${app.state.battles.some(r => r.monster === number) ? '<button class="text-button replay-button" data-action="replay-battle">' + icon('undo') + 'Replay last encounter</button>' : ''}</section>`;
+    spell = E.preparedSpell(app.state),
+    tonic = E.activeTonic(app.state);
+  return `<section class="panel monster-panel ${won ? 'cleared' : ''}"><div class="monster-heading"><span class="section-kicker">${won ? 'A LITTLE VICTORY' : 'A CHALLENGE AWAITS'}</span><span class="chapter">#${String(number).padStart(2, '0')}</span></div><button class="monster-scene" data-action="bestiary" aria-label="Inspect ${esc(monsterName(number))} in the monster collection" title="Open monster collection">${monsterArt(number, won)}</button><h3>${monsterName(number)}</h3><p>${won ? 'Defeated. Enjoy your well-earned pause.' : 'Waiting here until you feel ready.'}</p>${won ? `<div class="victory-note">${icon('check')}Next opponent arrives tomorrow</div>` : `<div class="readiness"><span>Estimated victory chance</span><strong id="chance-value">${app.chance === null ? '…' : Math.round(app.chance * 100) + '%'}</strong></div><div class="readiness-bar"><div id="chance-bar" style="width:${(app.chance || 0) * 100}%"></div></div>${spell ? `<button class="prepared-spell" data-action="open-spells">${icon('soul')}<span>${spell.name} prepared<small>Consumed in your next fight</small></span></button>` : ''}${tonic ? `<button class="prepared-spell" data-action="open-tonics">${icon('heart')}<span>${tonic.name} active<small>Lasts for your next fight</small></span></button>` : ''}<button class="button primary fight-button" data-action="fight" ${app.state.hp === 0 ? 'disabled' : ''}>${icon('sword')}Challenge ${monsterName(number)}</button>${app.state.hp === 0 ? '<button class="text-button" data-action="recover">Recover HP to fight</button>' : '<small class="fight-hint">Your stats, gear, spells & health shape your chances.</small>'}`}${app.state.battles.some(r => r.monster === number) ? '<button class="text-button replay-button" data-action="replay-battle">' + icon('undo') + 'Replay last encounter</button>' : ''}</section>`;
 }
 export function updateOdds() {
   const key = oddsKey(app.state);
@@ -56,13 +57,17 @@ function renderBattleModal() {
       : enemyMax;
   const loadout = r.loadout || app.state.equipped,
     weapon = E.SHOP.find(i => i.id === loadout.weapon),
-    armor = E.SHOP.find(i => i.id === loadout.armor);
+    armor = E.SHOP.find(i => i.id === loadout.armor),
+    helmet = E.SHOP.find(i => i.id === loadout.helmet),
+    pet = E.SHOP.find(i => i.id === r.pet),
+    tonic = E.SHOP.find(i => i.id === r.tonic);
   const levels = r.levels || Object.fromEntries(E.CATEGORIES.map(c => [c, E.level(app.state, c)]));
   const context = {
       monster: monsterName(r.monster),
       weapon,
       armor,
       spell: E.SHOP.find(i => i.id === r.spell),
+      pet,
     },
     step = event ? describeCombatEvent(event, context) : null;
   const round = event?.round || Math.floor(Math.max(0, index) / 2) + 1;
@@ -79,6 +84,11 @@ function renderBattleModal() {
   const history = r.events.slice(Math.max(0, historyEnd - 4), historyEnd);
   const chips = [
     ...(r.spell ? [{ label: `${E.SHOP.find(i => i.id === r.spell)?.name} · this fight`, tone: 'soul' }] : []),
+    ...(tonic ? [{ label: `${tonic.name} · this fight`, tone: 'soul' }] : []),
+    ...(pet
+      ? [{ label: `${pet.name} · ${pet.description.split('·')[1]?.trim() || 'companion'}`, tone: 'gear' }]
+      : []),
+    ...(helmet ? [{ label: `${helmet.name} · +${helmet.bonus} max HP`, tone: 'gear' }] : []),
     { label: `Body ${levels.body} · ${maximum} max HP`, tone: 'body' },
     ...(weapon
       ? [{ label: `${weapon.name} · +${weapon.bonus} attack`, tone: 'gear' }]
@@ -90,7 +100,7 @@ function renderBattleModal() {
     ...(levels.soul > 1
       ? [
           {
-            label: `Soul ${levels.soul} · ${Math.round((1 - 0.88 ** (levels.soul - 1)) * 100)}% deflect`,
+            label: `Soul ${levels.soul} · ${Math.round(E.soulDeflect(levels.soul) * 100)}% deflect`,
             tone: 'soul',
           },
         ]
@@ -104,7 +114,7 @@ function renderBattleModal() {
     `<div class="battle-body">
     <div class="battle-toolbar"><span>${finished ? `${round} rounds` : `${index < 0 ? 'GET READY' : `ROUND ${round} · ${event?.type === 'attack' ? 'YOUR TURN' : event?.type === 'rally' ? 'RECOVERY' : 'MONSTER’S TURN'}`}`}</span><div>${app.modal.replay ? '<span class="replay-label">REPLAY</span>' : ''}<span>${finished ? 'Encounter complete' : `Step ${Math.max(0, index + 1)} / ${r.events.length}`}</span><button class="icon-button" data-action="battle-mute" title="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}" aria-label="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}">${icon(app.state.settings.muted ? 'mute' : 'sound')}</button></div></div>
     <div class="battle-stage ${stageClass}" id="battle-stage">${finished && r.won ? '<div class="victory-banner" aria-hidden="true"><span class="victory-rays"></span><strong>VICTORY</strong></div>' : ''}
-      <div class="battle-fighter player"><div class="fighter-scene"><div class="fighter-motion">${avatarArt(weapon, armor, false, { appearance: r.appearance || app.state.appearance })}</div>${effect('player')}</div><strong>${esc(r.playerName || app.state.name)}</strong><div class="health-bar" role="progressbar" aria-label="Adventurer health" aria-valuemin="0" aria-valuemax="${maximum}" aria-valuenow="${hp}" id="battle-player-bar"><div style="width:${(hp / maximum) * 100}%"></div></div><small id="battle-player-hp">${hp} / ${maximum} HP</small></div>
+      <div class="battle-fighter player"><div class="fighter-scene"><div class="fighter-motion">${avatarArt(weapon, armor, false, { appearance: r.appearance || app.state.appearance, helmet })}</div>${effect('player')}</div><strong>${esc(r.playerName || app.state.name)}</strong><div class="health-bar" role="progressbar" aria-label="Adventurer health" aria-valuemin="0" aria-valuemax="${maximum}" aria-valuenow="${hp}" id="battle-player-bar"><div style="width:${(hp / maximum) * 100}%"></div></div><small id="battle-player-hp">${hp} / ${maximum} HP</small></div>
       <div class="battle-divider"><span>VS</span><i></i></div>
       <div class="battle-fighter monster"><div class="fighter-scene"><div class="fighter-motion">${monsterArt(r.monster, finished && r.won)}</div>${effect('monster')}</div><strong>${monsterName(r.monster)}</strong><div class="health-bar enemy" role="progressbar" aria-label="Monster health" aria-valuemin="0" aria-valuemax="${enemyMax}" aria-valuenow="${enemy}" id="battle-enemy-bar"><div style="width:${(enemy / enemyMax) * 100}%"></div></div><small id="battle-enemy-hp">${enemy} / ${enemyMax} HP</small></div>
     </div>

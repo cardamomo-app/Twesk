@@ -6,7 +6,7 @@ import {monsterArt} from '../art.js';
 const day='2026-10-08';
 function encounter(){
   const state=freshState();state.name='Combat preview';state.xp.mind=300;state.xp.soul=300;state.xp.heart=300;
-  state.inventory=['twig','guard'];state.equipped={weapon:'twig',armor:'guard'};
+  state.inventory=['twig','guard'];state.equipped={weapon:'twig',armor:'guard',helmet:null};
   const rolls=[0,.99,.999,0,.99,.999,.999,0,.999,.99,0,0,.1];
   const result=fight(state,day,()=>rolls.shift()??.5);
   return {state,result};
@@ -14,7 +14,7 @@ function encounter(){
 test('combat records actual HP loss, blocked damage, stat bonuses, and pre-hit health',()=>{
   const {state,result}=encounter();
   assert.equal(result.won,true);assert.equal(result.initialHP,100);assert.equal(result.hp,42);
-  assert.deepEqual(result.loadout,{weapon:'twig',armor:'guard'});
+  assert.deepEqual(result.loadout,{weapon:'twig',armor:'guard',helmet:null});
   assert.deepEqual(new Set(result.events.map(e=>e.type)),new Set(['attack','hit','rally','deflect']));
   let hp=result.initialHP,enemy=112;
   for(const event of result.events){

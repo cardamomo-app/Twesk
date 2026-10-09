@@ -1,6 +1,6 @@
-import {DEFAULT_APPEARANCE,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.9.0';
-import {validHabitIcon} from './habit-icons.js?v=0.9.0';
+import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.10.0';
+import {validHabitIcon} from './habit-icons.js?v=0.10.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -22,7 +22,7 @@ export function deviceTimezone() {
 }
 export function daysBetween(a, b) { return Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86400000); }
 export const level = (s, stat) => Math.floor(s.xp[stat] / 300) + 1;
-export const maxHP = s => 100 + 15 * (level(s, 'body') - 1);
+export const maxHP = s => 100 + 15 * (level(s, 'body') - 1) + (SHOP.find(i => i.id === s.equipped?.helmet)?.bonus || 0);
 export const healingMultiplier = s => 1 + .1 * (level(s, 'heart') - 1);
 export const words = text => (text.trim().match(/\S+/gu) || []).length;
 export const noteEntitlement = text => words(text) >= 150 ? 3 : words(text) >= 50 ? 2 : words(text) ? 1 : 0;
@@ -45,8 +45,8 @@ export function freshState() {
       habit('Check in with someone', 'heart', 20), habit('Do something kind', 'heart', 10),
       habit('Mindless scrolling', 'harm', 3), habit('Fast food', 'harm', 7),
     ],
-    notes: [], noteGold: {}, reviewDates: [], inventory: [], equipped: { weapon: null, armor: null }, potions: 0,
-    supplies: {}, preparedSpell: null, activePet: null,
+    notes: [], noteGold: {}, reviewDates: [], inventory: [], equipped: { weapon: null, armor: null, helmet: null }, potions: 0,
+    supplies: {}, preparedSpell: null, tonic: null, activePet: null, wardrobe: [],
     progress: createProgress(),
     monster: { number: 1, defeatedOn: null }, battles: [], pendingRecovery: false,
     settings: { theme: 'light', muted: false, reducedMotion: false, timezone: deviceTimezone(), lastBackup: null, backupNudge: null },
@@ -223,15 +223,35 @@ export const SHOP = [
   { id: 'moon', name: 'Moonstone mail', type: 'armor', tier: 'special', price: 250, bonus: 5, description: 'Reduce each hit by 5' },
   { id: 'greater-potion', name: 'Greater healing potion', type: 'potion', tier: 'large', price: 20, bonus: 65, description: 'Restore 65 HP · Heart improves healing' },
   { id: 'full-potion', name: 'Full healing potion', type: 'potion', tier: 'special', price: 35, bonus: 0, description: 'Restore all missing HP, at any Body level' },
-  { id: 'ember', name: 'Ember spell', type: 'spell', tier: 'basic', price: 20, bonus: 3, effect: 'attack', description: '+3 damage on every attack in your next fight' },
-  { id: 'ward', name: 'Stone ward', type: 'spell', tier: 'large', price: 25, bonus: 3, effect: 'armor', description: 'Block 3 extra damage on every hit in your next fight' },
-  { id: 'fox', name: 'Fern fox', type: 'pet', tier: 'basic', price: 80, bonus: 0, description: 'A fox companion · cosmetic, stays with you' },
-  { id: 'owl', name: 'Dusk owl', type: 'pet', tier: 'large', price: 125, bonus: 0, description: 'An owl companion · cosmetic, stays with you' },
-  { id: 'cat', name: 'Moon cat', type: 'pet', tier: 'special', price: 250, bonus: 0, description: 'A cat companion · cosmetic, stays with you' },
+  { id: 'ember', name: 'Ember spell', type: 'spell', tier: 'basic', price: 20, bonus: 3, effect: 'attack', boosts: { attack: 3 }, description: '+3 damage on every attack in your next fight' },
+  { id: 'ward', name: 'Stone ward', type: 'spell', tier: 'large', price: 25, bonus: 3, effect: 'armor', boosts: { armor: 3 }, description: 'Block 3 extra damage on every hit in your next fight' },
+  { id: 'storm', name: 'Storm lance', type: 'spell', tier: 'special', price: 45, boosts: { attack: 6 }, description: '+6 damage on every attack in your next fight' },
+  { id: 'starfall', name: 'Starfall', type: 'spell', tier: 'legendary', price: 60, boosts: { attack: 4, armor: 2 }, description: '+4 damage and block 2 on every hit in your next fight' },
+  { id: 'swift-tonic', name: 'Swiftness tonic', type: 'potion', tonic: true, tier: 'large', price: 35, bonus: 0, boosts: { dodge: .1 }, description: '+10% deflect chance for your next fight · stacks with a spell' },
+  { id: 'fort-tonic', name: 'Fortitude tonic', type: 'potion', tonic: true, tier: 'special', price: 25, bonus: 0, boosts: { rally: 15 }, description: '+15 HP to your rally for your next fight · works at any Heart level' },
+  { id: 'fox', name: 'Fern fox', type: 'pet', tier: 'basic', price: 80, bonus: 0, boosts: { dodge: .04 }, description: 'Keen ears · +4% deflect chance' },
+  { id: 'owl', name: 'Dusk owl', type: 'pet', tier: 'large', price: 125, bonus: 0, boosts: { attack: 3 }, description: 'Spots openings · +3 attack' },
+  { id: 'tortoise', name: 'Stone tortoise', type: 'pet', tier: 'large', price: 150, bonus: 0, boosts: { armor: 3 }, description: 'Shell guard · blocks 3 per hit' },
+  { id: 'cat', name: 'Moon cat', type: 'pet', tier: 'special', price: 250, bonus: 0, boosts: { rally: 20 }, description: 'Purrs you back up · +20 HP rally, even at Heart 1' },
+  { id: 'drake', name: 'Ember drake', type: 'pet', tier: 'legendary', price: 600, bonus: 0, boosts: { attack: 5 }, description: 'Breathes fire alongside you · +5 attack' },
+  { id: 'cap', name: 'Leather cap', type: 'helmet', tier: 'basic', price: 35, bonus: 5, description: '+5 maximum HP · snug and simple' },
+  { id: 'helm', name: 'Ironwood helm', type: 'helmet', tier: 'large', price: 125, bonus: 12, description: '+12 maximum HP · cheek guards included' },
+  { id: 'starhelm', name: 'Starlit helm', type: 'helmet', tier: 'special', price: 250, bonus: 20, description: '+20 maximum HP · crested and gleaming' },
+  { id: 'crown', name: 'Sunforged crown', type: 'helmet', tier: 'legendary', price: 600, bonus: 32, description: '+32 maximum HP · fit for a legend' },
+  { id: 'dawn', name: 'Dawnbreaker', type: 'weapon', tier: 'legendary', price: 600, bonus: 8, description: '+8 attack · forged at first light' },
+  { id: 'sunplate', name: 'Sunforged plate', type: 'armor', tier: 'legendary', price: 600, bonus: 8, description: 'Reduce each hit by 8 · with a crimson cape' },
 ];
 export const isConsumable = item => ['potion','spell'].includes(item.type);
 export const itemCount = (s,id) => id==='potion' ? s.potions : (s.supplies?.[id] || (s.inventory.includes(id)?1:0));
 export const preparedSpell = s => SHOP.find(i=>i.type==='spell'&&i.id===s.preparedSpell);
+export const activeTonic = s => SHOP.find(i=>i.tonic&&i.id===s.tonic);
+export const activePetItem = s => SHOP.find(i=>i.type==='pet'&&i.id===s.activePet);
+export const GEAR_SLOTS = ['weapon','armor','helmet'];
+// Equipping or removing a helmet shifts current HP with the maximum, like a Body level-up.
+function setGear(s,type,id) {
+  const before=maxHP(s); s.equipped[type]=id;
+  if(type==='helmet'&&s.hp>0) s.hp=Math.max(1,Math.min(maxHP(s),s.hp+maxHP(s)-before));
+}
 export function buy(s, id) {
   const item = SHOP.find(i => i.id === id);
   if (!item) throw new Error('Item not found.');
@@ -243,7 +263,7 @@ export function buy(s, id) {
   else {
     s.inventory.push(id);
     if(item.type==='pet') { if(!s.activePet)s.activePet=id; }
-    else if (!s.equipped[item.type]) s.equipped[item.type] = id;
+    else if (!s.equipped[item.type]) setGear(s,item.type,id);
   }
   return item;
 }
@@ -252,7 +272,25 @@ export function equip(s,id) {
   const item = SHOP.find(i => i.id === id);
   if(!item||isConsumable(item))throw new Error('Choose equipment or a companion.');
   if(item.type==='pet') { s.activePet=s.activePet===id?null:id; return; }
-  s.equipped[item.type] = s.equipped[item.type] === id ? null : id;
+  setGear(s,item.type,s.equipped[item.type] === id ? null : id);
+}
+// Cosmetics: priced appearance options are bought once into the wardrobe, as "key:id".
+export const cosmeticKey = (key,id) => `${key}:${id}`;
+export const ownableCosmetic = entry => { const [key,id]=String(entry).split(':'); return !!appearanceOption(key,id)?.price; };
+export const cosmeticOwned = (s,key,id) => !appearanceOption(key,id)?.price || (s.wardrobe||[]).includes(cosmeticKey(key,id));
+export const appearanceUnlocked = (s,look) => Object.keys(APPEARANCE).every(key=>cosmeticOwned(s,key,{...DEFAULT_APPEARANCE,...look}[key]));
+export function buyCosmetic(s,key,id) {
+  const option=appearanceOption(key,id);
+  if(!option?.price) throw new Error('This style is already free to wear.');
+  if(cosmeticOwned(s,key,id)) throw new Error('You already own this style.');
+  if(s.gold<option.price) throw new Error('A little more gold needed.');
+  s.gold-=option.price; s.wardrobe.push(cosmeticKey(key,id)); s.appearance[key]=id;
+  return option;
+}
+export function setAppearance(s,key,id) {
+  if(!appearanceOption(key,id)) throw new Error('Unknown style.');
+  if(!cosmeticOwned(s,key,id)) throw new Error('Buy this style first.');
+  s.appearance[key]=id;
 }
 export function prepareSpell(s,id) {
   if(!SHOP.some(i=>i.id===id&&i.type==='spell')||!itemCount(s,id))throw new Error('Buy this spell first.');
@@ -262,6 +300,10 @@ export function prepareSpell(s,id) {
 export function usePotion(s,id='potion') {
   const item=SHOP.find(i=>i.id===id&&i.type==='potion');
   if (!item||!itemCount(s,id)) throw new Error('You don’t have this potion yet.');
+  if (item.tonic) {
+    if (s.tonic) throw new Error(`${activeTonic(s).name} is already active for your next fight.`);
+    s.supplies[id]--; s.tonic=id; return 0;
+  }
   if (s.hp === maxHP(s)) throw new Error('You’re already at full health.');
   const amount = id==='full-potion'?maxHP(s)-s.hp:Math.min(maxHP(s)-s.hp, Math.floor(item.bonus*healingMultiplier(s)));
   if(id==='potion')s.potions--;else s.supplies[id]--;
@@ -271,15 +313,23 @@ export function rollover(s,today) {
   reopenTasks(s,today);
   if (s.monster.defeatedOn && s.monster.defeatedOn < today) { s.monster.number++; s.monster.defeatedOn = null; }
 }
+// Soul deflect chance rises quickly at first and levels off below 50%, so late fights stay real.
+export const soulDeflect = soulLevel => .5*(1-.76**(soulLevel-1));
+// Gold loot grows with each monster until #17, then holds at a quest-sized 40.
+export const monsterGold = number => 8+2*Math.min(number-1,16);
 export function monsterStats(number) {
   return { hp: Math.round(112*(1+.06*(number-1))), attack: 24+Math.floor(.8*(number-1)+.5) };
 }
+// Bonuses from the prepared spell, active tonic, and companion, by source and in total.
+export function boostSources(s) {
+  return { spell: preparedSpell(s)?.boosts || {}, tonic: activeTonic(s)?.boosts || {}, pet: activePetItem(s)?.boosts || {} };
+}
+const boostTotal = (s,key) => Object.values(boostSources(s)).reduce((n,b)=>n+(b[key]||0),0);
 export function combatStats(s) {
-  const spell=preparedSpell(s);
   return {
-    hp: s.hp, max: maxHP(s), attack: 4*(level(s,'mind')-1)+(SHOP.find(i => i.id === s.equipped.weapon)?.bonus || 0)+(spell?.effect==='attack'?spell.bonus:0),
-    armor: (SHOP.find(i => i.id === s.equipped.armor)?.bonus || 0)+(spell?.effect==='armor'?spell.bonus:0),
-    dodge: 1-.88**(level(s,'soul')-1), rally: 15*(level(s,'heart')-1),
+    hp: s.hp, max: maxHP(s), attack: 4*(level(s,'mind')-1)+(SHOP.find(i => i.id === s.equipped.weapon)?.bonus || 0)+boostTotal(s,'attack'),
+    armor: (SHOP.find(i => i.id === s.equipped.armor)?.bonus || 0)+boostTotal(s,'armor'),
+    dodge: Math.min(.75, soulDeflect(level(s,'soul'))+boostTotal(s,'dodge')), rally: 15*(level(s,'heart')-1)+boostTotal(s,'rally'),
   };
 }
 export function victoryOdds(s) {
@@ -327,29 +377,34 @@ export function estimateOdds(s) {
 // The combat-relevant state with `item` equipped or prepared, for before/after comparisons.
 export function withItem(s,item) {
   const next={...s,equipped:{...s.equipped}};
-  if(item.type==='spell') next.preparedSpell=item.id; else next.equipped[item.type]=item.id;
+  if(item.type==='spell') next.preparedSpell=item.id;
+  else if(item.tonic) next.tonic=item.id;
+  else if(item.type==='pet') next.activePet=item.id;
+  else { next.equipped[item.type]=item.id; if(item.type==='helmet') next.hp=Math.min(maxHP(next),s.hp+maxHP(next)-maxHP(s)); }
   return next;
 }
-export const oddsInput = s => ({hp:s.hp,xp:s.xp,equipped:s.equipped,preparedSpell:s.preparedSpell,monster:{number:s.monster.number}});
+export const oddsInput = s => ({hp:s.hp,xp:s.xp,equipped:s.equipped,preparedSpell:s.preparedSpell,tonic:s.tonic??null,activePet:s.activePet??null,monster:{number:s.monster.number}});
 export function fight(s,today,rng=Math.random) {
   if (!s.hp) throw new Error('Recover some HP before fighting.');
   if (s.monster.defeatedOn) throw new Error('Your next opponent arrives tomorrow.');
   const p=combatStats(s), m=monsterStats(s.monster.number), events=[];
-  const spell=preparedSpell(s);
+  const spell=preparedSpell(s), tonic=activeTonic(s), pet=activePetItem(s), boosts=boostSources(s);
   if(spell) { s.supplies[spell.id]--;s.preparedSpell=null; }
+  if(tonic) s.tonic=null;
   let hp=p.hp, enemy=m.hp, ready=true, round=0;
   const roll=(min,count)=>min+2*Math.floor(rng()*count);
   while (hp>0 && enemy>0) {
     round++;
     const baseDamage=roll(10,13), weaponBonus=SHOP.find(i=>i.id===s.equipped.weapon)?.bonus||0;
     const damage=baseDamage+p.attack, enemyBefore=enemy; enemy=Math.max(0,enemy-damage);
-    events.push({type:'attack',round,amount:damage,actualDamage:enemyBefore-enemy,baseDamage,weaponBonus,mindBonus:4*(level(s,'mind')-1),spellBonus:spell?.effect==='attack'?spell.bonus:0,hpBefore:hp,enemyBefore,hp,enemy});
+    events.push({type:'attack',round,amount:damage,actualDamage:enemyBefore-enemy,baseDamage,weaponBonus,mindBonus:4*(level(s,'mind')-1),spellBonus:boosts.spell.attack||0,petBonus:boosts.pet.attack||0,hpBefore:hp,enemyBefore,hp,enemy});
     if (!enemy) break;
     if (p.dodge && rng()<p.dodge) { events.push({type:'deflect',round,amount:0,soulLevel:level(s,'soul'),hpBefore:hp,enemyBefore:enemy,hp,enemy}); continue; }
     const rawDamage=roll(m.attack-10,11), injury=Math.max(1,rawDamage-p.armor), hpBefore=hp;
     hp=Math.max(0,hp-injury);
-    const spellBlock=spell?.effect==='armor'?Math.min(spell.bonus,rawDamage-injury):0;
-    events.push({type:'hit',round,amount:injury,actualDamage:hpBefore-hp,rawDamage,blocked:rawDamage-injury,armorBonus:p.armor-(spell?.effect==='armor'?spell.bonus:0),spellBlock,hpBefore,enemyBefore:enemy,hp,enemy});
+    // Attribute blocked damage: spell first, then companion, then armor.
+    const blocked=rawDamage-injury, spellBlock=Math.min(boosts.spell.armor||0,blocked), petBlock=Math.min(boosts.pet.armor||0,blocked-spellBlock);
+    events.push({type:'hit',round,amount:injury,actualDamage:hpBefore-hp,rawDamage,blocked,armorBonus:p.armor-(boosts.spell.armor||0)-(boosts.pet.armor||0),spellBlock,petBlock,hpBefore,enemyBefore:enemy,hp,enemy});
     if (hp && ready && p.rally && hp<=p.max/2) {
       const healed=Math.min(p.max-hp,p.rally), hpBefore=hp; hp+=healed; ready=false;
       events.push({type:'rally',round,amount:healed,heartLevel:level(s,'heart'),hpBefore,enemyBefore:enemy,hp,enemy});
@@ -358,15 +413,15 @@ export function fight(s,today,rng=Math.random) {
   s.hp=hp; let loot=null;
   if (!enemy) {
     s.monster.defeatedOn=today;
-    if (rng()<.75) { const gold=8+2*(s.monster.number-1); s.gold+=gold; loot={type:'gold',amount:gold}; }
+    if (rng()<.75) { const gold=monsterGold(s.monster.number); s.gold+=gold; loot={type:'gold',amount:gold}; }
     else {
-      const tier=s.monster.number<=3?'basic':s.monster.number<=7?'large':'special';
-      const choices=SHOP.filter(i=>i.tier===tier && ['weapon','armor'].includes(i.type) && !s.inventory.includes(i.id));
-      if (!choices.length) { const gold=8+2*(s.monster.number-1); s.gold+=gold; loot={type:'gold',amount:gold}; }
+      const tier=s.monster.number<=3?'basic':s.monster.number<=7?'large':'special'; // legendary gear is gold-only
+      const choices=SHOP.filter(i=>i.tier===tier && GEAR_SLOTS.includes(i.type) && !s.inventory.includes(i.id));
+      if (!choices.length) { const gold=monsterGold(s.monster.number); s.gold+=gold; loot={type:'gold',amount:gold}; }
       else { const item=choices[Math.floor(rng()*choices.length)]; s.inventory.push(item.id); loot={type:'equipment',id:item.id}; }
     }
   } else s.pendingRecovery=true;
-  const result={id:uid(),day:today,monster:s.monster.number,won:enemy===0,loot,hp,events,spell:spell?.id||null,initialHP:p.hp,maxHP:p.max,playerName:s.name,appearance:{...(s.appearance||DEFAULT_APPEARANCE)},loadout:{...s.equipped},levels:Object.fromEntries(CATEGORIES.map(c=>[c,level(s,c)]))};
+  const result={id:uid(),day:today,monster:s.monster.number,won:enemy===0,loot,hp,events,spell:spell?.id||null,tonic:tonic?.id||null,pet:pet?.id||null,initialHP:p.hp,maxHP:p.max,playerName:s.name,appearance:{...(s.appearance||DEFAULT_APPEARANCE)},loadout:{...s.equipped},levels:Object.fromEntries(CATEGORIES.map(c=>[c,level(s,c)]))};
   s.battles.unshift(result); s.battles=s.battles.slice(0,50); return result;
 }
 
@@ -388,6 +443,7 @@ export function validateState(value) {
   if (!s||s.version!==1||!text(s.name,80)||!integer(s.gold,-1e8)||!integer(s.hp)||!s.xp||!CATEGORIES.every(k=>integer(s.xp[k]))) fail();
   if(s.appearance===undefined)s.appearance={...DEFAULT_APPEARANCE};
   if(!validAppearance(s.appearance))fail();
+  s.appearance={...DEFAULT_APPEARANCE,...s.appearance};
   if (s.hp>maxHP(s)||!array(s.tasks)||!array(s.habits,300)||!array(s.notes)||!array(s.inventory,SHOP.filter(i=>!isConsumable(i)).length)||!array(s.reviewDates)||!array(s.battles,50)) fail();
   if (!s.settings||!text(s.settings.timezone,100)||!['light','dark'].includes(s.settings.theme)||typeof s.settings.muted!=='boolean'||typeof s.settings.reducedMotion!=='boolean') fail();
   try { dateKey(new Date(),s.settings.timezone); } catch { fail(); }
@@ -396,12 +452,14 @@ export function validateState(value) {
   if (!s.monster||!integer(s.monster.number,1,500)||(s.monster.defeatedOn!==null&&!date(s.monster.defeatedOn))) fail();
   if (!integer(s.potions)||typeof s.pendingRecovery!=='boolean'||!s.noteGold||typeof s.noteGold!=='object'||Array.isArray(s.noteGold)) fail();
   if (!Object.entries(s.noteGold).every(([k,v])=>date(k)&&integer(v,0,6))||!s.reviewDates.every(date)) fail();
-  s.supplies ??= {};s.preparedSpell ??= null;s.activePet ??= null;
+  s.supplies ??= {};s.preparedSpell ??= null;s.activePet ??= null;s.tonic ??= null;s.wardrobe ??= [];if(s.equipped&&s.equipped.helmet===undefined)s.equipped.helmet=null;
   if(typeof s.supplies!=='object'||Array.isArray(s.supplies)||!Object.entries(s.supplies).every(([id,n])=>id!=='potion'&&SHOP.some(i=>i.id===id&&isConsumable(i))&&integer(n)))fail();
   if(s.preparedSpell!==null&&(!preparedSpell(s)||!itemCount(s,s.preparedSpell)))fail();
   if(s.activePet!==null&&(!s.inventory.includes(s.activePet)||!SHOP.some(i=>i.id===s.activePet&&i.type==='pet')))fail();
   if (!s.equipped||!s.inventory.every(id=>SHOP.some(i=>i.id===id&&!isConsumable(i)))||new Set(s.inventory).size!==s.inventory.length) fail();
-  for(const type of ['weapon','armor']) if(s.equipped[type]!==null&&(!s.inventory.includes(s.equipped[type])||!SHOP.some(i=>i.id===s.equipped[type]&&i.type===type))) fail();
+  if(s.tonic!==null&&!activeTonic(s))fail();
+  if(!Array.isArray(s.wardrobe)||!s.wardrobe.every(ownableCosmetic)||new Set(s.wardrobe).size!==s.wardrobe.length||!appearanceUnlocked(s,s.appearance))fail();
+  for(const type of GEAR_SLOTS) if(s.equipped[type]!==null&&(!s.inventory.includes(s.equipped[type])||!SHOP.some(i=>i.id===s.equipped[type]&&i.type===type))) fail();
   const unique=a=>new Set(a.map(x=>x.id)).size===a.length;
   if (![s.tasks,s.habits,s.notes].every(unique)) fail();
   for(const t of s.tasks) if(!id(t.id)||!text(t.title,500)||!Object.hasOwn(TASK_GOLD,t.tier)||typeof t.done!=='boolean'||!integer(t.earned,0,40)||(t.done?t.earned!==TASK_GOLD[t.tier]:t.earned!==0)) fail();
@@ -421,14 +479,16 @@ export function validateState(value) {
     if(battle.won) {
       if(!battle.loot||!['gold','equipment'].includes(battle.loot.type)) fail();
       if(battle.loot.type==='gold'&&!integer(battle.loot.amount)) fail();
-      if(battle.loot.type==='equipment'&&!SHOP.some(i=>i.id===battle.loot.id&&['weapon','armor'].includes(i.type))) fail();
+      if(battle.loot.type==='equipment'&&!SHOP.some(i=>i.id===battle.loot.id&&GEAR_SLOTS.includes(i.type))) fail();
     } else if(battle.loot!==null) fail();
     if(battle.initialHP!==undefined&&!integer(battle.initialHP)) fail();
     if(battle.maxHP!==undefined&&!integer(battle.maxHP,1)) fail();
     if(battle.playerName!==undefined&&!text(battle.playerName,80)) fail();
     if(battle.appearance!==undefined&&!validAppearance(battle.appearance))fail();
     if(battle.spell!=null&&!SHOP.some(i=>i.id===battle.spell&&i.type==='spell'))fail();
-    if(battle.loadout) for(const type of ['weapon','armor']) if(battle.loadout[type]!==null&&!SHOP.some(i=>i.id===battle.loadout[type]&&i.type===type)) fail();
+    if(battle.tonic!=null&&!SHOP.some(i=>i.id===battle.tonic&&i.tonic))fail();
+    if(battle.pet!=null&&!SHOP.some(i=>i.id===battle.pet&&i.type==='pet'))fail();
+    if(battle.loadout) for(const type of GEAR_SLOTS) if(battle.loadout[type]!=null&&!SHOP.some(i=>i.id===battle.loadout[type]&&i.type===type)) fail();
     if(battle.levels&&!CATEGORIES.every(c=>integer(battle.levels[c],1))) fail();
   }
   const migrateProgress=s.progress===undefined,p=ensureProgress(s);

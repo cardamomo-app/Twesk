@@ -3,7 +3,7 @@
 // over the Chrome DevTools Protocol with Node's built-in WebSocket. Each page gets an isolated
 // browser context, so tests never share storage with each other or with real saves.
 import { spawn } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -11,12 +11,21 @@ import { join, extname, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const MAC_APPS = [
+  'Google Chrome.app/Contents/MacOS/Google Chrome',
+  'Chromium.app/Contents/MacOS/Chromium',
+  'Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+  'Brave Browser.app/Contents/MacOS/Brave Browser',
+];
+// Applications folders on this Mac, then on any attached drive (e.g. a browser kept on an external disk).
+const appFolders = () => {
+  let volumes = [];
+  try { volumes = readdirSync('/Volumes').map(name => `/Volumes/${name}/Applications`); } catch {}
+  return ['/Applications', `${process.env.HOME}/Applications`, ...volumes];
+};
 const CANDIDATES = [
   process.env.CHROME_PATH,
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/Applications/Chromium.app/Contents/MacOS/Chromium',
-  '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-  '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
+  ...appFolders().flatMap(folder => MAC_APPS.map(app => `${folder}/${app}`)),
   '/usr/bin/google-chrome',
   '/usr/bin/chromium',
   '/usr/bin/chromium-browser',

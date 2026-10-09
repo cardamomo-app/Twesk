@@ -184,18 +184,18 @@ uiTest('reviewed notes can be selected and downloaded together as one text file'
   });
   await page.press('j', ['Meta']);
   await page.click('[data-action="vault-filter"][data-filter="kept"]');
-  assert.ok(!(await page.exists('#vault-download button')), 'no download button until a note is selected');
+  assert.ok(!(await page.exists('#vault-download .vault-download')), 'no download button until a note is selected');
   const notes = (await page.save()).notes;
   const card = text => `#vault-results article[data-id="${notes.find(n => n.text.startsWith(text)).id}"]`;
   // Clicking a note's empty space or text selects it; its own buttons keep working normally.
   await page.click(`${card('Plan the garden')} .note-text`);
   await page.click(`${card('Book club')} .note-top`);
   assert.equal(await page.count('#vault-results .note-card.selected'), 2);
-  assert.equal(await page.text('#vault-download button'), '2');
+  assert.equal(await page.text('#vault-download .vault-download'), '2');
   await page.click(`${card('Unrelated')} .note-text`);
   await page.click(`${card('Unrelated')} .note-text`);
   assert.equal(await page.count('#vault-results .note-card.selected'), 2, 'a second click deselects');
-  await page.click('#vault-download button');
+  await page.click('#vault-download .vault-download');
   const text = await page.waitFor(() => window.__exported);
   assert.match(text, /^Twesk notes · 2 notes/);
   assert.match(text, /Plan the garden #home\n\n\n\* \* \*\n\n\n.*\n\nBook club ideas\n\nRead slower books\n$/);
@@ -205,11 +205,11 @@ uiTest('reviewed notes can be selected and downloaded together as one text file'
   assert.ok(!(await page.exists(`${card('Unrelated')}.selected`)), 'buttons inside a note do not select it');
   // The Journal tab works the same way, with Space on a focused card, and exports read as a journal.
   await page.click('[data-action="vault-filter"][data-filter="journal"]');
-  assert.ok(!(await page.exists('#vault-download button')), 'changing tabs clears the selection');
+  assert.ok(!(await page.exists('#vault-download .vault-download')), 'changing tabs clears the selection');
   await page.evaluate(() => { window.__exported = null; document.querySelector('#vault-results .note-card.selectable').focus(); });
   await page.press(' ');
   assert.equal(await page.count('#vault-results .note-card.selected'), 1);
-  await page.click('#vault-download button');
+  await page.click('#vault-download .vault-download');
   const journal = await page.waitFor(() => window.__exported);
   assert.match(journal, /^Twesk journal · 1 entry ·/);
   assert.match(journal, /Rainy walk, clear head/);

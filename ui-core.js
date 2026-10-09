@@ -1,7 +1,7 @@
 // Shared interface foundation: the app store, saving, small HTML helpers, and toasts.
-import * as E from './engine.js?v=0.13.0';
-import { goldArt } from './art.js?v=0.13.0';
-import { HABIT_ICONS } from './habit-icons.js?v=0.13.0';
+import * as E from './engine.js?v=0.13.1';
+import { goldArt } from './art.js?v=0.13.1';
+import { HABIT_ICONS } from './habit-icons.js?v=0.13.1';
 export const $ = s => document.querySelector(s);
 export const $$ = s => [...document.querySelectorAll(s)];
 export const esc = v =>
@@ -109,6 +109,7 @@ const icons = {
   undo: '<path d="M9 4 3 10l6 6M3 10h11a6 6 0 0 1 0 12"/>',
   download: '<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>',
   upload: '<path d="M12 16V4m-5 5 5-5 5 5M4 16v5h16v-5"/>',
+  merge: '<path d="M6 3v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3M12 14v7m-3-3 3 3 3-3"/>',
   calendar:
     '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4m6-4v4M8 14h2m4 0h2m-8 3h2"/>',
   helmet: '<path d="M4 15a8 8 0 0 1 16 0v2H4ZM12 7V4M4 17h16l-1 3H5Z"/>',

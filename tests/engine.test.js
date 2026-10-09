@@ -222,3 +222,29 @@ test('hashtag autocomplete finds the tag at the caret and suggests known tags, m
   assert.deepEqual(E.suggestionsFor('#TH',E.knownTags(s)).map(t=>t.tag),['#thesis'],'case-insensitive');
   assert.deepEqual(E.suggestionsFor('#thesis',E.knownTags(s)),[],'no suggestion once fully typed');
 });
+test('merging notes joins their text oldest first with paragraph breaks, and undo restores them',()=>{
+  const s=E.freshState();
+  const make=(text,created,extra={})=>{const {note}=E.saveNote(s,{text},day(1));note.created=created;note.status='kept';Object.assign(note,extra);return note;};
+  const b=make('Second thought about the shed #garden','2026-10-03T10:00:00Z',{pinned:true});
+  const a=make('Paint the shed green\n\nMaybe sage #garden','2026-10-01T10:00:00Z');
+  const c=make('  Buy brushes  ','2026-10-05T10:00:00Z');
+  const before=JSON.parse(JSON.stringify(s.notes)),gold=s.gold;
+  const {note,undo}=E.mergeNotes(s,[b.id,c.id,a.id]);
+  assert.equal(note.id,a.id,'the oldest note survives');assert.equal(note.created,'2026-10-01T10:00:00Z');
+  assert.equal(note.text,'Paint the shed green\n\nMaybe sage #garden\n\nSecond thought about the shed #garden\n\nBuy brushes');
+  assert.equal(s.notes.length,1);assert.equal(note.pinned,true);assert.ok(note.paid<=3);assert.equal(s.gold,gold,'no gold for merging');
+  assert.deepEqual(E.tags(note.text),['#garden']);
+  assert.doesNotThrow(()=>E.validateState(JSON.parse(JSON.stringify(s))));
+  E.undoMergeNotes(s,undo);
+  assert.deepEqual(JSON.parse(JSON.stringify(s.notes)),before,'undo restores every note exactly');
+  assert.throws(()=>E.mergeNotes(s,[a.id]),/at least two/);
+  s.notes.find(n=>n.id===b.id).status='archived';assert.throws(()=>E.mergeNotes(s,[a.id,b.id]),/archived/);
+});
+test('merging keeps task links pointing at the surviving note',()=>{
+  const s=E.freshState();const {note:first}=E.saveNote(s,{text:'Older idea'},day(1));first.created='2026-10-01T00:00:00Z';
+  const {note:second}=E.saveNote(s,{text:'Plan the trip'},day(1));second.created='2026-10-02T00:00:00Z';
+  const task=E.convertNote(s,second.id);first.status='kept';
+  const {note}=E.mergeNotes(s,[first.id,second.id]);
+  assert.equal(note.taskId,task.id);assert.equal(task.source,note.id);
+  assert.doesNotThrow(()=>E.validateState(JSON.parse(JSON.stringify(s))));
+});

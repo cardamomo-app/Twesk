@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.13.0';
-import {validHabitIcon} from './habit-icons.js?v=0.13.0';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.13.1';
+import {validHabitIcon} from './habit-icons.js?v=0.13.1';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -286,6 +286,37 @@ export function undoReturnTaskToVault(s, undo) {
   else { note.status = undo.previous.status; note.taskId = undo.task.id; delete note.taskTitle; delete note.taskTier; delete note.taskRepeat; }
   s.tasks.splice(Math.min(undo.index, s.tasks.length), 0, undo.task);
   return undo.task;
+}
+// Merge several notes into the oldest one: their texts in order, oldest first, separated by a blank line.
+// The survivor keeps its date and task link; it stays pinned if any was. No new note gold is earned.
+// Returns what is needed to undo the merge exactly.
+export function mergeNotes(s, ids) {
+  const notes = s.notes.filter(n => ids.includes(n.id));
+  if (notes.length < 2) throw new Error('Choose at least two notes to merge.');
+  if (notes.some(n => n.status === 'archived')) throw new Error('Restore archived notes before merging them.');
+  const ordered = [...notes].sort((a, b) => a.created.localeCompare(b.created)), [survivor, ...rest] = ordered;
+  const undo = { survivor: { ...survivor }, removed: rest.map(n => ({ note: { ...n }, index: s.notes.indexOf(n) })) };
+  survivor.text = ordered.map(n => n.text.replace(/\r\n?/g, '\n').trim()).filter(Boolean).join('\n\n');
+  survivor.paid = Math.min(3, ordered.reduce((sum, n) => sum + n.paid, 0));
+  survivor.status = ordered.some(n => n.status === 'kept') ? 'kept' : 'inbox';
+  survivor.kind = ordered.every(n => n.kind === 'journal') ? 'journal' : 'note';
+  survivor.healed = ordered.some(n => n.healed);
+  if (ordered.some(n => n.pinned)) survivor.pinned = true;
+  if (!survivor.taskId) { const linked = rest.find(n => n.taskId); if (linked) survivor.taskId = linked.taskId; }
+  for (const n of rest) for (const t of s.tasks) if (t.source === n.id) t.source = survivor.id;
+  s.notes = s.notes.filter(n => !rest.includes(n));
+  return { note: survivor, undo };
+}
+export function undoMergeNotes(s, undo) {
+  const survivor = s.notes.find(n => n.id === undo.survivor.id);
+  if (!survivor) throw new Error('That note has changed since.');
+  Object.keys(survivor).forEach(key => delete survivor[key]);
+  Object.assign(survivor, undo.survivor);
+  for (const { note, index } of [...undo.removed].sort((a, b) => a.index - b.index)) {
+    s.notes.splice(Math.min(index, s.notes.length), 0, { ...note });
+    for (const t of s.tasks) if (t.source === survivor.id && note.taskId === t.id) t.source = note.id;
+  }
+  return survivor;
 }
 export function reviewNote(s, id, status, today) {
   const note = s.notes.find(n => n.id === id);

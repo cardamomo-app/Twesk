@@ -1,9 +1,9 @@
 // The Vault: notes, journal entries, quick capture, and recovery reflections.
-import * as E from './engine.js?v=0.13.0';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.13.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.13.0';
-import { isJournalExport, notesToText } from './notes-export.js?v=0.13.0';
-import { sound } from './ui-effects.js?v=0.13.0';
+import * as E from './engine.js?v=0.13.1';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.13.1';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.13.1';
+import { isJournalExport, notesToText } from './notes-export.js?v=0.13.1';
+import { sound } from './ui-effects.js?v=0.13.1';
 const noteDate = n =>
   new Intl.DateTimeFormat('en', {
     month: 'short',
@@ -64,10 +64,15 @@ function downloadButton() {
       app.vaultFilter === 'journal' ? (n === 1 ? 'entry' : 'entries') : n === 1 ? 'note' : 'notes';
   const filtered = app.vaultSearch || app.vaultTag;
   const toggle = `<button class="text-button vault-select-all" data-action="vault-select-all" title="${all ? 'Deselect' : 'Select'} the ${shown} ${noun(shown)} shown${filtered ? ' with this filter' : ''}">${all ? 'Deselect all' : 'Select all'}</button>`;
+  // Merge appears once two or more notes are selected, icon-only beside the download button.
+  const merge =
+    count >= 2
+      ? `<button class="vault-merge" data-action="vault-merge" title="Merge ${count} selected ${noun(count)} into one" aria-label="Merge ${count} selected ${noun(count)} into one">${icon('merge')}</button>`
+      : '';
   const download = count
     ? `<button class="vault-download" data-action="vault-export" title="Download ${count} selected ${noun(count)} as one text file" aria-label="Download ${count} selected ${noun(count)} as one text file">${icon('download')}<span>${count}</span></button>`
     : '';
-  return toggle + download;
+  return toggle + merge + download;
 }
 const refreshDownload = () => {
   const slot = $('#vault-download');
@@ -210,6 +215,20 @@ export const actions = {
     // Dragging across text to copy it should not toggle the card.
     if (String(getSelection()).trim() && b.contains(getSelection().anchorNode)) return;
     toggleSelected(b);
+  },
+  'vault-merge'() {
+    const ids = selectedVisible().map(n => n.id);
+    const merged = commit(() => E.mergeNotes(app.state, ids));
+    if (!merged) return;
+    app.vaultSelected = new Set();
+    view.renderModal();
+    const card = $(`#vault-results article[data-id="${CSS.escape(merged.note.id)}"]`);
+    card?.classList.add('just-merged');
+    card?.scrollIntoView({ block: 'nearest' });
+    sound('note');
+    toast(`Merged ${ids.length} notes into one.`, () =>
+      commit(() => E.undoMergeNotes(app.state, merged.undo)),
+    );
   },
   'vault-export'() {
     const notes = selectedVisible();

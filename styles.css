@@ -508,3 +508,8 @@ button.hashtag:hover{text-decoration:underline}
 .tag-option{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 9px;border-radius:7px;cursor:pointer;color:var(--accent)}
 .tag-option small{font-size:9px;color:var(--muted)}
 .tag-option.active,.tag-option:hover{background:var(--accent-soft)}
+.vault-merge{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:var(--accent-soft);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);animation:pop-in .18s ease-out}
+.vault-merge:hover{background:var(--accent);color:#fff}
+.vault-merge .icon{width:15px;height:15px}
+@keyframes merged-glow{0%{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 45%,transparent)}100%{box-shadow:0 0 0 0 transparent}}
+.note-card.just-merged{animation:merged-glow 1.2s ease-out;border-color:var(--accent)}

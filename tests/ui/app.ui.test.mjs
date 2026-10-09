@@ -245,6 +245,31 @@ uiTest('Select all picks only the notes shown, so one hashtag can be exported', 
   assert.equal(await page.count('#vault-results .note-card.selected'), 0, 'Deselect all clears the shown notes');
 });
 
+uiTest('selected notes merge into one with paragraph breaks, and Undo restores them', async page => {
+  const s = E.freshState();
+  for (const [text, created] of [['Paint the shed #garden', '2026-10-01T09:00:00Z'], ['Use the sage green', '2026-10-02T09:00:00Z'], ['Separate thought', '2026-10-03T09:00:00Z']]) {
+    const { note } = E.saveNote(s, { text }, '2026-10-01');
+    note.created = created;
+    note.status = 'kept';
+  }
+  await page.open({ save: s });
+  await page.press('j', ['Meta']);
+  await page.click('[data-action="vault-filter"][data-filter="kept"]');
+  const notes = (await page.save()).notes;
+  const card = text => `#vault-results article[data-id="${notes.find(n => n.text.startsWith(text)).id}"]`;
+  await page.click(`${card('Paint the shed')} .note-text`);
+  assert.ok(!(await page.exists('.vault-merge')), 'merge needs at least two notes');
+  await page.click(`${card('Use the sage')} .note-text`);
+  assert.match(await page.evaluate(() => document.querySelector('.vault-merge').getAttribute('aria-label')), /Merge 2 selected notes into one/);
+  await page.click('.vault-merge');
+  await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).notes.length === 2);
+  const merged = (await page.save()).notes.find(n => n.text.startsWith('Paint'));
+  assert.equal(merged.text, 'Paint the shed #garden\n\nUse the sage green');
+  assert.equal(await page.count('#vault-results .note-card.selected'), 0, 'the selection clears after merging');
+  await page.click('#toasts .toast button');
+  await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).notes.length === 3);
+});
+
 uiTest('hashtags autocomplete in task titles and captured notes', async page => {
   const s = E.freshState();
   E.saveTask(s, { title: 'Draft outline #thesis', tier: 'quick' }, '2026-10-01');

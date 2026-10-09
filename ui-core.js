@@ -1,7 +1,7 @@
 // Shared interface foundation: the app store, saving, small HTML helpers, and toasts.
-import * as E from './engine.js?v=0.10.0';
-import { goldArt } from './art.js?v=0.10.0';
-import { HABIT_ICONS } from './habit-icons.js?v=0.10.0';
+import * as E from './engine.js?v=0.11.0';
+import { goldArt } from './art.js?v=0.11.0';
+import { HABIT_ICONS } from './habit-icons.js?v=0.11.0';
 export const $ = s => document.querySelector(s);
 export const $$ = s => [...document.querySelectorAll(s)];
 export const esc = v =>
@@ -34,6 +34,8 @@ export function viewDefaults() {
     avatarAngle: -0.45,
     avatarZoom: 1,
     avatarPreview: null,
+    historyMonth: null,
+    historyDay: null,
   };
 }
 // Everything the interface shares. Modules read and assign app.state, app.modal, etc.
@@ -106,6 +108,8 @@ const icons = {
   undo: '<path d="M9 4 3 10l6 6M3 10h11a6 6 0 0 1 0 12"/>',
   download: '<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>',
   upload: '<path d="M12 16V4m-5 5 5-5 5 5M4 16v5h16v-5"/>',
+  calendar:
+    '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4m6-4v4M8 14h2m4 0h2m-8 3h2"/>',
   helmet: '<path d="M4 15a8 8 0 0 1 16 0v2H4ZM12 7V4M4 17h16l-1 3H5Z"/>',
   sparkle: '<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2ZM19 3v4M17 5h4"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',

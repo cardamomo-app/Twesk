@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.10.0';
-import {validHabitIcon} from './habit-icons.js?v=0.10.0';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.11.0';
+import {validHabitIcon} from './habit-icons.js?v=0.11.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -46,7 +46,7 @@ export function freshState() {
       habit('Mindless scrolling', 'harm', 3), habit('Fast food', 'harm', 7),
     ],
     notes: [], noteGold: {}, reviewDates: [], inventory: [], equipped: { weapon: null, armor: null, helmet: null }, potions: 0,
-    supplies: {}, preparedSpell: null, tonic: null, activePet: null, wardrobe: [],
+    supplies: {}, preparedSpell: null, tonic: null, activePet: null, wardrobe: [], history: {},
     progress: createProgress(),
     monster: { number: 1, defeatedOn: null }, battles: [], pendingRecovery: false,
     settings: { theme: 'light', muted: false, reducedMotion: false, timezone: deviceTimezone(), lastBackup: null, backupNudge: null },
@@ -68,6 +68,22 @@ export function momentum(habit, today) {
   return factor;
 }
 // Summary for the habit details view: next reward, streak, totals, and the last `days` days.
+// Everything that happened on one date, for the history calendar.
+export function daySummary(s, day, noteDay = n => n.created.slice(0, 10)) {
+  const xp = Object.fromEntries(CATEGORIES.map(c => [c, 0])), habits = [], harm = [];
+  for (const h of s.habits) {
+    if (h.category === 'harm') { const n = h.harmLogs.filter(l => l.day === day).length; if (n) harm.push({ title: h.title, count: n }); continue; }
+    const log = h.logs.find(l => l.day === day);
+    if (log) { habits.push({ title: h.title, category: h.category, xp: log.xp }); xp[h.category] += log.xp; }
+  }
+  const record = s.history?.[day] || { tasks: 0, gold: 0, levels: [] };
+  const notes = s.notes.filter(n => noteDay(n) === day);
+  return {
+    day, habits, harm, xp, tasks: record.tasks, gold: record.gold, levels: record.levels,
+    notes: notes.filter(n => n.kind !== 'journal').length, journals: notes.filter(n => n.kind === 'journal').length,
+    battles: s.battles.filter(b => b.day === day).map(b => ({ monster: b.monster, won: b.won })),
+  };
+}
 export function habitStats(h, today, days = 28) {
   const harm = h.category === 'harm', logs = harm ? h.harmLogs : h.logs;
   const counts = new Map(); for (const l of logs) counts.set(l.day, (counts.get(l.day) || 0) + 1);
@@ -90,15 +106,29 @@ export function completeHabit(s, id, today) {
   const beforeLevel = level(s, h.category), beforeHP = maxHP(s);
   ensureProgress(s).habits[h.category]++;
   h.logs.push({ day: today, xp: amount }); s.xp[h.category] += amount;
+  if (level(s, h.category) > beforeLevel) { historyDay(s, today).levels.push(h.category); pruneHistory(s); }
   s.hp = Math.max(0, Math.min(maxHP(s), s.hp + maxHP(s) - beforeHP));
   return { amount, category: h.category, leveled: level(s, h.category) > beforeLevel };
+}
+// Daily record for the history calendar: tasks cleared, task gold, and stat level-ups by date.
+// Habit, note, and battle history comes from their own dated logs.
+const HISTORY_DAYS = 800;
+function historyDay(s, day) {
+  s.history ||= {};
+  return (s.history[day] ||= { tasks: 0, gold: 0, levels: [] });
+}
+function pruneHistory(s) {
+  const days = Object.keys(s.history || {}).sort();
+  for (const day of days.slice(0, Math.max(0, days.length - HISTORY_DAYS))) delete s.history[day];
 }
 export function undoHabit(s, id, today) {
   const h = s.habits.find(h => h.id === id), log = h?.logs.find(l => l.day === today);
   if (!log) throw new Error('Nothing to undo today.');
-  const beforeHP = maxHP(s);
+  const beforeHP = maxHP(s), beforeLevel = level(s, h.category);
   const progress=ensureProgress(s);progress.habits[h.category]=Math.max(0,progress.habits[h.category]-1);
   s.xp[h.category] -= log.xp; h.logs = h.logs.filter(l => l !== log);
+  const levels = s.history?.[today]?.levels, at = levels?.lastIndexOf(h.category) ?? -1;
+  if (level(s, h.category) < beforeLevel && at >= 0) levels.splice(at, 1);
   s.hp = Math.max(0, Math.min(maxHP(s), s.hp + maxHP(s) - beforeHP));
   return log.xp;
 }
@@ -150,12 +180,14 @@ export function toggleTask(s, id, today) {
   const progress=ensureProgress(s);
   if (task.done) {
     const amount = task.earned; s.gold -= amount; task.done = false; task.earned = 0; progress.tasks=Math.max(0,progress.tasks-1);
+    const record = s.history?.[task.doneOn || today];
+    if (record) { record.tasks = Math.max(0, record.tasks - 1); record.gold = Math.max(0, record.gold - amount); }
     delete task.doneOn; if (task.repeat) task.due = null;
     return -amount;
   }
   progress.tasks++;
   const amount = TASK_GOLD[task.tier]; task.done = true; task.earned = amount; s.gold += amount;
-  if (today) task.doneOn = today;
+  if (today) { task.doneOn = today; const record = historyDay(s, today); record.tasks++; record.gold += amount; pruneHistory(s); }
   if (task.repeat) task.due = nextOccurrence(today, task.repeat);
   return amount;
 }
@@ -495,6 +527,10 @@ export function validateState(value) {
   if(!p||typeof p!=='object'||Array.isArray(p)||!integer(p.tasks)||!integer(p.notes)||!integer(p.journals)||p.journals>p.notes||!p.habits||!CATEGORIES.every(c=>integer(p.habits[c]))||!p.earned||typeof p.earned!=='object'||Array.isArray(p.earned))fail();
   if(!Object.entries(p.earned).every(([id,day])=>ACHIEVEMENTS.some(a=>a.id===id)&&date(day)))fail();
   if(migrateProgress)awardAchievements(s,dateKey(new Date(),s.settings.timezone));
+  // Older saves: rebuild what can be dated (completed tasks that recorded their day).
+  if(s.history===undefined){s.history={};for(const t of s.tasks)if(t.done&&t.doneOn){const r=historyDay(s,t.doneOn);r.tasks++;r.gold+=t.earned;}}
+  if(!s.history||typeof s.history!=='object'||Array.isArray(s.history)||Object.keys(s.history).length>HISTORY_DAYS)fail();
+  for(const [day,r] of Object.entries(s.history))if(!date(day)||!r||typeof r!=='object'||!integer(r.tasks,0,10000)||!integer(r.gold,0,1e6)||!Array.isArray(r.levels)||r.levels.length>40||!r.levels.every(c=>CATEGORIES.includes(c)))fail();
   s.revision=integer(s.revision)?s.revision:0;
   return s;
 }

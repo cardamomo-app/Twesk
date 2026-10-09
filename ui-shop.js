@@ -1,12 +1,12 @@
 // Shop and inventory: buying, equipping, potions, spells, and pets.
-import * as E from './engine.js?v=0.10.0';
-import { avatarFaceArt, itemArt, monsterName } from './art.js?v=0.10.0';
+import * as E from './engine.js?v=0.11.0';
+import { avatarFaceArt, itemArt, monsterName } from './art.js?v=0.11.0';
 import { APPEARANCE, APPEARANCE_LABELS } from './appearance.js';
-import { $, app, coin, esc, icon, modalShell, toast, view } from './ui-core.js?v=0.10.0';
-import { commit, openModal } from './ui-modal.js?v=0.10.0';
-import { burst, countUp, sound } from './ui-effects.js?v=0.10.0';
-import { potionCount } from './ui-character.js?v=0.10.0';
-import { percent, requestOdds } from './ui-odds.js?v=0.10.0';
+import { $, app, coin, esc, icon, modalShell, toast, view } from './ui-core.js?v=0.11.0';
+import { commit, openModal } from './ui-modal.js?v=0.11.0';
+import { burst, countUp, sound } from './ui-effects.js?v=0.11.0';
+import { potionCount } from './ui-character.js?v=0.11.0';
+import { percent, requestOdds } from './ui-odds.js?v=0.11.0';
 // Odds are compared against the next opponent, at full health when currently at 0 HP.
 function comparisonBase() {
   const s = app.state;

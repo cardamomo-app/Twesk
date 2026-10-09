@@ -56,8 +56,10 @@ const appSource=await bundle('app.js',{workerSource});
 if(!applied.has('worker')||!applied.has('home'))throw new Error('Standalone source edits did not apply; update the packager.');
 const template=await readFile(resolve(root,'index.html'),'utf8');
 const css=await readFile(resolve(root,'styles.css'),'utf8');
-const output=template.replace(/  <link rel="stylesheet"[^>]+>/,()=>`  <style>\n${css}\n  </style>`)
+// The single file has no service worker or install manifest; it runs from wherever it is opened.
+const output=template.replace(/  <link rel="(?:manifest|apple-touch-icon)"[^>]*>\n/g,'').replace(/  <meta name="(?:apple-mobile-web-app-capable|mobile-web-app-capable|apple-mobile-web-app-title)"[^>]*>\n/g,'')
+  .replace(/  <link rel="stylesheet"[^>]+>/,()=>`  <style>\n${css}\n  </style>`)
   .replace(/  <script type="module"[^>]+><\/script>/,'')
-  .replace('</body>',()=>`  <script>\n${appSource.replace(/<\/script/gi,'<\\/script')}\n  </script>\n</body>`);
+  .replace('</body>',()=>`  <script>window.__TWESK_STANDALONE__=true;</script>\n  <script>\n${appSource.replace(/<\/script/gi,'<\\/script')}\n  </script>\n</body>`);
 await writeFile(resolve(root,'Twesk.html'),output);
 console.log(`Created Twesk.html (${Math.round(Buffer.byteLength(output)/1024)} KB). Open it directly in your browser.`);

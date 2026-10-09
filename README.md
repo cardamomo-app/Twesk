@@ -16,9 +16,21 @@ Use the same browser and address each time. Browser storage belongs to an origin
 
 For a self-contained copy, open **Twesk.html** directly in a regular browser. It embeds the styles, application code, artwork, and a Blob-based combat worker, so no server or internet connection is required. The original `index.html` is the development entry and needs the local server because browsers restrict local-file JavaScript module imports and workers. File-based browser storage can vary by browser and file location; use export/import to move progress between the served app and the HTML copy, and keep backups.
 
-Regenerate `Twesk.html` after source changes with `npm run build:standalone`. The dependency-free packager supports this app's current named imports/exports and fails on unsupported syntax. The bundled app, worker, reset, and restore were checked via HTTP with a separate preview save; direct `file:` navigation is blocked by the in-app test browser and must be checked in a regular browser.
+Regenerate `sw.js` and `Twesk.html` after source changes with `npm run build`. The dependency-free packager supports this app's current named imports/exports and fails on unsupported syntax. The bundled app, worker, reset, and restore were checked via HTTP with a separate preview save; direct `file:` navigation is blocked by the in-app test browser and must be checked in a regular browser.
 
 **Settings → Reset progress** restores the full initial state after confirmation. The current save is kept under `twesk.v1.previous`; **Restore previous progress** swaps it back after confirmation. Both operations save a higher revision for other open tabs and stop if saving fails. Export is also available before resetting. This keeps one previous adventure, rather than an unlimited history; clearing browser storage also removes that recovery copy.
+
+## Install as an app
+
+Twesk is an installable web app: it gets its own window and Dock icon and keeps working with the server off. A service worker (`sw.js`) caches every file the app uses after the first launch.
+
+**Safari (macOS Sonoma or later):** with `npm start` running, open http://127.0.0.1:4187, then choose **File → Add to Dock**. Safari gives Dock apps their own storage, so to bring existing progress along, first use **Settings → Export backup** in the Safari tab, then open the Dock app and use **Settings → Import backup**. Open the Dock app once while the server is running so it can save its offline copy; after that it opens without the server.
+
+**Chrome, Edge, or Brave:** open the same address and use the install icon in the address bar (or the menu's **Install Twesk**). These share storage with the browser, so progress carries over.
+
+When a newer version is available and the server is running, the app updates in the background and shows **A new version of Twesk is ready · Reload**. Keep exporting backups occasionally: installed or not, progress lives in browser storage.
+
+After changing app files, run `npm run build` to regenerate `sw.js` (its offline file list and version) and `Twesk.html`; a test fails if `sw.js` is out of date.
 
 ## Included
 
@@ -66,7 +78,7 @@ Quick capture: **Command/Ctrl-K**. Vault: **Command/Ctrl-J**. Escape closes dial
 npm test
 ```
 
-The 85 domain checks cover independent XP, the weekly progression target, momentum and missed days, reward undo, note caps, conversion/review, health, equipment, exact combat odds versus independent sampling, loot, rollover, backup validation, milestone persistence/migration, monster collection statuses, artwork bounds, habit icon compatibility/validation, personalized face portraits, reset/recovery, failed-storage preservation, device-timezone defaults, backup-reminder timing, recurring-task schedules, project tags, loadout comparisons, habit details, pinned notes, capped Soul deflection and monster gold, helmets, pet/spell/tonic bonuses, the wardrobe, rendering of every style and helmet from every side, and the daily history record (undo, level-up removal, migration, bounds).
+The 88 domain checks cover independent XP, the weekly progression target, momentum and missed days, reward undo, note caps, conversion/review, health, equipment, exact combat odds versus independent sampling, loot, rollover, backup validation, milestone persistence/migration, monster collection statuses, artwork bounds, habit icon compatibility/validation, personalized face portraits, reset/recovery, failed-storage preservation, device-timezone defaults, backup-reminder timing, recurring-task schedules, project tags, loadout comparisons, habit details, pinned notes, capped Soul deflection and monster gold, helmets, pet/spell/tonic bonuses, the wardrobe, rendering of every style and helmet from every side, and the daily history record (undo, level-up removal, migration, bounds).
 
 ### Interface tests
 
@@ -74,7 +86,7 @@ The 85 domain checks cover independent XP, the weekly progression target, moment
 npm run test:ui
 ```
 
-21 tests drive the real interface in a headless Chromium-based browser with real mouse clicks and key presses: loading and reload persistence, task completion and undo, moving a task back to the Vault and returning it, selecting and downloading notes as text, Select all with a hashtag filter, merging notes with Undo, hashtag autocomplete (including the animated path with motion on), recurring tasks and project filters, habit scroll position, level-up celebration, ⌘K capture and keyboard Vault review, shop comparisons/helmets/tonics/styles, studio try-on and purchase, a won fight with its loot, the history calendar, backup export plus reset and restore, Escape and focus trapping, the phone layout, migration of older saves, and the standalone `Twesk.html` with its built-in worker. Each test runs in an isolated browser profile, so real saves are never touched; a failing test saves a screenshot to `tests/ui/artifacts/`.
+22 tests drive the real interface in a headless Chromium-based browser with real mouse clicks and key presses: loading and reload persistence, task completion and undo, moving a task back to the Vault and returning it, selecting and downloading notes as text, Select all with a hashtag filter, merging notes with Undo, hashtag autocomplete (including the animated path with motion on), recurring tasks and project filters, habit scroll position, level-up celebration, ⌘K capture and keyboard Vault review, shop comparisons/helmets/tonics/styles, studio try-on and purchase, a won fight with its loot, the history calendar, backup export plus reset and restore, Escape and focus trapping, the phone layout, migration of older saves, and the installed app opening and saving fully offline, and the standalone `Twesk.html` with its built-in worker (and no service worker). Each test runs in an isolated browser profile, so real saves are never touched; a failing test saves a screenshot to `tests/ui/artifacts/`.
 
 The driver (`tests/ui/browser.mjs`) has no dependencies: it uses the browser's DevTools protocol over Node's built-in WebSocket. It looks for Chrome, Chromium, Edge, or Brave in /Applications, ~/Applications, and the Applications folder of any attached drive (so a browser kept on an external disk works while it is plugged in); set `CHROME_PATH` to choose one. Without a browser, the interface tests are skipped. `npm run test:all` runs both suites. The suite takes about 15 seconds.
 
@@ -82,6 +94,7 @@ The full flows were also checked in the browser: capture → convert → complet
 
 ## Files
 
+- `manifest.json`, `icons/`, `sw.js`, `scripts/sw-source.mjs`, `scripts/build-sw.mjs`, `scripts/make-icons.mjs`: installable app metadata, icons (rendered from `icons/icon.svg`), and the generated offline cache.
 - `index.html`, `styles.css`, `app.js`: page shell, styles, and the interface entry (dashboard layout, dialog routing, event wiring, startup).
 - `ui-core.js`: the shared `app` store (save plus view state), saving, HTML helpers, and toasts. `view` holds the top-level redraw functions, registered by `app.js` so feature modules never import it.
 - `ui-modal.js`: opening/closing dialogs, `commit` transactions with rollback, and seal notifications.

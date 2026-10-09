@@ -513,3 +513,5 @@ button.hashtag:hover{text-decoration:underline}
 .vault-merge .icon{width:15px;height:15px}
 @keyframes merged-glow{0%{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 45%,transparent)}100%{box-shadow:0 0 0 0 transparent}}
 .note-card.just-merged{animation:merged-glow 1.2s ease-out;border-color:var(--accent)}
+.toast.update-ready{pointer-events:auto;background:var(--accent);color:#fff}
+.toast.update-ready button{color:#fff;font-weight:700;text-decoration:underline}

@@ -523,6 +523,8 @@ button.hashtag:hover{text-decoration:underline}
 .vault-merge .icon{width:15px;height:15px}
 @keyframes merged-glow{0%{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 45%,transparent)}100%{box-shadow:0 0 0 0 transparent}}
 .note-card.just-merged{animation:merged-glow 1.2s ease-out;border-color:var(--accent)}
+.toast.update-ready{pointer-events:auto;background:var(--accent);color:#fff}
+.toast.update-ready button{color:#fff;font-weight:700;text-decoration:underline}
 
   </style>
 
@@ -532,6 +534,7 @@ button.hashtag:hover{text-decoration:underline}
   <div id="overlay"></div>
   <div id="toasts" aria-live="polite" aria-atomic="false"></div>
   <div id="effects" aria-hidden="true"></div>
+  <script>window.__TWESK_STANDALONE__=true;</script>
   <script>
 (()=>{'use strict';
 const modules={"app.js":function(require,exports){
@@ -720,6 +723,25 @@ window.addEventListener('focus', () => {
 awardAchievements(app.state, today());
 render();
 if (!app.protectSave) persist();
+// Offline support for the installed app (Add to Dock / Install). Skipped in the single-file Twesk.html.
+if ('serviceWorker' in navigator && !window.__TWESK_STANDALONE__ && location.protocol.startsWith('http')) {
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+  // A new version took over while this page was open: offer a reload instead of switching mid-task.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || $('#update-ready')) return;
+    const note = document.createElement('div');
+    note.id = 'update-ready';
+    note.className = 'toast update-ready';
+    note.setAttribute('role', 'status');
+    note.textContent = 'A new version of Twesk is ready.';
+    const reload = document.createElement('button');
+    reload.textContent = 'Reload';
+    reload.onclick = () => location.reload();
+    note.append(reload);
+    $('#toasts').append(note);
+  });
+}
 
 Object.assign(exports,{});
 },

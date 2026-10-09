@@ -460,8 +460,25 @@ uiTest('older saves without newer fields load cleanly', async page => {
   assert.deepEqual(migrated.wardrobe, []);
 });
 
+uiTest('once installed, the app opens and saves with no server or network', async page => {
+  await page.open();
+  await page.waitFor(() => navigator.serviceWorker?.controller, { timeout: 15000, message: 'service worker controls the page' });
+  await page.waitFor(async () => (await caches.keys()).some(k => k.startsWith('twesk-')) && (await caches.open((await caches.keys()).find(k => k.startsWith('twesk-')))).match('./engine.js?v=' + document.querySelector('script[src*="app.js"]').src.split('?v=')[1]), { message: 'files cached' });
+  await page.cmd('Network.enable');
+  await page.cmd('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+  await page.goto('/');
+  await page.waitFor(() => document.querySelector('#app .topbar'), { message: 'dashboard rendered offline' });
+  await page.waitFor(() => /%$/.test(document.querySelector('#chance-value')?.textContent || ''), { message: 'combat worker works offline' });
+  await page.click('#app [data-action="toggle-task"]');
+  await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).gold === 4);
+  await page.cmd('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+  page.errors.length = 0; // offline network errors for non-app requests are expected
+});
+
 uiTest('the standalone Twesk.html runs, including its built-in odds worker', async page => {
   await page.open({ path: '/Twesk.html' });
+  assert.equal(await page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length), 0, 'no service worker in the single file');
+  assert.ok(!(await page.exists('link[rel="manifest"]')));
   await page.waitFor(() => /%$/.test(document.querySelector('#chance-value')?.textContent || ''), { message: 'odds from the inline worker' });
   assert.equal(await page.count('script[src]'), 0, 'no external scripts');
   await page.click('#app [data-action="toggle-task"]');

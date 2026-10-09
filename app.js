@@ -1,20 +1,20 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.13.3';
-import { avatarFaceArt } from './art.js?v=0.13.3';
-import { awardAchievements } from './achievements.js?v=0.13.3';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.13.3';
-import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.13.3';
-import { closeModal, openModal } from './ui-modal.js?v=0.13.3';
-import * as tasks from './ui-tasks.js?v=0.13.3';
-import * as habits from './ui-habits.js?v=0.13.3';
-import * as vault from './ui-vault.js?v=0.13.3';
-import * as character from './ui-character.js?v=0.13.3';
-import * as shop from './ui-shop.js?v=0.13.3';
-import * as battle from './ui-battle.js?v=0.13.3';
-import * as collection from './ui-collection.js?v=0.13.3';
-import * as settings from './ui-settings.js?v=0.13.3';
-import * as history from './ui-history.js?v=0.13.3';
-import { installTagSuggest } from './ui-tag-suggest.js?v=0.13.3';
+import * as E from './engine.js?v=0.14.0';
+import { avatarFaceArt } from './art.js?v=0.14.0';
+import { awardAchievements } from './achievements.js?v=0.14.0';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.14.0';
+import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.14.0';
+import { closeModal, openModal } from './ui-modal.js?v=0.14.0';
+import * as tasks from './ui-tasks.js?v=0.14.0';
+import * as habits from './ui-habits.js?v=0.14.0';
+import * as vault from './ui-vault.js?v=0.14.0';
+import * as character from './ui-character.js?v=0.14.0';
+import * as shop from './ui-shop.js?v=0.14.0';
+import * as battle from './ui-battle.js?v=0.14.0';
+import * as collection from './ui-collection.js?v=0.14.0';
+import * as settings from './ui-settings.js?v=0.14.0';
+import * as history from './ui-history.js?v=0.14.0';
+import { installTagSuggest } from './ui-tag-suggest.js?v=0.14.0';
 
 const features = [tasks, habits, vault, character, shop, battle, collection, settings, history];
 const modals = Object.assign({}, ...features.map(f => f.modals));
@@ -183,3 +183,22 @@ window.addEventListener('focus', () => {
 awardAchievements(app.state, today());
 render();
 if (!app.protectSave) persist();
+// Offline support for the installed app (Add to Dock / Install). Skipped in the single-file Twesk.html.
+if ('serviceWorker' in navigator && !window.__TWESK_STANDALONE__ && location.protocol.startsWith('http')) {
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+  // A new version took over while this page was open: offer a reload instead of switching mid-task.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || $('#update-ready')) return;
+    const note = document.createElement('div');
+    note.id = 'update-ready';
+    note.className = 'toast update-ready';
+    note.setAttribute('role', 'status');
+    note.textContent = 'A new version of Twesk is ready.';
+    const reload = document.createElement('button');
+    reload.textContent = 'Reload';
+    reload.onclick = () => location.reload();
+    note.append(reload);
+    $('#toasts').append(note);
+  });
+}

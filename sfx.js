@@ -304,6 +304,93 @@ const SOUNDS = {
     noise({ t, dur: 0.12, vol: 0.05, type: 'lowpass', f: 320 });
   },
 
+  // Delights
+  pop(t) {
+    noise({ t, dur: 0.06, vol: 0.22, type: 'bandpass', f: rand(1400, 2200), q: 0.9, attack: 0.001 });
+    tone({ t, f: rand(500, 700), f2: 180, dur: 0.08, vol: 0.06, verb: 0.1 });
+  },
+  treat(t) {
+    tone({ t, f: 330, f2: 700, dur: 0.18, vol: 0.08, type: 'triangle', verb: 0.2 });
+    tone({ t: t + 0.16, f: 700, f2: 520, dur: 0.16, vol: 0.06, type: 'triangle', verb: 0.2 });
+    pluck(1046.5, t + 0.3, 0.07, 0.4, 0.4);
+  },
+  drift(t) {
+    noise({ t, dur: 1.6, vol: 0.05, type: 'bandpass', f: 600, f2: 1400, q: 0.6, attack: 0.5, verb: 0.5 });
+    [784, 988, 1175, 1568].forEach((f, i) => bell(f, t + 0.3 + i * 0.22, 0.03, 1.2, 0.7, rand(-0.5, 0.5)));
+  },
+  rocket(t) {
+    tone({
+      t,
+      f: rand(500, 700),
+      f2: rand(1800, 2400),
+      dur: 0.7,
+      vol: 0.03,
+      verb: 0.2,
+      pan: rand(-0.6, 0.6),
+    });
+    noise({ t, dur: 0.7, vol: 0.06, type: 'highpass', f: 3000, attack: 0.1, verb: 0.1 });
+  },
+  burst(t) {
+    const pan = rand(-0.7, 0.7);
+    tone({ t, f: 70, f2: 35, dur: 0.6, vol: 0.28, verb: 0.6, pan });
+    noise({ t, dur: 0.5, vol: 0.2, type: 'lowpass', f: 900, verb: 0.6, pan });
+    for (let i = 0; i < 9; i++)
+      noise({
+        t: t + 0.15 + i * rand(0.04, 0.09),
+        dur: 0.03,
+        vol: 0.06,
+        type: 'highpass',
+        f: 4000,
+        verb: 0.3,
+        pan: pan + rand(-0.2, 0.2),
+      });
+  },
+  // A short four-on-the-floor groove: kick, offbeat hats, a bassline, and chord stabs.
+  disco(t, { bars = 6 } = {}) {
+    const beat = 60 / 118,
+      bass = [110, 110, 146.8, 164.8, 110, 110, 98, 123.5],
+      chords = [
+        [220, 277.2, 329.6],
+        [196, 246.9, 293.7],
+      ];
+    for (let b = 0; b < bars * 4; b++) {
+      const at = t + b * beat;
+      tone({ t: at, f: 150, f2: 45, dur: 0.18, vol: 0.22, verb: 0.05 });
+      noise({ t: at + beat / 2, dur: 0.05, vol: 0.05, type: 'highpass', f: 7000, verb: 0.05 });
+      tone({
+        t: at,
+        f: bass[b % 8],
+        dur: beat * 0.45,
+        vol: 0.06,
+        type: 'sawtooth',
+        verb: 0.1,
+        filter: { type: 'lowpass', f: 500, q: 4 },
+      });
+      tone({
+        t: at + beat / 2,
+        f: bass[b % 8] * 2,
+        dur: beat * 0.3,
+        vol: 0.04,
+        type: 'sawtooth',
+        verb: 0.1,
+        filter: { type: 'lowpass', f: 700, q: 4 },
+      });
+      if (b % 2 === 1)
+        for (const f of chords[Math.floor(b / 4) % 2])
+          tone({
+            t: at + beat / 2,
+            f,
+            dur: 0.18,
+            vol: 0.025,
+            type: 'square',
+            verb: 0.35,
+            filter: { type: 'lowpass', f: 2200 },
+          });
+      if (b % 8 === 0) bell(rand(1500, 2100), at, 0.02, 0.6, 0.6, rand(-0.5, 0.5));
+    }
+    cymbal(t + bars * 4 * beat, 1.2, 0.06);
+  },
+
   // Combat
   start(t) {
     timpani(110, t, 0.22);

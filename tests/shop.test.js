@@ -90,3 +90,20 @@ test('every catalog item has finite, distinct voxel artwork',()=>{
   for(const svg of art){assert.match(svg,/<polygon/);assert.doesNotMatch(svg,/NaN|Infinity|undefined/);}
   assert.equal(new Set(art).size,E.SHOP.length);
 });
+test('delights are single-use, need what they act on, and never touch stats or rewards',()=>{
+  const s=funded(),stats=E.combatStats(s);
+  for(const id of ['balloons','treat','drift','fireworks','disco'])E.buy(s,id);
+  const gold=s.gold;
+  assert.equal(E.useDelight(s,'balloons',day).id,'balloons');assert.equal(E.itemCount(s,'balloons'),0);
+  assert.deepEqual(E.combatStats(s),stats,'delights do not change combat stats');
+  assert.throws(()=>E.useDelight(s,'balloons',day),/Buy this first/);
+  assert.throws(()=>E.useDelight(s,'treat',day),/companion/);assert.equal(E.itemCount(s,'treat'),1,'nothing used up on refusal');
+  E.buy(s,'fox');E.useDelight(s,'treat',day);
+  E.useDelight(s,'drift',day);assert.deepEqual(s.ambience,{kind:'leaves',day});
+  E.buy(s,'drift');assert.throws(()=>E.useDelight(s,'drift',day),/already drifting/);
+  E.useDelight(s,'fireworks',day);E.useDelight(s,'disco',day);
+  assert.equal(s.gold,gold-80-20,'only the fox and the second drift cost gold');
+  assert.doesNotThrow(()=>E.validateState(JSON.parse(JSON.stringify(s))));
+  assert.equal(E.driftKind('2026-01-15'),'snow');assert.equal(E.driftKind('2026-04-02'),'petals');assert.equal(E.driftKind('2026-10-08'),'leaves');
+  const bad=E.freshState();bad.ambience={kind:'lava',day};assert.throws(()=>E.validateState(bad));
+});

@@ -373,6 +373,58 @@ uiTest('the shop compares items, helmets raise HP, tonics activate, and styles c
   assert.deepEqual(after.wardrobe, ['accessory:glasses']);
 });
 
+uiTest(
+  'delights play over the dashboard, balloons pop, Escape ends one, and drift lasts the day',
+  async page => {
+    const s = E.freshState();
+    s.supplies = { balloons: 1, treat: 1, drift: 2, disco: 1 };
+    await page.open({ save: s });
+    const openDelights = async () => {
+      await page.click('#app .character-actions [data-action="inventory"]');
+      await page.click('[data-action="shop-tab"][data-category="delight"]');
+    };
+    await openDelights();
+    assert.equal(await page.text('[data-action="use-delight"][data-id="treat"]'), 'Needs a companion');
+    await page.click('[data-action="use-delight"][data-id="balloons"]');
+    await page.waitFor(() => !document.querySelector('.modal') && document.querySelectorAll('.balloon').length === 14);
+    assert.equal((await page.save()).supplies.balloons, 0);
+    await page.waitFor(() => [...document.querySelectorAll('.balloon')].some(b => b.getBoundingClientRect().top < innerHeight - 60), { message: 'a balloon has risen into view' });
+    await page.evaluate(() => {
+      const b = [...document.querySelectorAll('.balloon')].find(b => b.getBoundingClientRect().top < innerHeight - 60);
+      b.dataset.target = '1';
+    });
+    await page.click('.balloon[data-target="1"]');
+    assert.equal(await page.count('.balloon'), 13, 'a clicked balloon pops');
+    await page.press('Escape');
+    assert.ok(!(await page.exists('#delight-layer')), 'Escape ends the delight');
+    await openDelights();
+    await page.click('[data-action="use-delight"][data-id="disco"]');
+    await page.waitFor(() => document.querySelector('.disco-ball') && document.querySelector('#app .avatar-scene.dancing'));
+    await page.press('Escape');
+    assert.ok(!(await page.exists('.dancing')), 'the dance stops with the party');
+    await openDelights();
+    await page.click('[data-action="use-delight"][data-id="drift"]');
+    await page.waitFor(() => document.querySelector('#ambience i'));
+    await page.goto('/');
+    await page.waitFor(() => document.querySelector('#ambience i'), { message: 'drift continues after a reload' });
+    await openDelights();
+    assert.equal(await page.text('[data-action="use-delight"][data-id="drift"]'), 'Drifting today', 'one drift per day');
+    assert.ok(await page.evaluate(() => document.querySelector('[data-action="use-delight"][data-id="drift"]').disabled));
+  },
+  { reducedMotion: false },
+);
+
+uiTest('with Reduce motion, a delight becomes a gentle glow', async page => {
+  const s = E.freshState();
+  s.supplies = { fireworks: 1 };
+  await page.open({ save: s });
+  await page.click('#app .character-actions [data-action="inventory"]');
+  await page.click('[data-action="shop-tab"][data-category="delight"]');
+  await page.click('[data-action="use-delight"][data-id="fireworks"]');
+  await page.waitFor(() => document.querySelector('#delight-layer.gentle'));
+  assert.equal(await page.count('.rocket, .spark'), 0);
+});
+
 uiTest('the character studio previews a locked style without saving, then buys it', async page => {
   const s = E.freshState();
   s.gold = 500;

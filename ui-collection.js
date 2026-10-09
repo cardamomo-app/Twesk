@@ -1,7 +1,7 @@
 // Achievements and the bestiary.
-import { collectionBody } from './collection-view.js?v=0.14.1';
-import { $, app, modalShell, view } from './ui-core.js?v=0.14.1';
-import { closeModal, openModal } from './ui-modal.js?v=0.14.1';
+import { collectionBody } from './collection-view.js?v=0.15.1';
+import { $, app, modalShell, view } from './ui-core.js?v=0.15.1';
+import { closeModal, openModal } from './ui-modal.js?v=0.15.1';
 export function onKeydown(event) {
   if (
     event.target.matches('[data-action="collection-tab"]') &&

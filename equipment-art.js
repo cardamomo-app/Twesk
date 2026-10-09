@@ -1,4 +1,4 @@
-import {avatarGeometry} from './avatar-model.js?v=0.14.1';
+import {avatarGeometry} from './avatar-model.js?v=0.15.1';
 import {createCuboidScene,visibleCuboidFaces} from './cuboid-renderer.js';
 
 const weaponParts=new Set(['sword grip','pommel','crossguard','blade','blade ridge','sword point','sword tip','blade shoulders','blade rune','guard wing']);
@@ -43,6 +43,43 @@ function spell(item){
   else{add(-10,6,30,20,3,12,ink);add(-7,6,25,14,3,5,ink);add(-3,6,22,6,3,3,ink);add(-2,9,28,4,1,11,'#b8d8c4');}
   return boxes;
 }
+function delight(item){
+  const boxes=[],add=(x,y,z,w,d,h,color,part='delight')=>boxes.push({x,y,z,w,d,h,color,part});
+  if(item.id==='treat'){
+    // A bone-shaped biscuit.
+    add(-16,-5,8,32,10,8,'#e8c896');add(-16,-5,16,32,10,2,'#f2dcb4');
+    for(const x of [-22,14])for(const y of [-9,3]){add(x,y,6,9,8,12,'#e8c896');add(x,y,18,9,8,2,'#f2dcb4');}
+    add(-4,6,10,8,1,3,'#c79a63');
+  }else if(item.id==='balloons'){
+    const colors=['#e86f7f','#6fa8e8','#f2c14e'];
+    [[-14,0,40],[2,-4,50],[12,4,36]].forEach(([x,y,z],i)=>{
+      add(x,y,z,14,14,16,colors[i]);add(x+2,y+2,z+16,10,10,4,colors[i]);add(x+2,y+2,z-4,10,10,4,colors[i]);
+      add(x+3,y+12,z+10,3,1,4,'#ffffff');add(x+6,y+6,z-7,2,2,3,colors[i]);
+      for(let k=0;k<6;k++)add(x+6-(k%2),y+6,z-8-k*5,1,1,5,'#8a8796','string');
+    });
+    add(-3,1,4,6,6,6,'#8a8796','string');
+  }else if(item.id==='drift'){
+    // A blossom on a little twig.
+    add(-2,-2,6,4,4,26,'#7a5a46');add(2,-2,22,10,4,3,'#7a5a46');add(10,-1,20,6,6,4,'#8fbf7a');
+    for(const [x,y] of [[-9,-2],[3,-2],[-3,-8],[-3,4]])add(x,y,30,8,8,6,'#f4b6c8');
+    add(-3,-2,31,6,6,6,'#f8d16a');add(-1,0,37,2,2,1,'#fbe39a');
+  }else if(item.id==='fireworks'){
+    // A rocket with fins and a fuse.
+    add(-6,-6,12,12,12,34,'#d9534f');add(-6,-6,24,12,12,6,'#f4e3c1');add(-6,-6,36,12,12,4,'#2f6fb5');
+    add(-4,-4,46,8,8,6,'#d9534f');add(-2,-2,52,4,4,4,'#f2c14e');
+    for(const [x,y] of [[-11,-2],[6,-2],[-2,-11],[-2,6]])add(x,y,8,5,4,12,'#2f6fb5');
+    add(-1,-1,2,2,2,10,'#7a5a46');add(-1,-1,0,2,2,2,'#f2c14e');
+  }else{
+    // A faceted mirror ball on a short chain.
+    const tones=['#e6e9f2','#b9c2d6','#f7f8fc','#9aa6bf'];
+    for(let x=-14;x<14;x+=4)for(let y=-14;y<14;y+=4)for(let z=10;z<38;z+=4){
+      const dx=x+2,dy=y+2,dz=z+2-24;if(dx*dx+dy*dy+dz*dz>196||dx*dx+dy*dy+dz*dz<120)continue;
+      add(x,y,z,4,4,4,tones[Math.abs(Math.round((x+y+z)/4))%4]);
+    }
+    add(-1,-1,38,2,2,14,'#8a8796','chain');add(-3,-3,52,6,6,2,'#8a8796','chain');
+  }
+  return boxes;
+}
 function pet(item){
   const boxes=[],add=(x,y,z,w,d,h,color,part='pet')=>boxes.push({x,y,z,w,d,h,color,part});
   if(item.id==='tortoise'){
@@ -83,7 +120,7 @@ export function itemArt(item) {
   const key=item.id;
   if(illustrations.has(key))return illustrations.get(key);
   const parts=item.type==='weapon'?weaponParts:item.type==='helmet'?helmetParts:armorParts;
-  let boxes=item.type==='potion'?potion(item):item.type==='spell'?spell(item):item.type==='pet'?pet(item):avatarGeometry(item.type==='weapon'?item:null,item.type==='armor'?item:null,undefined,item.type==='helmet'?item:null).filter(b=>parts.has(b.part));
+  let boxes=item.type==='potion'?potion(item):item.type==='spell'?spell(item):item.type==='pet'?pet(item):item.type==='delight'?delight(item):avatarGeometry(item.type==='weapon'?item:null,item.type==='armor'?item:null,undefined,item.type==='helmet'?item:null).filter(b=>parts.has(b.part));
   // Showcase the actual equipped geometry, recentered on a small display stand.
   const minX=Math.min(...boxes.map(b=>b.x)),maxX=Math.max(...boxes.map(b=>b.x+b.w));
   const floor=Math.min(...boxes.map(b=>b.z)),ceiling=Math.max(...boxes.map(b=>b.z+b.h));
@@ -93,7 +130,7 @@ export function itemArt(item) {
   const centerX=(Math.min(...anchors.map(b=>b.x))+Math.max(...anchors.map(b=>b.x+b.w)))/2;
   const centerY=(Math.min(...anchors.map(b=>b.y))+Math.max(...anchors.map(b=>b.y+b.d)))/2;
   boxes=boxes.map(b=>({...b,x:(b.x-centerX)*scale,y:(b.y-centerY)*scale,z:(b.z-floor)*scale+8,w:b.w*scale,d:b.d*scale,h:b.h*scale}));
-  const accent=item.type==='potion'?'#b6a4c5':item.tier==='legendary'?'#e2b84f':item.tier==='special'?'#b5a7d7':item.tier==='large'?'#93aaa0':'#b8a789';
+  const accent=item.type==='potion'?'#b6a4c5':item.type==='delight'?'#f2b8c6':item.tier==='legendary'?'#e2b84f':item.tier==='special'?'#b5a7d7':item.tier==='large'?'#93aaa0':'#b8a789';
   boxes.unshift({x:-25,y:-19,z:0,w:50,d:38,h:4,color:'#b8b6ad',part:'display stand'},{x:-26,y:-20,z:4,w:52,d:40,h:3,color:'#ddd9cc',part:'stand rim'},{x:-23,y:-17,z:7,w:46,d:34,h:1,color:accent,part:'stand inset'});
   const faces=visibleCuboidFaces(createCuboidScene(boxes),-.55);
   const illustration=`<svg class="equipment-art voxel-art ${item.type}" viewBox="20 40 200 200" aria-hidden="true"><ellipse cx="120" cy="226" rx="50" ry="9" fill="currentColor" opacity=".07"/>${faces.map(f=>`<polygon points="${f.projected.map(p=>p.map(n=>n.toFixed(2)).join(',')).join(' ')}" fill="${tint(f.color,f.light)}"/>`).join('')}</svg>`;

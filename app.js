@@ -1,20 +1,21 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.14.1';
-import { avatarFaceArt } from './art.js?v=0.14.1';
-import { awardAchievements } from './achievements.js?v=0.14.1';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.14.1';
-import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.14.1';
-import { closeModal, openModal } from './ui-modal.js?v=0.14.1';
-import * as tasks from './ui-tasks.js?v=0.14.1';
-import * as habits from './ui-habits.js?v=0.14.1';
-import * as vault from './ui-vault.js?v=0.14.1';
-import * as character from './ui-character.js?v=0.14.1';
-import * as shop from './ui-shop.js?v=0.14.1';
-import * as battle from './ui-battle.js?v=0.14.1';
-import * as collection from './ui-collection.js?v=0.14.1';
-import * as settings from './ui-settings.js?v=0.14.1';
-import * as history from './ui-history.js?v=0.14.1';
-import { installTagSuggest } from './ui-tag-suggest.js?v=0.14.1';
+import * as E from './engine.js?v=0.15.1';
+import { avatarFaceArt } from './art.js?v=0.15.1';
+import { awardAchievements } from './achievements.js?v=0.15.1';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.15.1';
+import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.15.1';
+import { closeModal, openModal } from './ui-modal.js?v=0.15.1';
+import * as tasks from './ui-tasks.js?v=0.15.1';
+import * as habits from './ui-habits.js?v=0.15.1';
+import * as vault from './ui-vault.js?v=0.15.1';
+import * as character from './ui-character.js?v=0.15.1';
+import * as shop from './ui-shop.js?v=0.15.1';
+import * as battle from './ui-battle.js?v=0.15.1';
+import * as collection from './ui-collection.js?v=0.15.1';
+import * as settings from './ui-settings.js?v=0.15.1';
+import * as history from './ui-history.js?v=0.15.1';
+import { installDelights, renderAmbience } from './ui-delights.js?v=0.15.1';
+import { installTagSuggest } from './ui-tag-suggest.js?v=0.15.1';
 
 const features = [tasks, habits, vault, character, shop, battle, collection, settings, history];
 const modals = Object.assign({}, ...features.map(f => f.modals));
@@ -79,6 +80,7 @@ function render() {
   if (window.scrollY !== pageY) window.scrollTo(0, pageY);
   if (focused && !app.modal) $(`#app ${focused}`)?.focus({ preventScroll: true });
   syncLoops($('#app'));
+  renderAmbience();
   renderModal();
   battle.updateOdds();
 }
@@ -94,6 +96,7 @@ function renderModal() {
   syncLoops($('#overlay'));
 }
 installTagSuggest();
+installDelights();
 Object.assign(view, { render, renderModal, finishBattlePlayback: battle.finishBattlePlayback });
 
 function handleClick(event) {

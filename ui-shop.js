@@ -1,12 +1,13 @@
 // Shop and inventory: buying, equipping, potions, spells, and pets.
-import * as E from './engine.js?v=0.14.1';
-import { avatarFaceArt, itemArt, monsterName } from './art.js?v=0.14.1';
+import * as E from './engine.js?v=0.15.1';
+import { avatarFaceArt, itemArt, monsterName } from './art.js?v=0.15.1';
 import { APPEARANCE, APPEARANCE_LABELS } from './appearance.js';
-import { $, app, coin, esc, icon, modalShell, toast, view } from './ui-core.js?v=0.14.1';
-import { commit, openModal } from './ui-modal.js?v=0.14.1';
-import { burst, countUp, sound } from './ui-effects.js?v=0.14.1';
-import { potionCount } from './ui-character.js?v=0.14.1';
-import { percent, requestOdds } from './ui-odds.js?v=0.14.1';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.15.1';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.15.1';
+import { burst, countUp, sound } from './ui-effects.js?v=0.15.1';
+import { potionCount } from './ui-character.js?v=0.15.1';
+import { playDelight } from './ui-delights.js?v=0.15.1';
+import { percent, requestOdds } from './ui-odds.js?v=0.15.1';
 // Odds are compared against the next opponent, at full health when currently at 0 HP.
 function comparisonBase() {
   const s = app.state;
@@ -90,6 +91,7 @@ const shopTabs = [
   ['potion', 'Potions', 'heart'],
   ['spell', 'Spells', 'soul'],
   ['pet', 'Pets', 'pet'],
+  ['delight', 'Delights', 'balloon'],
   ['style', 'Style', 'sparkle'],
 ];
 // Cosmetics for the Style tab: priced appearance options, previewed on the character's face.
@@ -129,6 +131,8 @@ function renderShop(inventory) {
     spell:
       'Prepare one spell at a time. It is consumed when a fight starts, even on defeat. Switching or putting it away costs nothing.',
     pet: 'Choose one companion. Pets are permanent, and each lends a small bonus in every fight.',
+    delight:
+      'Single-use moments of fun. Buy a few and set one off whenever you like. They never change stats or rewards; Escape ends one early.',
     style: 'Styles are yours to keep once bought. Try one on in the character studio before buying.',
   };
   return modalShell(
@@ -146,28 +150,44 @@ function renderShop(inventory) {
                   owned = !consumable && count > 0;
                 const selected = inUse(i);
                 const action =
-                  i.type === 'potion' ? 'use-potion' : i.type === 'spell' ? 'prepare-spell' : 'equip';
+                  i.type === 'delight'
+                    ? 'use-delight'
+                    : i.type === 'potion'
+                      ? 'use-potion'
+                      : i.type === 'spell'
+                        ? 'prepare-spell'
+                        : 'equip';
+                // Delights need what they act on: a companion for a treat, and one drift per day.
+                const delightBlocked =
+                  i.id === 'treat' && !app.state.activePet
+                    ? 'Needs a companion'
+                    : i.id === 'drift' && app.state.ambience?.day === today()
+                      ? 'Drifting today'
+                      : '';
                 const tonicBlocked = i.tonic && !!app.state.tonic && !selected;
-                const useLabel = i.tonic
-                  ? selected
-                    ? 'Active · next fight'
-                    : tonicBlocked
-                      ? 'Another tonic is active'
-                      : 'Drink for next fight'
-                  : i.type === 'potion'
-                    ? 'Use potion'
-                    : i.type === 'spell'
+                const useLabel =
+                  i.type === 'delight'
+                    ? delightBlocked || 'Set it off'
+                    : i.tonic
                       ? selected
-                        ? 'Prepared · put away'
-                        : 'Prepare for fight'
-                      : i.type === 'pet'
-                        ? selected
-                          ? 'Companion · remove'
-                          : 'Choose companion'
-                        : selected
-                          ? 'Equipped · remove'
-                          : 'Equip';
-                return `<article class="shop-item ${i.tier} ${i.type} ${owned ? 'owned' : ''} ${selected ? 'item-selected' : ''}">${count ? `<span class="item-count">${consumable ? count + ' owned' : selected ? icon('check') + 'Selected' : 'Owned'}</span>` : ''}<div class="item-art">${itemArt(i)}</div><div class="item-copy"><span class="item-tier">${i.type === 'pet' ? `COMPANION · ${i.tier.toUpperCase()}` : i.type === 'spell' || i.tonic ? 'ONE FIGHT' : i.tier.toUpperCase()}</span><h3>${esc(i.name)}</h3><p>${esc(i.description)}</p></div>${comparison(i)}${!inventory ? `<button class="button secondary" data-action="buy" data-id="${i.id}" aria-label="${owned ? esc(i.name) + ' owned' : 'Buy ' + esc(i.name) + ' for ' + i.price + ' gold'}" ${owned || app.state.gold < i.price ? 'disabled' : ''}>${owned ? icon('check') + 'Owned' : `Buy ${coin(i.price, true)}`}</button>` : ''}${count ? `<button class="button ${inventory ? 'primary' : 'item-use'}" data-action="${action}" data-id="${i.id}" aria-label="${i.type === 'potion' ? 'Use' : i.type === 'spell' ? (selected ? 'Put away' : 'Prepare') : selected ? 'Remove' : 'Equip'} ${esc(i.name)}" ${(i.tonic ? !!app.state.tonic : i.type === 'potion' && app.state.hp === E.maxHP(app.state)) ? 'disabled' : ''}>${!i.tonic && i.type === 'potion' && app.state.hp === E.maxHP(app.state) ? 'Full health' : useLabel}</button>` : ''}</article>`;
+                        ? 'Active · next fight'
+                        : tonicBlocked
+                          ? 'Another tonic is active'
+                          : 'Drink for next fight'
+                      : i.type === 'potion'
+                        ? 'Use potion'
+                        : i.type === 'spell'
+                          ? selected
+                            ? 'Prepared · put away'
+                            : 'Prepare for fight'
+                          : i.type === 'pet'
+                            ? selected
+                              ? 'Companion · remove'
+                              : 'Choose companion'
+                            : selected
+                              ? 'Equipped · remove'
+                              : 'Equip';
+                return `<article class="shop-item ${i.tier} ${i.type} ${owned ? 'owned' : ''} ${selected ? 'item-selected' : ''}">${count ? `<span class="item-count">${consumable ? count + ' owned' : selected ? icon('check') + 'Selected' : 'Owned'}</span>` : ''}<div class="item-art">${itemArt(i)}</div><div class="item-copy"><span class="item-tier">${i.type === 'pet' ? `COMPANION · ${i.tier.toUpperCase()}` : i.type === 'spell' || i.tonic ? 'ONE FIGHT' : i.tier.toUpperCase()}</span><h3>${esc(i.name)}</h3><p>${esc(i.description)}</p></div>${comparison(i)}${!inventory ? `<button class="button secondary" data-action="buy" data-id="${i.id}" aria-label="${owned ? esc(i.name) + ' owned' : 'Buy ' + esc(i.name) + ' for ' + i.price + ' gold'}" ${owned || app.state.gold < i.price ? 'disabled' : ''}>${owned ? icon('check') + 'Owned' : `Buy ${coin(i.price, true)}`}</button>` : ''}${count ? `<button class="button ${inventory ? 'primary' : 'item-use'}" data-action="${action}" data-id="${i.id}" aria-label="${i.type === 'delight' ? 'Set off' : i.type === 'potion' ? 'Use' : i.type === 'spell' ? (selected ? 'Put away' : 'Prepare') : selected ? 'Remove' : 'Equip'} ${esc(i.name)}" ${(i.type === 'delight' ? !!delightBlocked : i.tonic ? !!app.state.tonic : i.type === 'potion' && app.state.hp === E.maxHP(app.state)) ? 'disabled' : ''}>${!i.tonic && i.type === 'potion' && app.state.hp === E.maxHP(app.state) ? 'Full health' : useLabel}</button>` : ''}</article>`;
               })
               .join('')
           : `<div class="empty-state"><span class="empty-symbol">${icon(shopTabs.find(t => t[0] === app.shopCategory)[2])}</span><h3>No ${shopTabs.find(t => t[0] === app.shopCategory)[1].toLowerCase()} in inventory</h3><button class="button primary" data-action="shop">Browse shop</button></div>`
@@ -306,6 +326,13 @@ export const actions = {
           ? 'Spell prepared for your next fight.'
           : 'Spell put away. It stays in your inventory.',
       );
+  },
+  'use-delight'(b, { id }) {
+    const item = commit(() => E.useDelight(app.state, id, today()));
+    if (!item) return;
+    // Close the shop first so the moment plays over the dashboard.
+    closeModal();
+    setTimeout(() => playDelight(id), 120);
   },
   'open-tonics'() {
     app.shopCategory = 'potion';

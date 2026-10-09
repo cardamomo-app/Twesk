@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.14.1';
-import {validHabitIcon} from './habit-icons.js?v=0.14.1';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.15.1';
+import {validHabitIcon} from './habit-icons.js?v=0.15.1';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -46,7 +46,7 @@ export function freshState() {
       habit('Mindless scrolling', 'harm', 3), habit('Fast food', 'harm', 7),
     ],
     notes: [], noteGold: {}, reviewDates: [], inventory: [], equipped: { weapon: null, armor: null, helmet: null }, potions: 0,
-    supplies: {}, preparedSpell: null, tonic: null, activePet: null, wardrobe: [], history: {},
+    supplies: {}, preparedSpell: null, tonic: null, activePet: null, wardrobe: [], history: {}, ambience: null,
     progress: createProgress(),
     monster: { number: 1, defeatedOn: null }, battles: [], pendingRecovery: false,
     settings: { theme: 'light', muted: false, reducedMotion: false, timezone: deviceTimezone(), lastBackup: null, backupNudge: null },
@@ -374,8 +374,13 @@ export const SHOP = [
   { id: 'crown', name: 'Sunforged crown', type: 'helmet', tier: 'legendary', price: 600, bonus: 32, description: '+32 maximum HP · fit for a legend' },
   { id: 'dawn', name: 'Dawnbreaker', type: 'weapon', tier: 'legendary', price: 600, bonus: 8, description: '+8 attack · forged at first light' },
   { id: 'sunplate', name: 'Sunforged plate', type: 'armor', tier: 'legendary', price: 600, bonus: 8, description: 'Reduce each hit by 8 · with a crimson cape' },
+  { id: 'treat', name: 'Pet treat', type: 'delight', tier: 'basic', price: 8, bonus: 0, description: 'Your companion hops, spins, and shows a little heart' },
+  { id: 'balloons', name: 'Balloon bouquet', type: 'delight', tier: 'basic', price: 15, bonus: 0, description: 'Colorful balloons float up across the screen · click to pop' },
+  { id: 'drift', name: 'Seasonal drift', type: 'delight', tier: 'large', price: 20, bonus: 0, description: 'Blossoms, leaves, or snow drift over your dashboard for the rest of the day' },
+  { id: 'fireworks', name: 'Fireworks show', type: 'delight', tier: 'special', price: 35, bonus: 0, description: 'Night falls for a moment of rockets, bursts, and crackles' },
+  { id: 'disco', name: 'Disco party', type: 'delight', tier: 'legendary', price: 60, bonus: 0, description: 'A disco ball, sweeping lights, a little groove, and a dance' },
 ];
-export const isConsumable = item => ['potion','spell'].includes(item.type);
+export const isConsumable = item => ['potion','spell','delight'].includes(item.type);
 export const itemCount = (s,id) => id==='potion' ? s.potions : (s.supplies?.[id] || (s.inventory.includes(id)?1:0));
 export const preparedSpell = s => SHOP.find(i=>i.type==='spell'&&i.id===s.preparedSpell);
 export const activeTonic = s => SHOP.find(i=>i.tonic&&i.id===s.tonic);
@@ -425,6 +430,18 @@ export function setAppearance(s,key,id) {
   if(!appearanceOption(key,id)) throw new Error('Unknown style.');
   if(!cosmeticOwned(s,key,id)) throw new Error('Buy this style first.');
   s.appearance[key]=id;
+}
+// Delights are single-use moments of fun with no effect on stats or rewards.
+// Seasonal drift lasts for the rest of the local day; its look follows the month.
+export const driftKind = day => { const month = Number(day.slice(5, 7)); return [12, 1, 2].includes(month) ? 'snow' : [9, 10, 11].includes(month) ? 'leaves' : 'petals'; };
+export function useDelight(s, id, today) {
+  const item = SHOP.find(i => i.id === id && i.type === 'delight');
+  if (!item || !itemCount(s, id)) throw new Error('Buy this first.');
+  if (id === 'treat' && !s.activePet) throw new Error('Choose a companion to give the treat to.');
+  if (id === 'drift' && s.ambience?.day === today) throw new Error('Your dashboard is already drifting today.');
+  s.supplies[id]--;
+  if (id === 'drift') s.ambience = { kind: driftKind(today), day: today };
+  return item;
 }
 export function prepareSpell(s,id) {
   if(!SHOP.some(i=>i.id===id&&i.type==='spell')||!itemCount(s,id))throw new Error('Buy this spell first.');
@@ -586,12 +603,13 @@ export function validateState(value) {
   if (!s.monster||!integer(s.monster.number,1,500)||(s.monster.defeatedOn!==null&&!date(s.monster.defeatedOn))) fail();
   if (!integer(s.potions)||typeof s.pendingRecovery!=='boolean'||!s.noteGold||typeof s.noteGold!=='object'||Array.isArray(s.noteGold)) fail();
   if (!Object.entries(s.noteGold).every(([k,v])=>date(k)&&integer(v,0,6))||!s.reviewDates.every(date)) fail();
-  s.supplies ??= {};s.preparedSpell ??= null;s.activePet ??= null;s.tonic ??= null;s.wardrobe ??= [];if(s.equipped&&s.equipped.helmet===undefined)s.equipped.helmet=null;
+  s.supplies ??= {};s.ambience ??= null;s.preparedSpell ??= null;s.activePet ??= null;s.tonic ??= null;s.wardrobe ??= [];if(s.equipped&&s.equipped.helmet===undefined)s.equipped.helmet=null;
   if(typeof s.supplies!=='object'||Array.isArray(s.supplies)||!Object.entries(s.supplies).every(([id,n])=>id!=='potion'&&SHOP.some(i=>i.id===id&&isConsumable(i))&&integer(n)))fail();
   if(s.preparedSpell!==null&&(!preparedSpell(s)||!itemCount(s,s.preparedSpell)))fail();
   if(s.activePet!==null&&(!s.inventory.includes(s.activePet)||!SHOP.some(i=>i.id===s.activePet&&i.type==='pet')))fail();
   if (!s.equipped||!s.inventory.every(id=>SHOP.some(i=>i.id===id&&!isConsumable(i)))||new Set(s.inventory).size!==s.inventory.length) fail();
   if(s.tonic!==null&&!activeTonic(s))fail();
+  if(s.ambience!==null&&(typeof s.ambience!=='object'||!['petals','leaves','snow'].includes(s.ambience.kind)||!date(s.ambience.day)))fail();
   if(!Array.isArray(s.wardrobe)||!s.wardrobe.every(ownableCosmetic)||new Set(s.wardrobe).size!==s.wardrobe.length||!appearanceUnlocked(s,s.appearance))fail();
   for(const type of GEAR_SLOTS) if(s.equipped[type]!==null&&(!s.inventory.includes(s.equipped[type])||!SHOP.some(i=>i.id===s.equipped[type]&&i.type===type))) fail();
   const unique=a=>new Set(a.map(x=>x.id)).size===a.length;

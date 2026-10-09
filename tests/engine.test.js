@@ -231,7 +231,7 @@ test('merging notes joins their text oldest first with paragraph breaks, and und
   const before=JSON.parse(JSON.stringify(s.notes)),gold=s.gold;
   const {note,undo}=E.mergeNotes(s,[b.id,c.id,a.id]);
   assert.equal(note.id,a.id,'the oldest note survives');assert.equal(note.created,'2026-10-01T10:00:00Z');
-  assert.equal(note.text,'Paint the shed green\n\nMaybe sage #garden\n\nSecond thought about the shed #garden\n\nBuy brushes');
+  assert.equal(note.text,'Paint the shed green\n\nMaybe sage #garden\n\nSecond thought about the shed\n\nBuy brushes','repeated tags are removed');
   assert.equal(s.notes.length,1);assert.equal(note.pinned,true);assert.ok(note.paid<=3);assert.equal(s.gold,gold,'no gold for merging');
   assert.deepEqual(E.tags(note.text),['#garden']);
   assert.doesNotThrow(()=>E.validateState(JSON.parse(JSON.stringify(s))));
@@ -247,4 +247,11 @@ test('merging keeps task links pointing at the surviving note',()=>{
   const {note}=E.mergeNotes(s,[first.id,second.id]);
   assert.equal(note.taskId,task.id);assert.equal(task.source,note.id);
   assert.doesNotThrow(()=>E.validateState(JSON.parse(JSON.stringify(s))));
+});
+test('merging keeps each hashtag once, where it first appears, and tidies what is left',()=>{
+  assert.equal(E.dedupeTags('Plan #Garden beds\n\nWater daily #garden.\n\n#garden #home\n\nShed #home and #tools'),
+    'Plan #Garden beds\n\nWater daily.\n\n#home\n\nShed and #tools');
+  assert.equal(E.dedupeTags('#a #b\n\n#a\n\n#b'),'#a #b','tag-only lines that become empty are dropped');
+  assert.equal(E.dedupeTags('  - indented item #x\n  - second #y'),'  - indented item #x\n  - second #y','untouched lines keep their spacing');
+  assert.equal(E.dedupeTags('email@#x then #x'),'email@#x then #x','only hashtags that start a word count');
 });

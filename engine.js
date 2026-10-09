@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.13.1';
-import {validHabitIcon} from './habit-icons.js?v=0.13.1';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.13.2';
+import {validHabitIcon} from './habit-icons.js?v=0.13.2';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -287,6 +287,24 @@ export function undoReturnTaskToVault(s, undo) {
   s.tasks.splice(Math.min(undo.index, s.tasks.length), 0, undo.task);
   return undo.task;
 }
+// Keep each hashtag only where it first appears (case-insensitive). Lines that lose a tag are tidied,
+// and a line left empty is dropped; untouched lines stay exactly as written.
+export function dedupeTags(text) {
+  const seen = new Set();
+  const lines = text.split('\n').flatMap(line => {
+    let changed = false;
+    const next = line.replace(/(^|[ \t])(#[\p{L}\p{N}_-]+)/gu, (match, space, tag) => {
+      const key = tag.toLowerCase();
+      if (!seen.has(key)) { seen.add(key); return match; }
+      changed = true;
+      return space;
+    });
+    if (!changed) return [line];
+    const tidy = next.replace(/[ \t]{2,}/g, ' ').replace(/[ \t]+([.,;:!?])/g, '$1').trim();
+    return tidy ? [tidy] : [];
+  });
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n').replace(/^\n+|\n+$/g, '');
+}
 // Merge several notes into the oldest one: their texts in order, oldest first, separated by a blank line.
 // The survivor keeps its date and task link; it stays pinned if any was. No new note gold is earned.
 // Returns what is needed to undo the merge exactly.
@@ -296,7 +314,7 @@ export function mergeNotes(s, ids) {
   if (notes.some(n => n.status === 'archived')) throw new Error('Restore archived notes before merging them.');
   const ordered = [...notes].sort((a, b) => a.created.localeCompare(b.created)), [survivor, ...rest] = ordered;
   const undo = { survivor: { ...survivor }, removed: rest.map(n => ({ note: { ...n }, index: s.notes.indexOf(n) })) };
-  survivor.text = ordered.map(n => n.text.replace(/\r\n?/g, '\n').trim()).filter(Boolean).join('\n\n');
+  survivor.text = dedupeTags(ordered.map(n => n.text.replace(/\r\n?/g, '\n').trim()).filter(Boolean).join('\n\n'));
   survivor.paid = Math.min(3, ordered.reduce((sum, n) => sum + n.paid, 0));
   survivor.status = ordered.some(n => n.status === 'kept') ? 'kept' : 'inbox';
   survivor.kind = ordered.every(n => n.kind === 'journal') ? 'journal' : 'note';

@@ -247,7 +247,7 @@ uiTest('Select all picks only the notes shown, so one hashtag can be exported', 
 
 uiTest('selected notes merge into one with paragraph breaks, and Undo restores them', async page => {
   const s = E.freshState();
-  for (const [text, created] of [['Paint the shed #garden', '2026-10-01T09:00:00Z'], ['Use the sage green', '2026-10-02T09:00:00Z'], ['Separate thought', '2026-10-03T09:00:00Z']]) {
+  for (const [text, created] of [['Paint the shed #garden', '2026-10-01T09:00:00Z'], ['Use the sage green #garden', '2026-10-02T09:00:00Z'], ['Separate thought', '2026-10-03T09:00:00Z']]) {
     const { note } = E.saveNote(s, { text }, '2026-10-01');
     note.created = created;
     note.status = 'kept';

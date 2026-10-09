@@ -131,6 +131,29 @@ uiTest(
   { height: 700 },
 );
 
+uiTest(
+  'redrawing the dashboard keeps the monster’s idle float smooth (no restart jump)',
+  async page => {
+    await page.open();
+    await page.click('#app [data-action="category"][data-category="harm"]');
+    // Wait until the float is mid-cycle, where a restart would visibly snap it down.
+    await page.waitFor(() => {
+      const a = document.querySelector('#app .monster-art').getAnimations()[0];
+      return a && a.currentTime % 5000 > 1500 && a.currentTime % 5000 < 3500;
+    }, { timeout: 8000 });
+    const result = await page.evaluate(() => {
+      const offset = () => new DOMMatrix(getComputedStyle(document.querySelector('#app .monster-art')).transform).m42;
+      const before = offset(), old = document.querySelector('#app .monster-art');
+      document.querySelector('#app [data-action="harm"]').click();
+      return { replaced: old !== document.querySelector('#app .monster-art'), before, after: offset() };
+    });
+    assert.ok(result.replaced, 'the monster was redrawn');
+    assert.ok(result.before < -1, `mid-float before the redraw (${result.before}px)`);
+    assert.ok(Math.abs(result.after - result.before) < 0.5, `float continues: ${result.before}px → ${result.after}px`);
+  },
+  { reducedMotion: false },
+);
+
 uiTest('a level-up shows its banner, glowing stat chip, and toast', async page => {
   const s = E.freshState();
   s.xp.soul = 295;

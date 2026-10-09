@@ -1,20 +1,20 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.14.0';
-import { avatarFaceArt } from './art.js?v=0.14.0';
-import { awardAchievements } from './achievements.js?v=0.14.0';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.14.0';
-import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.14.0';
-import { closeModal, openModal } from './ui-modal.js?v=0.14.0';
-import * as tasks from './ui-tasks.js?v=0.14.0';
-import * as habits from './ui-habits.js?v=0.14.0';
-import * as vault from './ui-vault.js?v=0.14.0';
-import * as character from './ui-character.js?v=0.14.0';
-import * as shop from './ui-shop.js?v=0.14.0';
-import * as battle from './ui-battle.js?v=0.14.0';
-import * as collection from './ui-collection.js?v=0.14.0';
-import * as settings from './ui-settings.js?v=0.14.0';
-import * as history from './ui-history.js?v=0.14.0';
-import { installTagSuggest } from './ui-tag-suggest.js?v=0.14.0';
+import * as E from './engine.js?v=0.14.1';
+import { avatarFaceArt } from './art.js?v=0.14.1';
+import { awardAchievements } from './achievements.js?v=0.14.1';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.14.1';
+import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.14.1';
+import { closeModal, openModal } from './ui-modal.js?v=0.14.1';
+import * as tasks from './ui-tasks.js?v=0.14.1';
+import * as habits from './ui-habits.js?v=0.14.1';
+import * as vault from './ui-vault.js?v=0.14.1';
+import * as character from './ui-character.js?v=0.14.1';
+import * as shop from './ui-shop.js?v=0.14.1';
+import * as battle from './ui-battle.js?v=0.14.1';
+import * as collection from './ui-collection.js?v=0.14.1';
+import * as settings from './ui-settings.js?v=0.14.1';
+import * as history from './ui-history.js?v=0.14.1';
+import { installTagSuggest } from './ui-tag-suggest.js?v=0.14.1';
 
 const features = [tasks, habits, vault, character, shop, battle, collection, settings, history];
 const modals = Object.assign({}, ...features.map(f => f.modals));
@@ -36,6 +36,12 @@ function controlSelector(el) {
     .filter(key => el.dataset[key] !== undefined)
     .map(key => `[data-${key}="${CSS.escape(el.dataset[key])}"]`)
     .join('');
+}
+// Redraws create fresh elements, which would restart looping animations (like the monster's idle
+// float) from their first frame. Anchoring them to the page clock keeps each loop's phase continuous.
+function syncLoops(root) {
+  for (const animation of root.getAnimations?.({ subtree: true }) || [])
+    if (animation.effect?.getComputedTiming().iterations === Infinity) animation.startTime = 0;
 }
 function render() {
   hideStatTooltip();
@@ -72,6 +78,7 @@ function render() {
   for (const [selector, top] of scrolls) if ($(selector)) $(selector).scrollTop = top;
   if (window.scrollY !== pageY) window.scrollTo(0, pageY);
   if (focused && !app.modal) $(`#app ${focused}`)?.focus({ preventScroll: true });
+  syncLoops($('#app'));
   renderModal();
   battle.updateOdds();
 }
@@ -84,6 +91,7 @@ function renderModal() {
   }
   document.body.classList.add('modal-open');
   $('#overlay').innerHTML = modals[app.modal.type]?.() ?? '';
+  syncLoops($('#overlay'));
 }
 installTagSuggest();
 Object.assign(view, { render, renderModal, finishBattlePlayback: battle.finishBattlePlayback });

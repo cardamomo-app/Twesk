@@ -577,6 +577,12 @@ function controlSelector(el) {
     .map(key => `[data-${key}="${CSS.escape(el.dataset[key])}"]`)
     .join('');
 }
+// Redraws create fresh elements, which would restart looping animations (like the monster's idle
+// float) from their first frame. Anchoring them to the page clock keeps each loop's phase continuous.
+function syncLoops(root) {
+  for (const animation of root.getAnimations?.({ subtree: true }) || [])
+    if (animation.effect?.getComputedTiming().iterations === Infinity) animation.startTime = 0;
+}
 function render() {
   hideStatTooltip();
   // Redrawing replaces the dashboard; keep list scroll positions, the page position, and focus.
@@ -612,6 +618,7 @@ function render() {
   for (const [selector, top] of scrolls) if ($(selector)) $(selector).scrollTop = top;
   if (window.scrollY !== pageY) window.scrollTo(0, pageY);
   if (focused && !app.modal) $(`#app ${focused}`)?.focus({ preventScroll: true });
+  syncLoops($('#app'));
   renderModal();
   battle.updateOdds();
 }
@@ -624,6 +631,7 @@ function renderModal() {
   }
   document.body.classList.add('modal-open');
   $('#overlay').innerHTML = modals[app.modal.type]?.() ?? '';
+  syncLoops($('#overlay'));
 }
 installTagSuggest();
 Object.assign(view, { render, renderModal, finishBattlePlayback: battle.finishBattlePlayback });

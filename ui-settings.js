@@ -1,7 +1,7 @@
 // Settings, backups, and full reset/restore.
-import { syncSettings } from './ui-sync.js?v=0.20.7';
-import * as E from './engine.js?v=0.20.7';
-import { PREVIOUS_SAVE_KEY, replaceSave, resetProgress, restorePreviousProgress } from './save-recovery.js?v=0.20.7';
+import { syncSettings } from './ui-sync.js?v=0.20.9';
+import * as E from './engine.js?v=0.20.9';
+import { PREVIOUS_SAVE_KEY, replaceSave, resetProgress, restorePreviousProgress } from './save-recovery.js?v=0.20.9';
 import {
   $,
   app,
@@ -13,8 +13,8 @@ import {
   today,
   view,
   viewDefaults,
-} from './ui-core.js?v=0.20.7';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.20.7';
+} from './ui-core.js?v=0.20.9';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.20.9';
 function backupStatus() {
   const last = app.state.settings.lastBackup;
   if (!last) return 'No backup exported from this browser yet.';

@@ -1,11 +1,11 @@
 // One task, a little trail, and a device-local focus timer.
-import * as E from './engine.js?v=0.20.7';
-import * as T from './quest-timer.js?v=0.20.7';
-import { avatarJourneyArt } from './avatar-model.js?v=0.20.7';
-import { $, app, coin, esc, icon, modalShell, toast, view } from './ui-core.js?v=0.20.7';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.20.7';
-import { rewardEffect, sound } from './ui-effects.js?v=0.20.7';
-import { unlockSfx } from './sfx.js?v=0.20.7';
+import * as E from './engine.js?v=0.20.9';
+import * as T from './quest-timer.js?v=0.20.9';
+import { avatarJourneyArt } from './avatar-model.js?v=0.20.9';
+import { $, app, coin, esc, icon, modalShell, toast, view } from './ui-core.js?v=0.20.9';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.20.9';
+import { rewardEffect, sound } from './ui-effects.js?v=0.20.9';
+import { unlockSfx } from './sfx.js?v=0.20.9';
 
 const TIMER_KEY = 'twesk.quest-timer.v1';
 let timer = T.freshTimer(), dialDrag = null, owed = 0;
@@ -72,13 +72,18 @@ function playButton(task) {
   const label = running ? 'Pause focus timer' : timer.status === 'paused' ? 'Resume focus timer' : 'Start focus timer';
   return `<button class="quest-play ${running ? 'is-running' : ''}" data-action="quest-play" ${task ? '' : 'disabled'} aria-label="${label}" title="${label}">${icon(running ? 'pause' : 'play')}</button>`;
 }
+// The same collapsible steps as the task list, opening inside the adventure box under the title.
+function questSteps(task, steps, done) {
+  const open = app.openTaskSteps.has(task.id);
+  return `<button class="task-step-summary quest-step-summary" data-action="task-steps" data-id="${task.id}" aria-expanded="${open}" aria-controls="quest-steps-${task.id}" aria-label="${open ? 'Hide' : 'Show'} steps for ${esc(task.title)}"><span class="step-progress" aria-hidden="true"><span style="width:${(done / steps.length) * 100}%"></span></span><span>${done}/${steps.length} steps</span>${icon('chevron')}</button><div class="task-steps quest-steps" id="quest-steps-${task.id}" ${open ? '' : 'hidden'}>${steps.map(step => `<label class="task-step ${step.done ? 'done' : ''}"><input type="checkbox" data-task-step data-id="${task.id}" data-step-id="${step.id}" ${step.done ? 'checked' : ''}><span>${esc(step.title)}</span></label>`).join('')}</div>`;
+}
 export function renderQuest() {
   reconcile();
   const task = currentQuest(), equipment = Object.fromEntries(E.GEAR_SLOTS.map(slot => [slot, E.SHOP.find(i => i.id === app.state.equipped[slot]) || null]));
   const steps = task?.steps || [], done = steps.filter(step => step.done).length;
-  return `<section class="quest-card ${task ? 'has-quest' : ''} ${timer.status === 'running' ? 'is-walking' : ''}" data-quest-drop aria-labelledby="quest-heading">
+  return `<section class="quest-card ${task ? 'has-quest' : ''} ${timer.status === 'running' ? 'is-walking' : ''} ${task && steps.length && app.openTaskSteps.has(task.id) ? 'steps-open' : ''}" data-quest-drop aria-labelledby="quest-heading">
     <header class="quest-heading"><span class="quest-symbol">${icon('compass')}</span><h3 id="quest-heading">One small adventure</h3><button class="quest-choose ${task ? 'quest-manage' : ''}" data-action="quest-choose" aria-label="${task ? 'Manage adventure' : 'Choose an adventure'}" title="${task ? 'Change or return this task' : 'Choose an adventure'}">${task ? icon('more') : `Choose${icon('chevron')}`}</button></header>
-    <div class="quest-task-slot">${task ? `<div class="quest-task">${timer.status === 'running' ? '' : `<button class="task-grip quest-grip" data-task-grip data-quest-grip data-id="${task.id}" aria-label="Drag ${esc(task.title)} back to your task list" title="Drag back to your task list">${icon('grip')}</button>`}<button class="task-check" data-action="toggle-task" data-id="${task.id}" aria-label="Complete ${esc(task.title)}"></button><span class="quest-task-text"><button class="quest-title" data-action="edit-task" data-id="${task.id}" title="${esc(task.title)}">${esc(task.title)}</button>${steps.length ? `<button class="quest-step-link" data-action="quest-steps">${done}/${steps.length} steps</button>` : ''}</span><span class="task-reward">${coin(E.TASK_GOLD[task.tier], true)}</span></div>` : ''}</div>
+    <div class="quest-task-slot">${task ? `<div class="quest-task">${timer.status === 'running' ? '' : `<button class="task-grip quest-grip" data-task-grip data-quest-grip data-id="${task.id}" aria-label="Drag ${esc(task.title)} back to your task list" title="Drag back to your task list">${icon('grip')}</button>`}<button class="task-check" data-action="toggle-task" data-id="${task.id}" aria-label="Complete ${esc(task.title)}"></button><span class="quest-task-text"><button class="quest-title" data-action="edit-task" data-id="${task.id}" title="${esc(task.title)}">${esc(task.title)}</button>${steps.length ? questSteps(task, steps, done) : ''}</span><span class="task-reward">${coin(E.TASK_GOLD[task.tier], true)}</span></div>` : ''}</div>
     <div class="quest-bottom">${clockFace(task)}<div class="quest-controls"><span class="sr-only" data-clock-status aria-live="polite">${statusText()}</span>${focusMeter()}<div class="quest-play-row">${playButton(task)}<button class="quest-reset" data-action="quest-reset" aria-label="Reset focus timer" title="Reset" ${task && canReset() ? '' : 'disabled'}>${icon('reset')}</button></div></div><div class="quest-trail" aria-hidden="true"><svg class="trail-ground" viewBox="0 0 90 74"><path class="trail-hill far" d="M-4 47Q10 35 24 41T52 34T94 40V76H-4Z"/><path class="trail-hill near" d="M-4 58Q18 47 38 53T94 50V76H-4Z"/><g class="trail-tree"><rect x="13" y="45" width="2" height="5" rx=".6"/><path d="M14 30 18.8 38.5H9.2ZM14 34.5 19.8 44.5H8.2Z"/></g><g class="trail-tree round"><rect x="74" y="42" width="2" height="6" rx=".6"/><circle cx="75" cy="38.5" r="5.2"/><circle cx="73.2" cy="36.6" r="1.6" class="trail-shine"/></g><path class="trail-path" d="M-5 68Q17 72 30 61T65 62T100 51"/></svg>${avatarJourneyArt(equipment.weapon, equipment.armor, app.state.appearance, equipment.helmet)}</div></div>
     <span class="quest-session-progress" aria-hidden="true"><span data-session-progress style="width:${100 * (1 - T.remaining(timer) / (timer.minutes * 60000))}%"></span></span>
   </section>`;
@@ -113,16 +118,11 @@ export const actions = {
     timer = T.freshTimer(currentQuest()?.id || null, timer.minutes); saveClock(); view.render();
     $('[data-action="quest-play"]')?.focus({ preventScroll: true });
   },
-  'quest-steps'() { openModal({ type: 'questSteps' }); },
 };
 export const modals = {
   quest() {
     const tasks = app.state.tasks.filter(t => !t.done);
     return modalShell(`${icon('compass')} Choose your adventure`, `<div class="quest-options">${tasks.length ? tasks.map(t => `<button class="quest-option ${t.id === currentQuest()?.id ? 'selected' : ''}" data-action="quest-select" data-id="${t.id}"><span>${icon(t.id === currentQuest()?.id ? 'compass' : 'arrow')}</span><strong>${esc(t.title)}</strong>${coin(E.TASK_GOLD[t.tier], true)}</button>`).join('') : '<p>Add a task to begin your next adventure.</p>'}${currentQuest() ? `<button class="quest-return" data-action="quest-clear">${icon('undo')}Return current task to the list</button>` : ''}</div>`, 'quest-modal');
-  },
-  questSteps() {
-    const task = currentQuest();
-    return modalShell('Small steps', `<div class="quest-options"><p class="quest-steps-title">${esc(task?.title || 'Adventure complete')}</p>${(task?.steps || []).map(step => `<label class="task-step ${step.done ? 'done' : ''}"><input type="checkbox" data-task-step data-id="${task.id}" data-step-id="${step.id}" ${step.done ? 'checked' : ''}><span>${esc(step.title)}</span></label>`).join('')}</div>`, 'quest-modal');
   },
 };
 function tick() {

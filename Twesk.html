@@ -763,6 +763,30 @@ button.hashtag:hover{text-decoration:underline}
 .task-step.done>span{color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted) 50%,transparent)}
 .task-step input{padding:0;min-width:0;box-sizing:border-box;width:13px;height:13px}
 .task-side>.task-meta{display:flex;flex-direction:column;align-items:flex-end;gap:0}
+/* Repeat schedule beside the gold, separated by a thin rule, on the title's line */
+.task-side{flex-direction:row;align-items:center;gap:7px;height:24px}
+.task-side>.task-meta{flex-direction:row;align-items:center;gap:3px;font-size:9px;line-height:1;white-space:nowrap}
+.task-side>.task-meta .icon{width:11px;height:11px}
+.task-side-rule{width:1px;height:13px;background:var(--line)}
+@media(max-width:420px){.task-side .task-meta-text{display:none}}
+/* Collapsible steps inside the adventure box */
+.quest-step-summary{padding-top:2px;font-size:8px}
+.quest-step-summary .step-progress{width:28px}
+.quest-card.steps-open{height:auto;flex-basis:auto}
+.quest-card.steps-open .quest-task-slot{height:auto;min-height:44px}
+.quest-card.steps-open .quest-task{height:auto;align-items:flex-start}
+.quest-card.steps-open .quest-title{-webkit-line-clamp:2}
+.quest-task-text>.task-steps{margin:6px 0 3px}
+.quest-task-text .task-step{font-size:10px;padding:2px 0}
+.quest-task-text>.task-steps{border-left:1.5px solid color-mix(in srgb,var(--accent) 22%,var(--line));padding-left:9px;display:flex;flex-direction:column;gap:1px;align-self:stretch}
+.quest-task-text>.task-steps[hidden]{display:none}
+.quest-task-text:has(.quest-step-summary) .quest-title{-webkit-line-clamp:1}
+.quest-card.steps-open .quest-task-text .quest-title{-webkit-line-clamp:2}
+/* With steps, the adventure task lines up on its title like list rows do */
+.quest-task:has(.quest-step-summary){align-items:flex-start;padding-top:7px}
+.quest-task:has(.quest-step-summary)>.task-check{margin-top:0}
+.quest-task:has(.quest-step-summary)>.quest-grip{height:18px}
+.quest-task:has(.quest-step-summary)>.task-reward{margin-top:-3px}
 
   </style>
   <script>
@@ -859,7 +883,7 @@ function render() {
     h => h.category !== 'harm' && h.logs.some(l => l.day === day),
   ).length;
   $('#app').innerHTML = `
-    <header class="topbar"><div class="topbar-brand"><a class="wordmark" href="" aria-label="Twesk home"><span class="logo-cube"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="m3 8 13-6 13 6v16l-13 6-13-6Z" fill="#7461d4"/><path d="m3 8 13 6 13-6-13-6Z" fill="#b9a8f2"/><path d="M16 14v16L3 24V8Z" fill="#937be2"/></svg></span>twesk<span class="beta">EARLY DAYS</span></a><time class="topbar-date" datetime="${day}">${esc(dateLabel())}</time></div>
+    <header class="topbar"><div class="topbar-brand"><a class="wordmark" href="" aria-label="Twesk home"><span class="logo-cube"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="m3 8 13-6 13 6v16l-13 6-13-6Z" fill="#7461d4"/><path d="m3 8 13 6 13-6-13-6Z" fill="#b9a8f2"/><path d="M16 14v16L3 24V8Z" fill="#937be2"/></svg></span>twesk</a><time class="topbar-date" datetime="${day}">${esc(dateLabel())}</time></div>
     <div class="topbar-actions"><button class="capture-button" data-action="capture">${icon('plus')}Quick capture<kbd>⌘ K</kbd></button><span class="toolbar-divider"></span><button class="collection-button" data-action="history" title="Progress history" aria-label="Open progress history">${icon('calendar')}</button><button class="collection-button" data-action="achievements" title="Achievements and monster collection" aria-label="Open achievements">${icon('medal')}</button>${iconButton('theme', app.state.settings.theme === 'dark' ? 'sun' : 'moon', 'Switch to ' + (app.state.settings.theme === 'dark' ? 'light' : 'dark') + ' mode')}${iconButton('mute', app.state.settings.muted ? 'mute' : 'sound', app.state.settings.muted ? 'Unmute sounds' : 'Mute sounds')}${iconButton('settings', 'settings', 'Settings and backup')}<button class="profile-dot" data-action="settings" aria-label="Your profile">${avatarFaceArt(app.state.appearance)}</button></div></header>
     <main>
     ${app.saveError ? '<div class="save-warning">' + esc(app.startupWarning || 'Browser saving is unavailable. Export a backup in Settings to keep your progress.') + '</div>' : E.backupDue(app.state, day) ? settings.backupReminder() : ''}
@@ -3652,8 +3676,9 @@ function taskTitle(title) {
 function taskMeta(t) {
   if (!t.repeat) return '';
   const back = t.done && t.due ? `back ${dueLabel(t.due)}` : '';
-  // Two short lines under the gold: the schedule, then when a finished repeat returns.
-  return `<small class="task-meta" title="Repeats ${E.REPEATS[t.repeat].toLowerCase()}${back ? ` · ${back}` : ''}"><span>${icon('repeat')}${E.REPEATS[t.repeat]}</span>${back ? `<span class="task-back">${back}</span>` : ''}</small>`;
+  // Beside the gold: the schedule for open tasks, or when a finished repeat comes back.
+  const full = `Repeats ${E.REPEATS[t.repeat].toLowerCase()}${back ? ` · ${back}` : ''}`;
+  return `<small class="task-meta" title="${full}" aria-label="${full}">${icon('repeat')}<span class="task-meta-text">${back || E.REPEATS[t.repeat]}</span></small>`;
 }
 const tierLabel = tier => ({ quick: 'Little thing', standard: 'A little focus', hard: 'Deep work', quest: 'Side quest' }[tier]);
 function taskRow(t) {
@@ -3666,7 +3691,7 @@ function taskRow(t) {
     ${!t.done ? `<button class="task-grip" data-task-grip data-action="task-grip" data-id="${t.id}" aria-label="Reorder ${esc(t.title)}" title="Drag to reorder · ↑ / ↓ to move" aria-description="Drag to reorder, or use the up and down arrow keys.">${icon('grip')}</button>` : ''}
     <button class="task-check" data-action="toggle-task" data-id="${t.id}" aria-label="${t.done ? 'Undo' : 'Complete'} ${esc(t.title)}">${t.done ? icon('check') : ''}</button>
     <span class="task-text"><span class="task-title">${taskTitle(t.title)}</span>${stepBlock}</span>
-    <span class="task-side"><span class="task-reward">${coin(E.TASK_GOLD[t.tier], true)}</span>${taskMeta(t)}</span>
+    <span class="task-side">${t.repeat ? `${taskMeta(t)}<span class="task-side-rule" aria-hidden="true"></span>` : ''}<span class="task-reward">${coin(E.TASK_GOLD[t.tier], true)}</span></span>
     ${iconButton('edit-task', 'more', 'Edit ' + t.title, `data-id="${t.id}"`)}</div></article>`;
 }
 function renderTasks() {
@@ -3890,13 +3915,18 @@ function playButton(task) {
   const label = running ? 'Pause focus timer' : timer.status === 'paused' ? 'Resume focus timer' : 'Start focus timer';
   return `<button class="quest-play ${running ? 'is-running' : ''}" data-action="quest-play" ${task ? '' : 'disabled'} aria-label="${label}" title="${label}">${icon(running ? 'pause' : 'play')}</button>`;
 }
+// The same collapsible steps as the task list, opening inside the adventure box under the title.
+function questSteps(task, steps, done) {
+  const open = app.openTaskSteps.has(task.id);
+  return `<button class="task-step-summary quest-step-summary" data-action="task-steps" data-id="${task.id}" aria-expanded="${open}" aria-controls="quest-steps-${task.id}" aria-label="${open ? 'Hide' : 'Show'} steps for ${esc(task.title)}"><span class="step-progress" aria-hidden="true"><span style="width:${(done / steps.length) * 100}%"></span></span><span>${done}/${steps.length} steps</span>${icon('chevron')}</button><div class="task-steps quest-steps" id="quest-steps-${task.id}" ${open ? '' : 'hidden'}>${steps.map(step => `<label class="task-step ${step.done ? 'done' : ''}"><input type="checkbox" data-task-step data-id="${task.id}" data-step-id="${step.id}" ${step.done ? 'checked' : ''}><span>${esc(step.title)}</span></label>`).join('')}</div>`;
+}
 function renderQuest() {
   reconcile();
   const task = currentQuest(), equipment = Object.fromEntries(E.GEAR_SLOTS.map(slot => [slot, E.SHOP.find(i => i.id === app.state.equipped[slot]) || null]));
   const steps = task?.steps || [], done = steps.filter(step => step.done).length;
-  return `<section class="quest-card ${task ? 'has-quest' : ''} ${timer.status === 'running' ? 'is-walking' : ''}" data-quest-drop aria-labelledby="quest-heading">
+  return `<section class="quest-card ${task ? 'has-quest' : ''} ${timer.status === 'running' ? 'is-walking' : ''} ${task && steps.length && app.openTaskSteps.has(task.id) ? 'steps-open' : ''}" data-quest-drop aria-labelledby="quest-heading">
     <header class="quest-heading"><span class="quest-symbol">${icon('compass')}</span><h3 id="quest-heading">One small adventure</h3><button class="quest-choose ${task ? 'quest-manage' : ''}" data-action="quest-choose" aria-label="${task ? 'Manage adventure' : 'Choose an adventure'}" title="${task ? 'Change or return this task' : 'Choose an adventure'}">${task ? icon('more') : `Choose${icon('chevron')}`}</button></header>
-    <div class="quest-task-slot">${task ? `<div class="quest-task">${timer.status === 'running' ? '' : `<button class="task-grip quest-grip" data-task-grip data-quest-grip data-id="${task.id}" aria-label="Drag ${esc(task.title)} back to your task list" title="Drag back to your task list">${icon('grip')}</button>`}<button class="task-check" data-action="toggle-task" data-id="${task.id}" aria-label="Complete ${esc(task.title)}"></button><span class="quest-task-text"><button class="quest-title" data-action="edit-task" data-id="${task.id}" title="${esc(task.title)}">${esc(task.title)}</button>${steps.length ? `<button class="quest-step-link" data-action="quest-steps">${done}/${steps.length} steps</button>` : ''}</span><span class="task-reward">${coin(E.TASK_GOLD[task.tier], true)}</span></div>` : ''}</div>
+    <div class="quest-task-slot">${task ? `<div class="quest-task">${timer.status === 'running' ? '' : `<button class="task-grip quest-grip" data-task-grip data-quest-grip data-id="${task.id}" aria-label="Drag ${esc(task.title)} back to your task list" title="Drag back to your task list">${icon('grip')}</button>`}<button class="task-check" data-action="toggle-task" data-id="${task.id}" aria-label="Complete ${esc(task.title)}"></button><span class="quest-task-text"><button class="quest-title" data-action="edit-task" data-id="${task.id}" title="${esc(task.title)}">${esc(task.title)}</button>${steps.length ? questSteps(task, steps, done) : ''}</span><span class="task-reward">${coin(E.TASK_GOLD[task.tier], true)}</span></div>` : ''}</div>
     <div class="quest-bottom">${clockFace(task)}<div class="quest-controls"><span class="sr-only" data-clock-status aria-live="polite">${statusText()}</span>${focusMeter()}<div class="quest-play-row">${playButton(task)}<button class="quest-reset" data-action="quest-reset" aria-label="Reset focus timer" title="Reset" ${task && canReset() ? '' : 'disabled'}>${icon('reset')}</button></div></div><div class="quest-trail" aria-hidden="true"><svg class="trail-ground" viewBox="0 0 90 74"><path class="trail-hill far" d="M-4 47Q10 35 24 41T52 34T94 40V76H-4Z"/><path class="trail-hill near" d="M-4 58Q18 47 38 53T94 50V76H-4Z"/><g class="trail-tree"><rect x="13" y="45" width="2" height="5" rx=".6"/><path d="M14 30 18.8 38.5H9.2ZM14 34.5 19.8 44.5H8.2Z"/></g><g class="trail-tree round"><rect x="74" y="42" width="2" height="6" rx=".6"/><circle cx="75" cy="38.5" r="5.2"/><circle cx="73.2" cy="36.6" r="1.6" class="trail-shine"/></g><path class="trail-path" d="M-5 68Q17 72 30 61T65 62T100 51"/></svg>${avatarJourneyArt(equipment.weapon, equipment.armor, app.state.appearance, equipment.helmet)}</div></div>
     <span class="quest-session-progress" aria-hidden="true"><span data-session-progress style="width:${100 * (1 - T.remaining(timer) / (timer.minutes * 60000))}%"></span></span>
   </section>`;
@@ -3931,16 +3961,11 @@ const actions = {
     timer = T.freshTimer(currentQuest()?.id || null, timer.minutes); saveClock(); view.render();
     $('[data-action="quest-play"]')?.focus({ preventScroll: true });
   },
-  'quest-steps'() { openModal({ type: 'questSteps' }); },
 };
 const modals = {
   quest() {
     const tasks = app.state.tasks.filter(t => !t.done);
     return modalShell(`${icon('compass')} Choose your adventure`, `<div class="quest-options">${tasks.length ? tasks.map(t => `<button class="quest-option ${t.id === currentQuest()?.id ? 'selected' : ''}" data-action="quest-select" data-id="${t.id}"><span>${icon(t.id === currentQuest()?.id ? 'compass' : 'arrow')}</span><strong>${esc(t.title)}</strong>${coin(E.TASK_GOLD[t.tier], true)}</button>`).join('') : '<p>Add a task to begin your next adventure.</p>'}${currentQuest() ? `<button class="quest-return" data-action="quest-clear">${icon('undo')}Return current task to the list</button>` : ''}</div>`, 'quest-modal');
-  },
-  questSteps() {
-    const task = currentQuest();
-    return modalShell('Small steps', `<div class="quest-options"><p class="quest-steps-title">${esc(task?.title || 'Adventure complete')}</p>${(task?.steps || []).map(step => `<label class="task-step ${step.done ? 'done' : ''}"><input type="checkbox" data-task-step data-id="${task.id}" data-step-id="${step.id}" ${step.done ? 'checked' : ''}><span>${esc(step.title)}</span></label>`).join('')}</div>`, 'quest-modal');
   },
 };
 function tick() {

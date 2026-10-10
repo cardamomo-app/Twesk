@@ -753,3 +753,27 @@ button.hashtag:hover{text-decoration:underline}
 .task-step.done>span{color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted) 50%,transparent)}
 .task-step input{padding:0;min-width:0;box-sizing:border-box;width:13px;height:13px}
 .task-side>.task-meta{display:flex;flex-direction:column;align-items:flex-end;gap:0}
+/* Repeat schedule beside the gold, separated by a thin rule, on the title's line */
+.task-side{flex-direction:row;align-items:center;gap:7px;height:24px}
+.task-side>.task-meta{flex-direction:row;align-items:center;gap:3px;font-size:9px;line-height:1;white-space:nowrap}
+.task-side>.task-meta .icon{width:11px;height:11px}
+.task-side-rule{width:1px;height:13px;background:var(--line)}
+@media(max-width:420px){.task-side .task-meta-text{display:none}}
+/* Collapsible steps inside the adventure box */
+.quest-step-summary{padding-top:2px;font-size:8px}
+.quest-step-summary .step-progress{width:28px}
+.quest-card.steps-open{height:auto;flex-basis:auto}
+.quest-card.steps-open .quest-task-slot{height:auto;min-height:44px}
+.quest-card.steps-open .quest-task{height:auto;align-items:flex-start}
+.quest-card.steps-open .quest-title{-webkit-line-clamp:2}
+.quest-task-text>.task-steps{margin:6px 0 3px}
+.quest-task-text .task-step{font-size:10px;padding:2px 0}
+.quest-task-text>.task-steps{border-left:1.5px solid color-mix(in srgb,var(--accent) 22%,var(--line));padding-left:9px;display:flex;flex-direction:column;gap:1px;align-self:stretch}
+.quest-task-text>.task-steps[hidden]{display:none}
+.quest-task-text:has(.quest-step-summary) .quest-title{-webkit-line-clamp:1}
+.quest-card.steps-open .quest-task-text .quest-title{-webkit-line-clamp:2}
+/* With steps, the adventure task lines up on its title like list rows do */
+.quest-task:has(.quest-step-summary){align-items:flex-start;padding-top:7px}
+.quest-task:has(.quest-step-summary)>.task-check{margin-top:0}
+.quest-task:has(.quest-step-summary)>.quest-grip{height:18px}
+.quest-task:has(.quest-step-summary)>.task-reward{margin-top:-3px}

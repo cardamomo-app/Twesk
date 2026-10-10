@@ -1,8 +1,8 @@
 // Task list, project filter, task dialog, and task actions.
-import * as E from './engine.js?v=0.20.7';
-import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.20.7';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.20.7';
-import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.20.7';
+import * as E from './engine.js?v=0.20.9';
+import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.20.9';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.20.9';
+import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.20.9';
 
 const inProject = t => !app.taskProject || E.tags(t.title).includes(app.taskProject);
 // Open tasks per project tag, in order of first appearance.
@@ -42,8 +42,9 @@ function taskTitle(title) {
 function taskMeta(t) {
   if (!t.repeat) return '';
   const back = t.done && t.due ? `back ${dueLabel(t.due)}` : '';
-  // Two short lines under the gold: the schedule, then when a finished repeat returns.
-  return `<small class="task-meta" title="Repeats ${E.REPEATS[t.repeat].toLowerCase()}${back ? ` · ${back}` : ''}"><span>${icon('repeat')}${E.REPEATS[t.repeat]}</span>${back ? `<span class="task-back">${back}</span>` : ''}</small>`;
+  // Beside the gold: the schedule for open tasks, or when a finished repeat comes back.
+  const full = `Repeats ${E.REPEATS[t.repeat].toLowerCase()}${back ? ` · ${back}` : ''}`;
+  return `<small class="task-meta" title="${full}" aria-label="${full}">${icon('repeat')}<span class="task-meta-text">${back || E.REPEATS[t.repeat]}</span></small>`;
 }
 const tierLabel = tier => ({ quick: 'Little thing', standard: 'A little focus', hard: 'Deep work', quest: 'Side quest' }[tier]);
 function taskRow(t) {
@@ -56,7 +57,7 @@ function taskRow(t) {
     ${!t.done ? `<button class="task-grip" data-task-grip data-action="task-grip" data-id="${t.id}" aria-label="Reorder ${esc(t.title)}" title="Drag to reorder · ↑ / ↓ to move" aria-description="Drag to reorder, or use the up and down arrow keys.">${icon('grip')}</button>` : ''}
     <button class="task-check" data-action="toggle-task" data-id="${t.id}" aria-label="${t.done ? 'Undo' : 'Complete'} ${esc(t.title)}">${t.done ? icon('check') : ''}</button>
     <span class="task-text"><span class="task-title">${taskTitle(t.title)}</span>${stepBlock}</span>
-    <span class="task-side"><span class="task-reward">${coin(E.TASK_GOLD[t.tier], true)}</span>${taskMeta(t)}</span>
+    <span class="task-side">${t.repeat ? `${taskMeta(t)}<span class="task-side-rule" aria-hidden="true"></span>` : ''}<span class="task-reward">${coin(E.TASK_GOLD[t.tier], true)}</span></span>
     ${iconButton('edit-task', 'more', 'Edit ' + t.title, `data-id="${t.id}"`)}</div></article>`;
 }
 export function renderTasks() {

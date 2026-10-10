@@ -112,7 +112,8 @@ uiTest('recurring tasks and #project filters', async page => {
   const plants = await page.evaluate(() => [...document.querySelectorAll('#app .task-row')].find(r => r.textContent.includes('Water')).querySelector('[data-action="toggle-task"]').dataset.id);
   await page.click(`#app [data-action="toggle-task"][data-id="${plants}"]`);
   await page.click('#app [data-action="task-view"][data-view="done"]');
-  assert.match(await page.text('#app .task-row.completed .task-meta'), /Every day\s*back tomorrow/);
+  assert.equal(await page.text('#app .task-row.completed .task-meta'), 'back tomorrow');
+  assert.equal(await page.evaluate(() => document.querySelector('#app .task-row.completed .task-meta').title), 'Repeats every day · back tomorrow');
   const task = (await page.save()).tasks.find(t => t.id === plants);
   assert.equal(task.repeat, 'daily');
   assert.ok(task.due > today(await page.save()));
@@ -242,6 +243,33 @@ uiTest('the adventure task drags back to the list when its timer is not running'
   assert.deepEqual(saved.tasks.map(t => t.id), [first.id, third.id, second.id], 'dropped after the task it was released on');
   assert.ok(!(await page.exists('.quest-task')), 'the adventure box is empty again');
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).hp === 62, { message: 'the focused minutes were credited' });
+});
+
+uiTest('adventure steps open and close inside the box, and repeats sit beside the gold', async page => {
+  const s = E.freshState();
+  const quest = s.tasks[0];
+  quest.steps = [{ id: 'a', title: 'First step', done: false }, { id: 'b', title: 'Second step', done: false }];
+  E.setCurrentQuest(s, quest.id);
+  E.saveTask(s, { title: 'Water the plants', tier: 'quick', repeat: 'daily' }, E.dateKey(new Date(), s.settings.timezone));
+  await page.open({ save: s });
+  assert.ok(!(await page.exists('.beta')), 'no "Early days" label beside the logo');
+  // The repeat schedule sits on the title's line, beside the gold.
+  const row = await page.evaluate(() => {
+    const meta = [...document.querySelectorAll('#app .task-row .task-meta')][0], reward = meta.closest('.task-side').querySelector('.task-reward');
+    const a = meta.getBoundingClientRect(), b = reward.getBoundingClientRect();
+    return { text: meta.textContent, sameLine: Math.abs((a.top + a.bottom) / 2 - (b.top + b.bottom) / 2) < 4, before: a.right <= b.left };
+  });
+  assert.deepEqual(row, { text: 'Every day', sameLine: true, before: true });
+  // Steps start collapsed in the box, open in place, and can be ticked there.
+  assert.ok(await page.evaluate(() => document.querySelector('.quest-steps').hidden));
+  await page.click('.quest-card [data-action="task-steps"]');
+  await page.waitFor(() => document.querySelector('.quest-card.steps-open .quest-steps:not([hidden])'));
+  assert.ok(!(await page.exists('.modal')), 'no separate dialog');
+  await page.click('.quest-steps input[data-step-id="a"]');
+  await page.waitFor(id => JSON.parse(localStorage.getItem('twesk.v1')).tasks.find(t => t.id === id).steps[0].done, { args: [quest.id] });
+  assert.match(await page.text('.quest-card .quest-step-summary'), /1\/2 steps/);
+  await page.click('.quest-card [data-action="task-steps"]');
+  await page.waitFor(() => !document.querySelector('.quest-card.steps-open'));
 });
 
 uiTest('a level-up shows its banner, glowing stat chip, and toast', async page => {

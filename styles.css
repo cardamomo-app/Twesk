@@ -724,3 +724,7 @@ button.hashtag:hover{text-decoration:underline}
 .trail-tree .trail-shine{fill:color-mix(in srgb,#fff 35%,transparent)}
 .trail-path{stroke:color-mix(in srgb,var(--gold) 34%,var(--panel));stroke-width:6;stroke-dasharray:none}
 .trail-ground{-webkit-mask-image:radial-gradient(ellipse 60% 64% at 50% 50%,#000 58%,transparent 100%);mask-image:radial-gradient(ellipse 60% 64% at 50% 50%,#000 58%,transparent 100%)}
+/* Dragging the adventure task back to the list */
+.quest-grip{flex:0 0 14px;width:14px;height:100%;margin-left:-3px}
+.quest-task.task-being-dragged{opacity:.45}
+.tasks-panel.task-drop-end{box-shadow:inset 0 0 0 2px var(--accent)}

@@ -205,6 +205,45 @@ uiTest('focus restores 1 HP per minute: credited as it passes, kept on reset, an
   assert.match(await page.evaluate(() => document.querySelector('[data-focus-meter]').getAttribute('aria-label')), /^Full health/);
 });
 
+// Press on one element, move in small steps (as a hand would), and release over another.
+async function dragTo(page, from, to, { after = false } = {}) {
+  const point = (sel, below) => page.evaluate((sel, below) => {
+    const r = document.querySelector(sel).getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: below ? r.bottom - 4 : r.top + r.height / 2 };
+  }, sel, below);
+  const a = await point(from), b = await point(to, after);
+  await page.cmd('Input.dispatchMouseEvent', { type: 'mouseMoved', x: a.x, y: a.y });
+  await page.cmd('Input.dispatchMouseEvent', { type: 'mousePressed', x: a.x, y: a.y, button: 'left', clickCount: 1 });
+  for (let i = 1; i <= 12; i++)
+    await page.cmd('Input.dispatchMouseEvent', { type: 'mouseMoved', x: a.x + ((b.x - a.x) * i) / 12, y: a.y + ((b.y - a.y) * i) / 12, button: 'left', buttons: 1 });
+  await new Promise(r => setTimeout(r, 120));
+  await page.cmd('Input.dispatchMouseEvent', { type: 'mouseReleased', x: b.x, y: b.y, button: 'left', clickCount: 1 });
+}
+
+uiTest('the adventure task drags back to the list when its timer is not running', async page => {
+  const s = E.freshState();
+  s.hp = 60;
+  const [first, second, third] = s.tasks;
+  E.setCurrentQuest(s, second.id);
+  await page.open({ save: s });
+  // While the timer runs there is no grip to drag.
+  await page.click('[data-action="quest-play"]');
+  assert.ok(!(await page.exists('[data-quest-grip]')), 'no grip while the timer runs');
+  // Pause after 2½ minutes of focus; now it can go back, and those minutes still count.
+  await page.evaluate(id => {
+    const t = { taskId: id, minutes: 25, remainingMs: 22.5 * 60000, endAt: null, status: 'paused', credited: 0 };
+    localStorage.setItem('twesk.quest-timer.v1', JSON.stringify(t));
+  }, second.id);
+  await page.goto('/');
+  await page.waitFor(() => document.querySelector('[data-quest-grip]'));
+  await dragTo(page, '[data-quest-grip]', `#app .task-list [data-task-id="${third.id}"]`, { after: true });
+  await page.waitFor(id => !JSON.parse(localStorage.getItem('twesk.v1')).tasks.find(t => t.id === id).pinned, { args: [second.id] });
+  const saved = await page.save();
+  assert.deepEqual(saved.tasks.map(t => t.id), [first.id, third.id, second.id], 'dropped after the task it was released on');
+  assert.ok(!(await page.exists('.quest-task')), 'the adventure box is empty again');
+  await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).hp === 62, { message: 'the focused minutes were credited' });
+});
+
 uiTest('a level-up shows its banner, glowing stat chip, and toast', async page => {
   const s = E.freshState();
   s.xp.soul = 295;

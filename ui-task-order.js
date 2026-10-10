@@ -1,18 +1,27 @@
 // Pointer dragging uses a dedicated handle so touch scrolling and task clicks stay natural.
-import * as E from './engine.js?v=0.20.3';
-import { $, app, toast, view } from './ui-core.js?v=0.20.3';
-import { commit } from './ui-modal.js?v=0.20.3';
-import { sound } from './ui-effects.js?v=0.20.3';
+import * as E from './engine.js?v=0.20.4';
+import { $, app, toast, view } from './ui-core.js?v=0.20.4';
+import { commit } from './ui-modal.js?v=0.20.4';
+import { sound } from './ui-effects.js?v=0.20.4';
 
 export function installTaskOrder() {
   let drag = null, frame = null;
-  const clearMarks = () => document.querySelectorAll('.task-drop-before,.task-drop-after,.quest-drop-ready').forEach(el => el.classList.remove('task-drop-before', 'task-drop-after', 'quest-drop-ready'));
+  const clearMarks = () => document.querySelectorAll('.task-drop-before,.task-drop-after,.quest-drop-ready,.task-drop-end').forEach(el => el.classList.remove('task-drop-before', 'task-drop-after', 'quest-drop-ready', 'task-drop-end'));
   function locate() {
     clearMarks();
     const hit = document.elementFromPoint(drag.x, drag.y), list = hit?.closest('[data-task-list]');
     drag.drop = null;
     const quest = hit?.closest('[data-quest-drop]');
-    if (quest) { quest.classList.add('quest-drop-ready'); drag.drop = { quest: true }; return; }
+    if (quest) {
+      if (drag.fromQuest) return; // already the adventure
+      quest.classList.add('quest-drop-ready'); drag.drop = { quest: true }; return;
+    }
+    // The adventure task can be returned anywhere in the list, or to the end via the panel's empty space.
+    if (drag.fromQuest && !list) {
+      const panel = hit?.closest('.tasks-panel');
+      if (panel) { panel.classList.add('task-drop-end'); drag.drop = { targetId: null }; }
+      return;
+    }
     if (!list || list.dataset.taskList !== drag.list) return;
     let row = hit.closest('[data-task-id]');
     if (!row) {
@@ -41,7 +50,7 @@ export function installTaskOrder() {
   }
   function finish(cancel = false) {
     if (!drag) return;
-    const { id, drop, active, handle } = drag;
+    const { id, drop, active, handle, fromQuest } = drag;
     drag.ghost?.remove();
     cancelAnimationFrame(frame);
     clearMarks();
@@ -51,7 +60,12 @@ export function installTaskOrder() {
     drag = null;
     app.taskDragging = false;
     if (!cancel && active && drop) {
-      const moved = commit(() => drop.quest ? E.setCurrentQuest(app.state, id) : E.moveTask(app.state, id, drop.targetId, drop));
+      const moved = commit(() => {
+        if (drop.quest) return E.setCurrentQuest(app.state, id);
+        if (fromQuest) E.setCurrentQuest(app.state);
+        return E.moveTask(app.state, id, drop.targetId, drop);
+      });
+      if (moved && fromQuest) sound('note');
       if (moved && drop.quest) { sound('note'); $('[data-action="quest-play"]')?.focus({ preventScroll: true }); }
     }
     view.modalClosed();
@@ -59,7 +73,10 @@ export function installTaskOrder() {
   $('#app').addEventListener('pointerdown', event => {
     const handle = event.target.closest('[data-task-grip]');
     if (!handle || event.button !== 0 || app.modal || app.busy) return;
-    drag = { id: handle.dataset.id, list: handle.closest('[data-task-list]').dataset.taskList, handle, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY, active: false };
+    // The adventure task stays put while its timer runs.
+    const fromQuest = handle.hasAttribute('data-quest-grip');
+    if (fromQuest && handle.closest('.quest-card')?.classList.contains('is-walking')) return;
+    drag = { id: handle.dataset.id, fromQuest, list: fromQuest ? 'other' : handle.closest('[data-task-list]').dataset.taskList, handle, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY, active: false };
     handle.setPointerCapture(event.pointerId);
   });
   document.addEventListener('pointermove', event => {
@@ -68,7 +85,7 @@ export function installTaskOrder() {
     if (!drag.active && Math.hypot(drag.x - drag.startX, drag.y - drag.startY) > 6) {
       drag.active = true; app.taskDragging = true;
       document.body.classList.add('task-dragging');
-      drag.handle.closest('.task-item').classList.add('task-being-dragged');
+      drag.handle.closest('.task-item,.quest-task').classList.add('task-being-dragged');
       drag.ghost = document.createElement('div');
       drag.ghost.className = 'task-drag-ghost';
       drag.ghost.textContent = app.state.tasks.find(t => t.id === drag.id)?.title || '';
@@ -88,7 +105,8 @@ export function installTaskOrder() {
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && drag) { event.preventDefault(); finish(true); return; }
     const handle = event.target.closest('[data-task-grip]');
-    if (!handle || !['ArrowUp', 'ArrowDown'].includes(event.key) || app.modal || app.busy) return;
+    // Arrow keys reorder list rows; the adventure task returns via its ⋯ menu instead.
+    if (!handle || handle.hasAttribute('data-quest-grip') || !['ArrowUp', 'ArrowDown'].includes(event.key) || app.modal || app.busy) return;
     event.preventDefault();
     const rows = [...handle.closest('[data-task-list]').querySelectorAll('[data-task-id]')];
     const index = rows.findIndex(row => row.dataset.taskId === handle.dataset.id), down = event.key === 'ArrowDown', target = rows[index + (down ? 1 : -1)];

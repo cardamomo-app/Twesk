@@ -734,6 +734,10 @@ button.hashtag:hover{text-decoration:underline}
 .trail-tree .trail-shine{fill:color-mix(in srgb,#fff 35%,transparent)}
 .trail-path{stroke:color-mix(in srgb,var(--gold) 34%,var(--panel));stroke-width:6;stroke-dasharray:none}
 .trail-ground{-webkit-mask-image:radial-gradient(ellipse 60% 64% at 50% 50%,#000 58%,transparent 100%);mask-image:radial-gradient(ellipse 60% 64% at 50% 50%,#000 58%,transparent 100%)}
+/* Dragging the adventure task back to the list */
+.quest-grip{flex:0 0 14px;width:14px;height:100%;margin-left:-3px}
+.quest-task.task-being-dragged{opacity:.45}
+.tasks-panel.task-drop-end{box-shadow:inset 0 0 0 2px var(--accent)}
 
   </style>
   <script>
@@ -3863,7 +3867,7 @@ function renderQuest() {
   const steps = task?.steps || [], done = steps.filter(step => step.done).length;
   return `<section class="quest-card ${task ? 'has-quest' : ''} ${timer.status === 'running' ? 'is-walking' : ''}" data-quest-drop aria-labelledby="quest-heading">
     <header class="quest-heading"><span class="quest-symbol">${icon('compass')}</span><h3 id="quest-heading">One small adventure</h3><button class="quest-choose ${task ? 'quest-manage' : ''}" data-action="quest-choose" aria-label="${task ? 'Manage adventure' : 'Choose an adventure'}" title="${task ? 'Change or return this task' : 'Choose an adventure'}">${task ? icon('more') : `Choose${icon('chevron')}`}</button></header>
-    <div class="quest-task-slot">${task ? `<div class="quest-task"><button class="task-check" data-action="toggle-task" data-id="${task.id}" aria-label="Complete ${esc(task.title)}"></button><span class="quest-task-text"><button class="quest-title" data-action="edit-task" data-id="${task.id}" title="${esc(task.title)}">${esc(task.title)}</button>${steps.length ? `<button class="quest-step-link" data-action="quest-steps">${done}/${steps.length} steps</button>` : ''}</span><span class="task-reward">${coin(E.TASK_GOLD[task.tier], true)}</span></div>` : ''}</div>
+    <div class="quest-task-slot">${task ? `<div class="quest-task">${timer.status === 'running' ? '' : `<button class="task-grip quest-grip" data-task-grip data-quest-grip data-id="${task.id}" aria-label="Drag ${esc(task.title)} back to your task list" title="Drag back to your task list">${icon('grip')}</button>`}<button class="task-check" data-action="toggle-task" data-id="${task.id}" aria-label="Complete ${esc(task.title)}"></button><span class="quest-task-text"><button class="quest-title" data-action="edit-task" data-id="${task.id}" title="${esc(task.title)}">${esc(task.title)}</button>${steps.length ? `<button class="quest-step-link" data-action="quest-steps">${done}/${steps.length} steps</button>` : ''}</span><span class="task-reward">${coin(E.TASK_GOLD[task.tier], true)}</span></div>` : ''}</div>
     <div class="quest-bottom">${clockFace(task)}<div class="quest-controls"><span class="sr-only" data-clock-status aria-live="polite">${statusText()}</span>${focusMeter()}<div class="quest-play-row">${playButton(task)}<button class="quest-reset" data-action="quest-reset" aria-label="Reset focus timer" title="Reset" ${task && canReset() ? '' : 'disabled'}>${icon('reset')}</button></div></div><div class="quest-trail" aria-hidden="true"><svg class="trail-ground" viewBox="0 0 90 74"><path class="trail-hill far" d="M-4 47Q10 35 24 41T52 34T94 40V76H-4Z"/><path class="trail-hill near" d="M-4 58Q18 47 38 53T94 50V76H-4Z"/><g class="trail-tree"><rect x="13" y="45" width="2" height="5" rx=".6"/><path d="M14 30 18.8 38.5H9.2ZM14 34.5 19.8 44.5H8.2Z"/></g><g class="trail-tree round"><rect x="74" y="42" width="2" height="6" rx=".6"/><circle cx="75" cy="38.5" r="5.2"/><circle cx="73.2" cy="36.6" r="1.6" class="trail-shine"/></g><path class="trail-path" d="M-5 68Q17 72 30 61T65 62T100 51"/></svg>${avatarJourneyArt(equipment.weapon, equipment.armor, app.state.appearance, equipment.helmet)}</div></div>
     <span class="quest-session-progress" aria-hidden="true"><span data-session-progress style="width:${100 * (1 - T.remaining(timer) / (timer.minutes * 60000))}%"></span></span>
   </section>`;
@@ -6932,13 +6936,22 @@ const { sound }=require("ui-effects.js");
 
 function installTaskOrder() {
   let drag = null, frame = null;
-  const clearMarks = () => document.querySelectorAll('.task-drop-before,.task-drop-after,.quest-drop-ready').forEach(el => el.classList.remove('task-drop-before', 'task-drop-after', 'quest-drop-ready'));
+  const clearMarks = () => document.querySelectorAll('.task-drop-before,.task-drop-after,.quest-drop-ready,.task-drop-end').forEach(el => el.classList.remove('task-drop-before', 'task-drop-after', 'quest-drop-ready', 'task-drop-end'));
   function locate() {
     clearMarks();
     const hit = document.elementFromPoint(drag.x, drag.y), list = hit?.closest('[data-task-list]');
     drag.drop = null;
     const quest = hit?.closest('[data-quest-drop]');
-    if (quest) { quest.classList.add('quest-drop-ready'); drag.drop = { quest: true }; return; }
+    if (quest) {
+      if (drag.fromQuest) return; // already the adventure
+      quest.classList.add('quest-drop-ready'); drag.drop = { quest: true }; return;
+    }
+    // The adventure task can be returned anywhere in the list, or to the end via the panel's empty space.
+    if (drag.fromQuest && !list) {
+      const panel = hit?.closest('.tasks-panel');
+      if (panel) { panel.classList.add('task-drop-end'); drag.drop = { targetId: null }; }
+      return;
+    }
     if (!list || list.dataset.taskList !== drag.list) return;
     let row = hit.closest('[data-task-id]');
     if (!row) {
@@ -6967,7 +6980,7 @@ function installTaskOrder() {
   }
   function finish(cancel = false) {
     if (!drag) return;
-    const { id, drop, active, handle } = drag;
+    const { id, drop, active, handle, fromQuest } = drag;
     drag.ghost?.remove();
     cancelAnimationFrame(frame);
     clearMarks();
@@ -6977,7 +6990,12 @@ function installTaskOrder() {
     drag = null;
     app.taskDragging = false;
     if (!cancel && active && drop) {
-      const moved = commit(() => drop.quest ? E.setCurrentQuest(app.state, id) : E.moveTask(app.state, id, drop.targetId, drop));
+      const moved = commit(() => {
+        if (drop.quest) return E.setCurrentQuest(app.state, id);
+        if (fromQuest) E.setCurrentQuest(app.state);
+        return E.moveTask(app.state, id, drop.targetId, drop);
+      });
+      if (moved && fromQuest) sound('note');
       if (moved && drop.quest) { sound('note'); $('[data-action="quest-play"]')?.focus({ preventScroll: true }); }
     }
     view.modalClosed();
@@ -6985,7 +7003,10 @@ function installTaskOrder() {
   $('#app').addEventListener('pointerdown', event => {
     const handle = event.target.closest('[data-task-grip]');
     if (!handle || event.button !== 0 || app.modal || app.busy) return;
-    drag = { id: handle.dataset.id, list: handle.closest('[data-task-list]').dataset.taskList, handle, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY, active: false };
+    // The adventure task stays put while its timer runs.
+    const fromQuest = handle.hasAttribute('data-quest-grip');
+    if (fromQuest && handle.closest('.quest-card')?.classList.contains('is-walking')) return;
+    drag = { id: handle.dataset.id, fromQuest, list: fromQuest ? 'other' : handle.closest('[data-task-list]').dataset.taskList, handle, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY, active: false };
     handle.setPointerCapture(event.pointerId);
   });
   document.addEventListener('pointermove', event => {
@@ -6994,7 +7015,7 @@ function installTaskOrder() {
     if (!drag.active && Math.hypot(drag.x - drag.startX, drag.y - drag.startY) > 6) {
       drag.active = true; app.taskDragging = true;
       document.body.classList.add('task-dragging');
-      drag.handle.closest('.task-item').classList.add('task-being-dragged');
+      drag.handle.closest('.task-item,.quest-task').classList.add('task-being-dragged');
       drag.ghost = document.createElement('div');
       drag.ghost.className = 'task-drag-ghost';
       drag.ghost.textContent = app.state.tasks.find(t => t.id === drag.id)?.title || '';
@@ -7014,7 +7035,8 @@ function installTaskOrder() {
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && drag) { event.preventDefault(); finish(true); return; }
     const handle = event.target.closest('[data-task-grip]');
-    if (!handle || !['ArrowUp', 'ArrowDown'].includes(event.key) || app.modal || app.busy) return;
+    // Arrow keys reorder list rows; the adventure task returns via its ⋯ menu instead.
+    if (!handle || handle.hasAttribute('data-quest-grip') || !['ArrowUp', 'ArrowDown'].includes(event.key) || app.modal || app.busy) return;
     event.preventDefault();
     const rows = [...handle.closest('[data-task-list]').querySelectorAll('[data-task-id]')];
     const index = rows.findIndex(row => row.dataset.taskId === handle.dataset.id), down = event.key === 'ArrowDown', target = rows[index + (down ? 1 : -1)];

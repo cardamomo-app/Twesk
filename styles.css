@@ -728,3 +728,28 @@ button.hashtag:hover{text-decoration:underline}
 .quest-grip{flex:0 0 14px;width:14px;height:100%;margin-left:-3px}
 .quest-task.task-being-dragged{opacity:.45}
 .tasks-panel.task-drop-end{box-shadow:inset 0 0 0 2px var(--accent)}
+/* Task rows: everything lines up on the title's first line; steps nest under the title */
+.task-item>.task-row{align-items:flex-start;padding:12px 0;min-height:0}
+.task-item .task-grip{align-self:flex-start;height:24px}
+.task-item .task-row>.task-check{margin-top:3px}
+.task-item .task-text{padding-top:3px;gap:0}
+.task-item .task-title{line-height:18px}
+.task-item .task-row>.icon-button{height:24px;align-self:flex-start}
+.task-side{display:flex;flex-direction:column;align-items:flex-end;gap:1px;flex-shrink:0}
+.task-side>.task-reward{height:24px;display:flex;align-items:center}
+.task-side>.task-meta{font-size:8px;line-height:1.4;white-space:nowrap;color:var(--muted)}
+.task-side>.task-meta .icon{width:10px;height:10px}
+/* Steps: a compact summary right under the title, then the list on a faint guide line */
+.task-step-summary{gap:6px;padding:5px 0 0;font-size:9px}
+.step-progress{width:36px;height:3px}
+.task-text>.task-steps{padding:0;margin:7px 0 2px;border-left:1.5px solid var(--line);padding-left:10px;display:flex;flex-direction:column;gap:2px}
+.task-text>.task-steps[hidden]{display:none}
+.task-text .task-step{padding:3px 0;font-size:11px;line-height:1.5;gap:8px;align-items:flex-start}
+.task-step input{appearance:none;-webkit-appearance:none;width:13px;height:13px;margin:2.5px 0 0;border:1.5px solid #d9d7e1;border-radius:4px;background:var(--panel);display:grid;place-content:center;flex-shrink:0;cursor:pointer;transition:background .15s,border-color .15s}
+.task-step input:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+.task-step input:checked{background:var(--accent);border-color:var(--accent)}
+.task-step input:checked::after{content:'';width:3px;height:6px;border:solid #fff;border-width:0 1.6px 1.6px 0;transform:translate(0,-.5px) rotate(45deg)}
+.task-step input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.task-step.done>span{color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted) 50%,transparent)}
+.task-step input{padding:0;min-width:0;box-sizing:border-box;width:13px;height:13px}
+.task-side>.task-meta{display:flex;flex-direction:column;align-items:flex-end;gap:0}

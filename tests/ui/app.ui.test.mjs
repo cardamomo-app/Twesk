@@ -112,7 +112,7 @@ uiTest('recurring tasks and #project filters', async page => {
   const plants = await page.evaluate(() => [...document.querySelectorAll('#app .task-row')].find(r => r.textContent.includes('Water')).querySelector('[data-action="toggle-task"]').dataset.id);
   await page.click(`#app [data-action="toggle-task"][data-id="${plants}"]`);
   await page.click('#app [data-action="task-view"][data-view="done"]');
-  assert.match(await page.text('#app .task-row.completed .task-meta'), /Every day · back tomorrow/);
+  assert.match(await page.text('#app .task-row.completed .task-meta'), /Every day\s*back tomorrow/);
   const task = (await page.save()).tasks.find(t => t.id === plants);
   assert.equal(task.repeat, 'daily');
   assert.ok(task.due > today(await page.save()));

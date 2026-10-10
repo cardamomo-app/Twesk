@@ -1,8 +1,8 @@
 // Task list, project filter, task dialog, and task actions.
-import * as E from './engine.js?v=0.20.4';
-import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.20.4';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.20.4';
-import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.20.4';
+import * as E from './engine.js?v=0.20.7';
+import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.20.7';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.20.7';
+import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.20.7';
 
 const inProject = t => !app.taskProject || E.tags(t.title).includes(app.taskProject);
 // Open tasks per project tag, in order of first appearance.
@@ -41,19 +41,23 @@ function taskTitle(title) {
 }
 function taskMeta(t) {
   if (!t.repeat) return '';
-  const back = t.done && t.due ? ` · back ${dueLabel(t.due)}` : '';
-  return `<small class="task-meta"><span>${icon('repeat')}${E.REPEATS[t.repeat]}${back}</span></small>`;
+  const back = t.done && t.due ? `back ${dueLabel(t.due)}` : '';
+  // Two short lines under the gold: the schedule, then when a finished repeat returns.
+  return `<small class="task-meta" title="Repeats ${E.REPEATS[t.repeat].toLowerCase()}${back ? ` · ${back}` : ''}"><span>${icon('repeat')}${E.REPEATS[t.repeat]}</span>${back ? `<span class="task-back">${back}</span>` : ''}</small>`;
 }
 const tierLabel = tier => ({ quick: 'Little thing', standard: 'A little focus', hard: 'Deep work', quest: 'Side quest' }[tier]);
 function taskRow(t) {
   const steps = t.steps || [], done = steps.filter(step => step.done).length, expanded = app.openTaskSteps.has(t.id);
+  // Steps live under the title, aligned with it; the repeat schedule sits under the gold on the right.
+  const stepBlock = steps.length
+    ? `<button class="task-step-summary" data-action="task-steps" data-id="${t.id}" aria-expanded="${expanded}" aria-controls="steps-${t.id}" aria-label="${expanded ? 'Hide' : 'Show'} steps for ${esc(t.title)}"><span class="step-progress" aria-hidden="true"><span style="width:${(done / steps.length) * 100}%"></span></span><span>${done}/${steps.length} steps</span>${icon('chevron')}</button><div class="task-steps" id="steps-${t.id}" ${expanded ? '' : 'hidden'}>${steps.map(step => `<label class="task-step ${step.done ? 'done' : ''}"><input type="checkbox" data-task-step data-id="${t.id}" data-step-id="${step.id}" ${step.done ? 'checked' : ''} ${t.done ? 'disabled' : ''}><span>${esc(step.title)}</span></label>`).join('')}</div>`
+    : '';
   return `<article class="task-item ${t.pinned ? 'is-pinned' : ''}" data-task-id="${t.id}"><div class="task-row ${t.done ? 'completed' : ''}">
     ${!t.done ? `<button class="task-grip" data-task-grip data-action="task-grip" data-id="${t.id}" aria-label="Reorder ${esc(t.title)}" title="Drag to reorder · ↑ / ↓ to move" aria-description="Drag to reorder, or use the up and down arrow keys.">${icon('grip')}</button>` : ''}
     <button class="task-check" data-action="toggle-task" data-id="${t.id}" aria-label="${t.done ? 'Undo' : 'Complete'} ${esc(t.title)}">${t.done ? icon('check') : ''}</button>
-    <span class="task-text"><span class="task-title">${taskTitle(t.title)}</span>${taskMeta(t)}${steps.length ? `<button class="task-step-summary" data-action="task-steps" data-id="${t.id}" aria-expanded="${expanded}" aria-controls="steps-${t.id}" aria-label="${expanded ? 'Hide' : 'Show'} steps for ${esc(t.title)}"><span class="step-progress" aria-hidden="true"><span style="width:${done / steps.length * 100}%"></span></span>${done}/${steps.length} steps${icon('chevron')}</button>` : ''}</span>
-    <span class="task-reward">${coin(E.TASK_GOLD[t.tier], true)}</span>
-    ${iconButton('edit-task', 'more', 'Edit ' + t.title, `data-id="${t.id}"`)}</div>
-    ${steps.length ? `<div class="task-steps" id="steps-${t.id}" ${expanded ? '' : 'hidden'}>${steps.map(step => `<label class="task-step ${step.done ? 'done' : ''}"><input type="checkbox" data-task-step data-id="${t.id}" data-step-id="${step.id}" ${step.done ? 'checked' : ''} ${t.done ? 'disabled' : ''}><span>${esc(step.title)}</span></label>`).join('')}</div>` : ''}</article>`;
+    <span class="task-text"><span class="task-title">${taskTitle(t.title)}</span>${stepBlock}</span>
+    <span class="task-side"><span class="task-reward">${coin(E.TASK_GOLD[t.tier], true)}</span>${taskMeta(t)}</span>
+    ${iconButton('edit-task', 'more', 'Edit ' + t.title, `data-id="${t.id}"`)}</div></article>`;
 }
 export function renderTasks() {
   const shown = app.state.tasks.filter(t => (app.taskView === 'done' ? t.done : !t.done) && inProject(t));

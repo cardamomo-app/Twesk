@@ -1,8 +1,8 @@
 // Pointer dragging uses a dedicated handle so touch scrolling and task clicks stay natural.
-import * as E from './engine.js?v=0.20.4';
-import { $, app, toast, view } from './ui-core.js?v=0.20.4';
-import { commit } from './ui-modal.js?v=0.20.4';
-import { sound } from './ui-effects.js?v=0.20.4';
+import * as E from './engine.js?v=0.20.7';
+import { $, app, toast, view } from './ui-core.js?v=0.20.7';
+import { commit } from './ui-modal.js?v=0.20.7';
+import { sound } from './ui-effects.js?v=0.20.7';
 
 export function installTaskOrder() {
   let drag = null, frame = null;

@@ -1,9 +1,9 @@
 // Habit categories, the habit dialog, and habit/harm logging.
-import * as E from './engine.js?v=0.20.9';
-import { HABIT_ICONS, habitIconChoice, resolvedHabitIcon, validHabitIcon } from './habit-icons.js?v=0.20.9';
-import { $, app, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.20.9';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.20.9';
-import { burst, celebrateLevel, rewardEffect, sound } from './ui-effects.js?v=0.20.9';
+import * as E from './engine.js?v=0.21.0';
+import { HABIT_ICONS, habitIconChoice, resolvedHabitIcon, validHabitIcon } from './habit-icons.js?v=0.21.0';
+import { $, app, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.21.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.21.0';
+import { burst, celebrateLevel, rewardEffect, sound } from './ui-effects.js?v=0.21.0';
 export function renderCategory(cat) {
   const meta = E.CATEGORY_META[cat],
     harm = cat === 'harm',
@@ -13,12 +13,14 @@ export function renderCategory(cat) {
   const done = habits.filter(h => h.logs.some(l => l.day === today())).length;
   return `<section class="habit-category ${cat} ${open ? 'expanded' : ''}"><button class="category-header" data-action="category" data-category="${cat}" aria-expanded="${open}"><span class="category-symbol">${icon(meta.icon)}</span><span class="category-name"><strong>${meta.label}</strong><small>${harm ? meta.subtitle : `${done}/${habits.length} today`}</small></span>${harm ? '<span class="harm-tag">− HP</span>' : `<span class="category-level">Lv. ${E.level(app.state, cat)}</span>`}${icon('chevron', 'category-chevron')}</button>${!harm ? `<div class="category-progress" role="progressbar" aria-label="${meta.label} experience" aria-valuemin="0" aria-valuemax="300" aria-valuenow="${xp}"><div style="width:${xp / 3}%"></div></div>` : ''}${
     open
-      ? `<div class="category-body"><p class="category-subtitle">${harm ? 'Log it when it happens. A moment to notice.' : meta.subtitle + ` · ${xp}/300 XP`}</p>${habits
+      ? `<div class="category-body" data-habit-list="${cat}"><p class="category-subtitle">${harm ? 'Log it when it happens. A moment to notice.' : meta.subtitle + ` · ${xp}/300 XP`}</p>${habits
           .map(h => {
             const log = h.logs.find(l => l.day === today()),
               reward = harm ? h.base : log?.xp || Math.round(h.base * E.momentum(h, today()));
             const harmCount = harm ? h.harmLogs.filter(l => l.day === today()).length : 0;
-            return `<div class="habit-row ${log ? 'done' : ''}"><button class="habit-complete" data-action="${harm ? 'harm' : 'habit'}" data-id="${h.id}" ${!harm ? `aria-pressed="${!!log}"` : ''} title="${esc(harm ? 'Log ' + h.title : log ? 'Completed today · click to undo' : 'Complete ' + h.title)}"><span class="habit-icon">${icon(log ? 'check' : resolvedHabitIcon(h))}</span><span class="habit-name">${esc(h.title)}${harmCount ? `<small>Logged ${harmCount}× today</small>` : log ? '<small>Done for today</small>' : ''}</span><span class="xp-badge">${harm ? '−' : '+'}${reward} ${harm ? 'HP' : 'XP'}</span></button>${iconButton('edit-habit', 'more', 'Edit ' + h.title, `data-id="${h.id}"`)}</div>`;
+            // The grip sits in the row's left gutter: drag to reorder, or onto the adventure box.
+            const grip = `<button class="habit-grip" data-habit-grip data-id="${h.id}" aria-label="Move ${esc(h.title)}${harm ? '' : ' or drag it to your adventure'}" title="Drag to reorder${harm ? '' : ' or start an adventure'} · Arrow keys move">${icon('grip')}</button>`;
+            return `<div class="habit-row ${log ? 'done' : ''} ${h.pinned ? 'is-adventure' : ''}" data-habit-id="${h.id}">${grip}<button class="habit-complete" data-action="${harm ? 'harm' : 'habit'}" data-id="${h.id}" ${!harm ? `aria-pressed="${!!log}"` : ''} title="${esc(harm ? 'Log ' + h.title : log ? 'Completed today · click to undo' : 'Complete ' + h.title)}"><span class="habit-icon">${icon(log ? 'check' : resolvedHabitIcon(h))}</span><span class="habit-name">${esc(h.title)}${harmCount ? `<small>Logged ${harmCount}× today</small>` : log ? '<small>Done for today</small>' : h.pinned ? `<small>${icon('compass')}On your adventure</small>` : ''}</span><span class="xp-badge">${harm ? '−' : '+'}${reward} ${harm ? 'HP' : 'XP'}</span></button>${iconButton('edit-habit', 'more', 'Edit ' + h.title, `data-id="${h.id}"`)}</div>`;
           })
           .join(
             '',

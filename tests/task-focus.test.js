@@ -93,3 +93,30 @@ test('old saves remain unchanged and malformed focus or steps cannot enter throu
   ];
   for (const change of variants) { const s = E.freshState(); change(s); assert.throws(() => E.validateState(s)); }
 });
+test('a positive habit can be the adventure, replacing a task, and leaves the card once completed', () => {
+  const s = E.freshState(), [task] = s.tasks, h = s.habits.find(h => h.category === 'mind');
+  E.setCurrentQuest(s, task.id);
+  assert.equal(E.setCurrentQuest(s, h.id, day), h);
+  assert.equal(task.pinned, undefined, 'the task returns to the list');
+  assert.equal(h.pinned, true); assert.deepEqual(E.validateState(s), s);
+  E.completeHabit(s, h.id, day);
+  assert.equal(h.pinned, undefined, 'a completed habit leaves the adventure');
+  assert.throws(() => E.setCurrentQuest(s, h.id, day), /open task or habit/, 'not again on the same day');
+  E.setCurrentQuest(s, h.id); E.setCurrentQuest(s, task.id);
+  assert.equal(h.pinned, undefined, 'a task replaces the habit');
+});
+test('Harm habits cannot be adventures, and a pinned Harm habit is rejected as a save', () => {
+  const s = E.freshState(), harm = s.habits.find(h => h.category === 'harm');
+  assert.throws(() => E.setCurrentQuest(s, harm.id, day));
+  harm.pinned = true; assert.throws(() => E.validateState(structuredClone(s)));
+});
+test('habits reorder only within their category', () => {
+  const s = E.freshState(), body = () => s.habits.filter(h => h.category === 'body').map(h => h.id);
+  const [first, second, ...rest] = body();
+  E.moveHabit(s, second, first);
+  assert.deepEqual(body(), [second, first, ...rest]);
+  E.moveHabit(s, second, first, { after: true });
+  assert.deepEqual(body(), [first, second, ...rest]);
+  assert.throws(() => E.moveHabit(s, first, s.habits.find(h => h.category === 'mind').id), /same category/);
+  assert.deepEqual(E.validateState(s).habits.map(h => h.id), s.habits.map(h => h.id));
+});

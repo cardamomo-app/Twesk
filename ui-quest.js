@@ -1,16 +1,19 @@
 // One task, a little trail, and a device-local focus timer.
-import * as E from './engine.js?v=0.20.9';
-import * as T from './quest-timer.js?v=0.20.9';
-import { avatarJourneyArt } from './avatar-model.js?v=0.20.9';
-import { $, app, coin, esc, icon, modalShell, toast, view } from './ui-core.js?v=0.20.9';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.20.9';
-import { rewardEffect, sound } from './ui-effects.js?v=0.20.9';
-import { unlockSfx } from './sfx.js?v=0.20.9';
+import * as E from './engine.js?v=0.21.0';
+import * as T from './quest-timer.js?v=0.21.0';
+import { avatarJourneyArt } from './avatar-model.js?v=0.21.0';
+import { resolvedHabitIcon } from './habit-icons.js?v=0.21.0';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.21.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.21.0';
+import { rewardEffect, sound } from './ui-effects.js?v=0.21.0';
+import { unlockSfx } from './sfx.js?v=0.21.0';
 
 const TIMER_KEY = 'twesk.quest-timer.v1';
 let timer = T.freshTimer(), dialDrag = null, owed = 0;
 try { timer = T.readTimer(JSON.parse(localStorage.getItem(TIMER_KEY))); } catch {}
-export const currentQuest = () => app.state.tasks.find(t => !t.done && t.pinned);
+// The adventure is an open task, or a positive habit dragged in from the habits column.
+export const currentQuest = () => app.state.tasks.find(t => !t.done && t.pinned) || app.state.habits.find(h => h.pinned);
+const isHabit = item => !!item?.category;
 function saveClock() {
   try { localStorage.setItem(TIMER_KEY, JSON.stringify(timer)); } catch {}
 }
@@ -77,13 +80,19 @@ function questSteps(task, steps, done) {
   const open = app.openTaskSteps.has(task.id);
   return `<button class="task-step-summary quest-step-summary" data-action="task-steps" data-id="${task.id}" aria-expanded="${open}" aria-controls="quest-steps-${task.id}" aria-label="${open ? 'Hide' : 'Show'} steps for ${esc(task.title)}"><span class="step-progress" aria-hidden="true"><span style="width:${(done / steps.length) * 100}%"></span></span><span>${done}/${steps.length} steps</span>${icon('chevron')}</button><div class="task-steps quest-steps" id="quest-steps-${task.id}" ${open ? '' : 'hidden'}>${steps.map(step => `<label class="task-step ${step.done ? 'done' : ''}"><input type="checkbox" data-task-step data-id="${task.id}" data-step-id="${step.id}" ${step.done ? 'checked' : ''}><span>${esc(step.title)}</span></label>`).join('')}</div>`;
 }
+// A habit adventure: its icon completes it, like the habit row, and it earns XP instead of gold.
+function questHabit(h) {
+  const reward = Math.round(h.base * E.momentum(h, today()));
+  const grip = timer.status === 'running' ? '' : `<button class="task-grip quest-grip" data-habit-grip data-quest-grip data-id="${h.id}" aria-label="Drag ${esc(h.title)} back to your habits" title="Drag back to your habits">${icon('grip')}</button>`;
+  return `<div class="quest-task quest-habit ${h.category}">${grip}<button class="quest-habit-check" data-action="habit" data-id="${h.id}" aria-label="Complete ${esc(h.title)}" title="Complete ${esc(h.title)}"><span class="quest-habit-glyph">${icon(resolvedHabitIcon(h))}</span><span class="quest-habit-tick">${icon('check')}</span></button><span class="quest-task-text"><button class="quest-title" data-action="edit-habit" data-id="${h.id}" title="${esc(h.title)}">${esc(h.title)}</button></span><span class="xp-badge">+${reward} XP</span></div>`;
+}
 export function renderQuest() {
   reconcile();
   const task = currentQuest(), equipment = Object.fromEntries(E.GEAR_SLOTS.map(slot => [slot, E.SHOP.find(i => i.id === app.state.equipped[slot]) || null]));
-  const steps = task?.steps || [], done = steps.filter(step => step.done).length;
+  const steps = (!isHabit(task) && task?.steps) || [], done = steps.filter(step => step.done).length;
   return `<section class="quest-card ${task ? 'has-quest' : ''} ${timer.status === 'running' ? 'is-walking' : ''} ${task && steps.length && app.openTaskSteps.has(task.id) ? 'steps-open' : ''}" data-quest-drop aria-labelledby="quest-heading">
-    <header class="quest-heading"><span class="quest-symbol">${icon('compass')}</span><h3 id="quest-heading">One small adventure</h3><button class="quest-choose ${task ? 'quest-manage' : ''}" data-action="quest-choose" aria-label="${task ? 'Manage adventure' : 'Choose an adventure'}" title="${task ? 'Change or return this task' : 'Choose an adventure'}">${task ? icon('more') : `Choose${icon('chevron')}`}</button></header>
-    <div class="quest-task-slot">${task ? `<div class="quest-task">${timer.status === 'running' ? '' : `<button class="task-grip quest-grip" data-task-grip data-quest-grip data-id="${task.id}" aria-label="Drag ${esc(task.title)} back to your task list" title="Drag back to your task list">${icon('grip')}</button>`}<button class="task-check" data-action="toggle-task" data-id="${task.id}" aria-label="Complete ${esc(task.title)}"></button><span class="quest-task-text"><button class="quest-title" data-action="edit-task" data-id="${task.id}" title="${esc(task.title)}">${esc(task.title)}</button>${steps.length ? questSteps(task, steps, done) : ''}</span><span class="task-reward">${coin(E.TASK_GOLD[task.tier], true)}</span></div>` : ''}</div>
+    <header class="quest-heading"><span class="quest-symbol">${icon('compass')}</span><h3 id="quest-heading">Adventure</h3><button class="quest-choose ${task ? 'quest-manage' : ''}" data-action="quest-choose" aria-label="${task ? 'Manage adventure' : 'Choose an adventure'}" title="${task ? `Change or return this ${isHabit(task) ? 'habit' : 'task'}` : 'Choose an adventure'}">${task ? icon('more') : `Choose${icon('chevron')}`}</button></header>
+    <div class="quest-task-slot">${isHabit(task) ? questHabit(task) : task ? `<div class="quest-task">${timer.status === 'running' ? '' : `<button class="task-grip quest-grip" data-task-grip data-quest-grip data-id="${task.id}" aria-label="Drag ${esc(task.title)} back to your task list" title="Drag back to your task list">${icon('grip')}</button>`}<button class="task-check" data-action="toggle-task" data-id="${task.id}" aria-label="Complete ${esc(task.title)}"></button><span class="quest-task-text"><button class="quest-title" data-action="edit-task" data-id="${task.id}" title="${esc(task.title)}">${esc(task.title)}</button>${steps.length ? questSteps(task, steps, done) : ''}</span><span class="task-reward">${coin(E.TASK_GOLD[task.tier], true)}</span></div>` : ''}</div>
     <div class="quest-bottom">${clockFace(task)}<div class="quest-controls"><span class="sr-only" data-clock-status aria-live="polite">${statusText()}</span>${focusMeter()}<div class="quest-play-row">${playButton(task)}<button class="quest-reset" data-action="quest-reset" aria-label="Reset focus timer" title="Reset" ${task && canReset() ? '' : 'disabled'}>${icon('reset')}</button></div></div><div class="quest-trail" aria-hidden="true"><svg class="trail-ground" viewBox="0 0 90 74"><path class="trail-hill far" d="M-4 47Q10 35 24 41T52 34T94 40V76H-4Z"/><path class="trail-hill near" d="M-4 58Q18 47 38 53T94 50V76H-4Z"/><g class="trail-tree"><rect x="13" y="45" width="2" height="5" rx=".6"/><path d="M14 30 18.8 38.5H9.2ZM14 34.5 19.8 44.5H8.2Z"/></g><g class="trail-tree round"><rect x="74" y="42" width="2" height="6" rx=".6"/><circle cx="75" cy="38.5" r="5.2"/><circle cx="73.2" cy="36.6" r="1.6" class="trail-shine"/></g><path class="trail-path" d="M-5 68Q17 72 30 61T65 62T100 51"/></svg>${avatarJourneyArt(equipment.weapon, equipment.armor, app.state.appearance, equipment.helmet)}</div></div>
     <span class="quest-session-progress" aria-hidden="true"><span data-session-progress style="width:${100 * (1 - T.remaining(timer) / (timer.minutes * 60000))}%"></span></span>
   </section>`;
@@ -122,7 +131,7 @@ export const actions = {
 export const modals = {
   quest() {
     const tasks = app.state.tasks.filter(t => !t.done);
-    return modalShell(`${icon('compass')} Choose your adventure`, `<div class="quest-options">${tasks.length ? tasks.map(t => `<button class="quest-option ${t.id === currentQuest()?.id ? 'selected' : ''}" data-action="quest-select" data-id="${t.id}"><span>${icon(t.id === currentQuest()?.id ? 'compass' : 'arrow')}</span><strong>${esc(t.title)}</strong>${coin(E.TASK_GOLD[t.tier], true)}</button>`).join('') : '<p>Add a task to begin your next adventure.</p>'}${currentQuest() ? `<button class="quest-return" data-action="quest-clear">${icon('undo')}Return current task to the list</button>` : ''}</div>`, 'quest-modal');
+    return modalShell(`${icon('compass')} Choose your adventure`, `<div class="quest-options">${tasks.length ? tasks.map(t => `<button class="quest-option ${t.id === currentQuest()?.id ? 'selected' : ''}" data-action="quest-select" data-id="${t.id}"><span>${icon(t.id === currentQuest()?.id ? 'compass' : 'arrow')}</span><strong>${esc(t.title)}</strong>${coin(E.TASK_GOLD[t.tier], true)}</button>`).join('') : '<p>Add a task to begin your next adventure.</p>'}${currentQuest() ? `<button class="quest-return" data-action="quest-clear">${icon('undo')}Return current ${isHabit(currentQuest()) ? 'habit to your habits' : 'task to the list'}</button>` : ''}</div>`, 'quest-modal');
   },
 };
 function tick() {

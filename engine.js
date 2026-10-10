@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.20.9';
-import {validHabitIcon} from './habit-icons.js?v=0.20.9';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.21.0';
+import {validHabitIcon} from './habit-icons.js?v=0.21.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -106,6 +106,7 @@ export function completeHabit(s, id, today) {
   const beforeLevel = level(s, h.category), beforeHP = maxHP(s);
   ensureProgress(s).habits[h.category]++;
   h.logs.push({ day: today, xp: amount }); s.xp[h.category] += amount;
+  delete h.pinned; // a finished adventure leaves the box
   if (level(s, h.category) > beforeLevel) { historyDay(s, today).levels.push(h.category); pruneHistory(s); }
   s.hp = Math.max(0, Math.min(maxHP(s), s.hp + maxHP(s) - beforeHP));
   return { amount, category: h.category, leveled: level(s, h.category) > beforeLevel };
@@ -224,12 +225,22 @@ export function focusHeal(s, minutes) {
   s.pendingRecovery = s.hp < maxHP(s) && s.pendingRecovery;
   return amount;
 }
-export function setCurrentQuest(s, id = null) {
-  const task = id === null ? null : s.tasks.find(t => t.id === id && !t.done);
-  if (id !== null && !task) throw new Error('Choose an open task for your adventure.');
-  for (const t of s.tasks) delete t.pinned;
-  if (task) task.pinned = true;
-  return task;
+// The adventure is one open task or one positive habit not yet done today (pass `today` to check that).
+export function setCurrentQuest(s, id = null, today = null) {
+  const item = id === null ? null : s.tasks.find(t => t.id === id && !t.done) || s.habits.find(h => h.id === id && h.category !== 'harm' && !(today && h.logs.some(l => l.day === today)));
+  if (id !== null && !item) throw new Error('Choose an open task or habit for your adventure.');
+  for (const x of [...s.tasks, ...s.habits]) delete x.pinned;
+  if (item) item.pinned = true;
+  return item;
+}
+// Habits keep their order within a category; array order is the saved order.
+export function moveHabit(s, id, targetId, { after = false } = {}) {
+  const habit = s.habits.find(h => h.id === id), target = s.habits.find(h => h.id === targetId);
+  if (!habit || !target || target.category !== habit.category) throw new Error('Choose a habit in the same category.');
+  if (id === targetId) return habit;
+  s.habits.splice(s.habits.indexOf(habit), 1);
+  s.habits.splice(s.habits.indexOf(target) + (after ? 1 : 0), 0, habit);
+  return habit;
 }
 // Array order is the saved order, including through filters, backups, and sync.
 export function moveTask(s, id, targetId, { after = false } = {}) {
@@ -705,6 +716,7 @@ export function validateState(value) {
   }
   for(const h of s.habits) {
     if(h.icon!==undefined&&!validHabitIcon(h.icon))fail();
+    if(h.pinned!==undefined&&(h.pinned!==true||h.category==='harm'))fail();
     if(!id(h.id)||!text(h.title,200)||![...CATEGORIES,'harm'].includes(h.category)||!(h.category==='harm'?[3,7,12]:[10,20,30]).includes(h.base)||!array(h.logs)||!array(h.harmLogs)) fail();
     if(!h.logs.every(l=>date(l.day)&&integer(l.xp,0,45))||new Set(h.logs.map(l=>l.day)).size!==h.logs.length||!h.harmLogs.every(l=>id(l.id)&&date(l.day)&&integer(l.damage,0,12))) fail();
   }

@@ -777,3 +777,27 @@ button.hashtag:hover{text-decoration:underline}
 .quest-task:has(.quest-step-summary)>.task-check{margin-top:0}
 .quest-task:has(.quest-step-summary)>.quest-grip{height:18px}
 .quest-task:has(.quest-step-summary)>.task-reward{margin-top:-3px}
+/* Habit grips live in the row's left gutter, so the habit layout never shifts; they appear on hover or focus */
+.habit-row{position:relative}
+.habit-grip{position:absolute;left:-10px;top:0;bottom:0;width:10px;display:flex;align-items:center;justify-content:center;color:var(--muted);opacity:0;cursor:grab;touch-action:none;border-radius:4px;transition:opacity .15s,color .15s}
+.habit-grip>.icon{width:9px;height:14px}
+.habit-row:hover>.habit-grip{opacity:.5}
+.habit-grip:hover,.habit-grip:focus-visible{opacity:1;color:var(--cat)}
+@media(hover:none){.habit-grip{opacity:.35}}
+.task-dragging .habit-grip{cursor:grabbing}
+.habit-row.task-being-dragged{opacity:.3}
+.habit-row.task-drop-before{box-shadow:0 -2px var(--cat)}
+.habit-row.task-drop-after{box-shadow:0 2px var(--cat)}
+.habit-name small .icon{width:8px;height:8px;margin-right:3px;vertical-align:-1px}
+.habit-row.is-adventure .habit-complete{background:color-mix(in srgb,var(--cat-bg) 55%,transparent)}
+.habits-panel.task-drop-end{box-shadow:inset 0 0 0 2px var(--accent)}
+/* A habit on the adventure: its icon is the check, tinted by its category */
+.quest-habit{background:var(--cat-bg);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--cat) 18%,transparent)}
+.quest-habit-check{position:relative;width:20px;height:20px;flex:0 0 20px;border-radius:6px;background:var(--panel);color:var(--cat);display:flex;align-items:center;justify-content:center}
+.quest-habit-check .icon{width:12px;height:12px}
+.quest-habit-tick{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
+.quest-habit-check:hover,.quest-habit-check:focus-visible{background:var(--cat);color:var(--panel)}
+.quest-habit-check:hover .quest-habit-tick,.quest-habit-check:focus-visible .quest-habit-tick{opacity:1}
+.quest-habit-check:hover .quest-habit-glyph,.quest-habit-check:focus-visible .quest-habit-glyph{opacity:0}
+.quest-habit .quest-title:hover{color:var(--cat)}
+.quest-habit .xp-badge{margin-left:auto}

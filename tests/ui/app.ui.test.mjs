@@ -245,6 +245,34 @@ uiTest('the adventure task drags back to the list when its timer is not running'
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).hp === 62, { message: 'the focused minutes were credited' });
 });
 
+uiTest('a habit drags onto the adventure, reorders in its category, and leaves the box once done', async page => {
+  const s = E.freshState();
+  const [first, second] = s.habits.filter(h => h.category === 'mind'), harm = s.habits.find(h => h.category === 'harm');
+  await page.open({ save: s });
+  assert.equal(await page.text('#quest-heading'), 'Adventure');
+  await page.click('#app [data-action="category"][data-category="mind"]');
+  await page.click('#app [data-action="category"][data-category="harm"]');
+  // Reorder within the category: the second habit goes before the first.
+  await dragTo(page, `[data-habit-grip][data-id="${second.id}"]`, `#app [data-habit-id="${first.id}"]`);
+  await page.waitFor(([a, b]) => { const ids = JSON.parse(localStorage.getItem('twesk.v1')).habits.map(h => h.id); return ids.indexOf(b) < ids.indexOf(a); }, { args: [[first.id, second.id]] });
+  // Harm habits can be reordered but never become an adventure.
+  await dragTo(page, `[data-habit-grip][data-id="${harm.id}"]`, '.quest-card');
+  await new Promise(r => setTimeout(r, 200));
+  assert.ok(!(await page.exists('.quest-task')), 'a Harm habit is not an adventure');
+  // A positive habit becomes the adventure; its row notes it.
+  await dragTo(page, `[data-habit-grip][data-id="${first.id}"]`, '.quest-card');
+  await page.waitFor(() => document.querySelector('.quest-task.quest-habit'));
+  assert.equal(await page.text('.quest-habit .quest-title'), first.title);
+  assert.match(await page.text('.quest-habit .xp-badge'), /^\+\d+ XP$/);
+  assert.match(await page.text(`#app [data-habit-id="${first.id}"] .habit-name small`), /On your adventure/);
+  assert.equal((await page.save()).habits.find(h => h.id === first.id).pinned, true);
+  // Its icon completes it: XP is earned and the box empties.
+  await page.click('.quest-habit-check');
+  await page.waitFor(id => JSON.parse(localStorage.getItem('twesk.v1')).habits.find(h => h.id === id).logs.length === 1, { args: [first.id] });
+  await page.waitFor(() => !document.querySelector('.quest-task'));
+  assert.equal((await page.save()).habits.find(h => h.id === first.id).pinned, undefined);
+});
+
 uiTest('adventure steps open and close inside the box, and repeats sit beside the gold', async page => {
   const s = E.freshState();
   const quest = s.tasks[0];

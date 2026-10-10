@@ -1,22 +1,23 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.17.2';
-import { avatarFaceArt } from './art.js?v=0.17.2';
-import { awardAchievements } from './achievements.js?v=0.17.2';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.17.2';
-import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.17.2';
-import { closeModal, openModal } from './ui-modal.js?v=0.17.2';
-import * as tasks from './ui-tasks.js?v=0.17.2';
-import * as habits from './ui-habits.js?v=0.17.2';
-import * as vault from './ui-vault.js?v=0.17.2';
-import * as character from './ui-character.js?v=0.17.2';
-import * as shop from './ui-shop.js?v=0.17.2';
-import * as battle from './ui-battle.js?v=0.17.2';
-import * as collection from './ui-collection.js?v=0.17.2';
-import * as settings from './ui-settings.js?v=0.17.2';
-import * as sync from './ui-sync.js?v=0.17.2';
-import * as history from './ui-history.js?v=0.17.2';
-import { installDelights, renderAmbience } from './ui-delights.js?v=0.17.2';
-import { installTagSuggest } from './ui-tag-suggest.js?v=0.17.2';
+import * as E from './engine.js?v=0.18.0';
+import { avatarFaceArt } from './art.js?v=0.18.0';
+import { awardAchievements } from './achievements.js?v=0.18.0';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.18.0';
+import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.18.0';
+import { closeModal, openModal } from './ui-modal.js?v=0.18.0';
+import * as tasks from './ui-tasks.js?v=0.18.0';
+import * as habits from './ui-habits.js?v=0.18.0';
+import * as vault from './ui-vault.js?v=0.18.0';
+import * as character from './ui-character.js?v=0.18.0';
+import * as shop from './ui-shop.js?v=0.18.0';
+import * as battle from './ui-battle.js?v=0.18.0';
+import * as collection from './ui-collection.js?v=0.18.0';
+import * as settings from './ui-settings.js?v=0.18.0';
+import * as sync from './ui-sync.js?v=0.18.0';
+import * as history from './ui-history.js?v=0.18.0';
+import { installDelights, renderAmbience } from './ui-delights.js?v=0.18.0';
+import { installTagSuggest } from './ui-tag-suggest.js?v=0.18.0';
+import { installTaskOrder } from './ui-task-order.js?v=0.18.0';
 
 const features = [tasks, habits, vault, character, shop, battle, collection, settings, history, sync];
 const modals = Object.assign({}, ...features.map(f => f.modals));
@@ -97,6 +98,7 @@ function renderModal() {
   syncLoops($('#overlay'));
 }
 installTagSuggest();
+installTaskOrder();
 installDelights();
 Object.assign(view, { render, renderModal, finishBattlePlayback: battle.finishBattlePlayback });
 
@@ -108,6 +110,7 @@ function handleClick(event) {
     id = b.dataset.id,
     sourceRect = b.getBoundingClientRect();
   if (app.busy && !['skip-battle', 'close-modal', 'dismiss', 'battle-mute'].includes(a)) return;
+  if (app.taskDragging) return;
   if (a === 'close-modal' || a === 'dismiss') return closeModal();
   if (a === 'stat-info') return toggleStatTooltip(b);
   actions[a]?.(b, { a, id, sourceRect });

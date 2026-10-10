@@ -1,8 +1,8 @@
 // Task list, project filter, task dialog, and task actions.
-import * as E from './engine.js?v=0.17.2';
-import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.17.2';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.17.2';
-import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.17.2';
+import * as E from './engine.js?v=0.18.0';
+import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.18.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.18.0';
+import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.18.0';
 
 const inProject = t => !app.taskProject || E.tags(t.title).includes(app.taskProject);
 // Open tasks per project tag, in order of first appearance.
@@ -40,27 +40,31 @@ function taskTitle(title) {
     .join('');
 }
 function taskMeta(t) {
-  if (!t.repeat) return '';
   const back = t.done && t.due ? ` · back ${dueLabel(t.due)}` : '';
-  return `<small class="task-meta">${icon('repeat')}${E.REPEATS[t.repeat]}${back}</small>`;
+  return `<small class="task-meta"><span>${t.inbox ? 'From the Vault' : tierLabel(t.tier)}</span>${t.repeat ? `<span>${icon('repeat')}${E.REPEATS[t.repeat]}${back}</span>` : ''}</small>`;
+}
+const tierLabel = tier => ({ quick: 'Little thing', standard: 'A little focus', hard: 'Deep work', quest: 'Side quest' }[tier]);
+function taskRow(t) {
+  const steps = t.steps || [], done = steps.filter(step => step.done).length, expanded = app.openTaskSteps.has(t.id);
+  return `<article class="task-item ${t.pinned ? 'is-pinned' : ''}" data-task-id="${t.id}"><div class="task-row ${t.done ? 'completed' : ''}">
+    ${!t.done ? `<button class="task-grip" data-task-grip data-action="task-grip" data-id="${t.id}" aria-label="Reorder ${esc(t.title)}" title="Drag to reorder · ↑ / ↓ to move" aria-description="Drag to reorder, or use the up and down arrow keys.">${icon('grip')}</button>` : ''}
+    <button class="task-check" data-action="toggle-task" data-id="${t.id}" aria-label="${t.done ? 'Undo' : 'Complete'} ${esc(t.title)}">${t.done ? icon('check') : ''}</button>
+    <span class="task-text"><span class="task-title">${taskTitle(t.title)}</span>${taskMeta(t)}${steps.length ? `<button class="task-step-summary" data-action="task-steps" data-id="${t.id}" aria-expanded="${expanded}" aria-controls="steps-${t.id}" aria-label="${expanded ? 'Hide' : 'Show'} steps for ${esc(t.title)}"><span class="step-progress" aria-hidden="true"><span style="width:${done / steps.length * 100}%"></span></span>${done}/${steps.length} steps${icon('chevron')}</button>` : ''}</span>
+    <span class="task-reward">${coin(E.TASK_GOLD[t.tier], true)}</span>
+    ${!t.done ? `<button class="task-pin ${t.pinned ? 'selected' : ''}" data-action="pin-task" data-id="${t.id}" aria-label="${t.pinned ? 'Unpin' : 'Pin'} ${esc(t.title)}${t.pinned ? '' : ' to focus'}" aria-pressed="${!!t.pinned}" title="${t.pinned ? 'Remove from focus' : 'Pin to focus'}">${icon('pin')}</button>` : ''}
+    ${iconButton('edit-task', 'more', 'Edit ' + t.title, `data-id="${t.id}"`)}</div>
+    ${steps.length ? `<div class="task-steps" id="steps-${t.id}" ${expanded ? '' : 'hidden'}>${steps.map(step => `<label class="task-step ${step.done ? 'done' : ''}"><input type="checkbox" data-task-step data-id="${t.id}" data-step-id="${step.id}" ${step.done ? 'checked' : ''} ${t.done ? 'disabled' : ''}><span>${esc(step.title)}</span></label>`).join('')}</div>` : ''}</article>`;
 }
 export function renderTasks() {
   const shown = app.state.tasks.filter(t => (app.taskView === 'done' ? t.done : !t.done) && inProject(t));
   if (!shown.length) return '';
-  const groups = [
-    ['inbox', 'From the Vault', 'Ready to find a place'],
-    ['quick', 'Little things', 'Quick wins · 4 gold'],
-    ['standard', 'A little focus', 'Some time and attention · 10 gold'],
-    ['hard', 'Deep work', 'Something more involved · 18 gold'],
-    ['quest', 'Side quests', 'Bigger milestones · 40 gold'],
-  ];
-  return groups
-    .map(([tier, label, sub]) => {
-      const tasks = shown.filter(t => (tier === 'inbox' ? t.inbox : !t.inbox && t.tier === tier));
-      if (!tasks.length) return '';
-      return `<section class="task-group"><div class="group-heading"><h3>${label}</h3><span>${tasks.length}</span></div><p class="group-description">${sub}</p>${tasks.map(t => `<div class="task-row ${t.done ? 'completed' : ''}"><button class="task-check" data-action="toggle-task" data-id="${t.id}" aria-label="${t.done ? 'Undo' : 'Complete'} ${esc(t.title)}">${t.done ? icon('check') : ''}</button><span class="task-text"><span class="task-title">${taskTitle(t.title)}</span>${taskMeta(t)}</span><span class="task-reward">${coin(E.TASK_GOLD[t.tier], true)}</span>${iconButton('edit-task', 'more', 'Edit ' + t.title, `data-id="${t.id}"`)}</div>`).join('')}</section>`;
-    })
-    .join('');
+  if (app.taskView === 'done') return shown.map(taskRow).join('');
+  const focus = shown.filter(t => t.pinned), others = shown.filter(t => !t.pinned);
+  const totalFocus = app.state.tasks.filter(t => !t.done && t.pinned).length;
+  return `<section class="task-focus ${focus.length ? 'has-focus' : ''}" data-task-list="focus" aria-label="Focus tasks"><div class="focus-heading">${icon('pin')}<h3>Focus</h3><span>${totalFocus}/3</span></div>${focus.map(taskRow).join('')}<div class="focus-drop-hint">Drop here to focus</div></section><section class="task-list" data-task-list="other" aria-label="Other tasks">${focus.length && others.length ? '<div class="other-tasks-heading">Other tasks</div>' : ''}${others.map(taskRow).join('')}</section>`;
+}
+function stepEditor(step = { id: '', title: '' }) {
+  return `<div class="step-editor-row"><input type="hidden" name="stepId" value="${esc(step.id)}"><input name="stepTitle" aria-label="Step" maxlength="160" placeholder="A small next step" value="${esc(step.title)}"><button type="button" class="icon-button" data-action="remove-task-step" aria-label="Remove step">${icon('close')}</button></div>`;
 }
 export const modals = {
   task() {
@@ -78,7 +82,9 @@ export const modals = {
       .join('');
     return modalShell(
       t ? 'Edit task' : 'A little thing to do',
-      `<form id="task-form" class="form-body"><label>What’s on your mind?<input name="title" required maxlength="160" placeholder="Give this task a name" data-tag-suggest aria-autocomplete="list" autocomplete="off" value="${esc(t?.title || app.modal.prefill || '')}" autofocus></label><p class="form-help">Add a #tag to group tasks into a project.</p><div class="form-grid"><label>How much does it ask of you?<select name="tier" ${t?.done ? 'disabled' : ''}>${tiers}</select></label><label>Repeats<select name="repeat">${repeats}</select></label></div><p class="form-help" id="repeat-help">${t?.repeat ? 'Earns gold each time. After you complete it, it comes back on its next date. Missed days don’t pile up.' : 'A repeating task earns gold each time and comes back on its next date.'}</p>${t?.inbox ? '<label class="checkbox-label"><input type="checkbox" name="sort" checked>Move out of the task inbox</label>' : ''}<div class="form-actions">${t ? `<span class="task-form-secondary"><button type="button" class="button danger subtle" data-action="delete-task" data-id="${t.id}">Delete task</button>${!t.done ? `<button type="button" class="button secondary subtle" data-action="task-to-vault" data-id="${t.id}" title="Take it off your list and keep it in the Vault to look into later">${icon('vault')}Move to Vault</button>` : ''}</span>` : '<span></span>'}<button class="button primary" type="submit">${t ? 'Save changes' : 'Add task'}${icon('plus')}</button></div></form>`,
+      `<form id="task-form" class="form-body"><label>What’s on your mind?<input name="title" required maxlength="160" placeholder="Give this task a name" data-tag-suggest aria-autocomplete="list" autocomplete="off" value="${esc(t?.title || app.modal.prefill || '')}" autofocus></label><p class="form-help">Add a #tag to group tasks into a project.</p><div class="form-grid"><label>How much does it ask of you?<select name="tier" ${t?.done ? 'disabled' : ''}>${tiers}</select></label><label>Repeats<select name="repeat">${repeats}</select></label></div><p class="form-help" id="repeat-help">${t?.repeat ? 'Earns gold each time. After you complete it, it comes back on its next date. Missed days don’t pile up.' : 'A repeating task earns gold each time and comes back on its next date.'}</p>
+      ${!t?.done ? `<fieldset class="task-step-editor"><legend>Small steps <span>optional</span></legend><div id="task-step-fields">${(t?.steps || []).map(stepEditor).join('')}</div><button type="button" class="button secondary subtle add-step" data-action="add-task-step">${icon('plus')}Add a step</button><p class="form-help">Steps keep it manageable. Finish the whole task to earn its gold.</p></fieldset>` : ''}
+      ${t?.inbox ? '<label class="checkbox-label"><input type="checkbox" name="sort" checked>Move out of the task inbox</label>' : ''}<div class="form-actions">${t ? `<span class="task-form-secondary"><button type="button" class="button danger subtle" data-action="delete-task" data-id="${t.id}">Delete task</button>${!t.done ? `<button type="button" class="button secondary subtle" data-action="task-to-vault" data-id="${t.id}" title="Take it off your list and keep it in the Vault to look into later">${icon('vault')}Move to Vault</button>` : ''}</span>` : '<span></span>'}<button class="button primary" type="submit">${t ? 'Save changes' : 'Add task'}${icon('plus')}</button></div></form>`,
     );
   },
 };
@@ -95,6 +101,24 @@ function celebrateToggle(r, sourceRect, id, day) {
   );
 }
 export const actions = {
+  'pin-task'(b, { id }) {
+    commit(() => E.pinTask(app.state, id));
+  },
+  'task-steps'(b, { id }) {
+    if (app.openTaskSteps.has(id)) app.openTaskSteps.delete(id); else app.openTaskSteps.add(id);
+    view.render();
+  },
+  'add-task-step'() {
+    const fields = $('#task-step-fields');
+    if (fields.children.length >= E.MAX_TASK_STEPS) return toast(`Use up to ${E.MAX_TASK_STEPS} steps.`);
+    fields.insertAdjacentHTML('beforeend', stepEditor());
+    fields.lastElementChild.querySelector('[name="stepTitle"]').focus();
+  },
+  'remove-task-step'(b) {
+    const row = b.closest('.step-editor-row'), next = row.nextElementSibling || row.previousElementSibling;
+    row.remove();
+    (next?.querySelector('[name="stepTitle"]') || $('[data-action="add-task-step"]'))?.focus();
+  },
   'task-view'(b) {
     app.taskView = b.dataset.view;
     view.render();
@@ -163,10 +187,15 @@ export const forms = {
           tier: data.get('tier'),
           repeat: data.get('repeat') || null,
           sort: !!data.get('sort'),
+          steps: app.state.tasks.find(t => t.id === app.modal.id)?.done ? undefined : data.getAll('stepTitle').map((title, i) => ({ id: data.getAll('stepId')[i] || undefined, title })).filter(step => step.title.trim()),
         },
         today(),
       ),
     );
-    if (r) closeModal();
+    if (r) {
+      if (r.steps?.length) app.openTaskSteps.add(r.id);
+      closeModal();
+      view.render();
+    }
   },
 };

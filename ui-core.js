@@ -1,7 +1,7 @@
 // Shared interface foundation: the app store, saving, small HTML helpers, and toasts.
-import * as E from './engine.js?v=0.17.2';
-import { goldArt } from './art.js?v=0.17.2';
-import { HABIT_ICONS } from './habit-icons.js?v=0.17.2';
+import * as E from './engine.js?v=0.18.0';
+import { goldArt } from './art.js?v=0.18.0';
+import { HABIT_ICONS } from './habit-icons.js?v=0.18.0';
 export const $ = s => document.querySelector(s);
 export const $$ = s => [...document.querySelectorAll(s)];
 export const esc = v =>
@@ -16,6 +16,8 @@ export function viewDefaults() {
   return {
     taskView: 'active',
     taskProject: null,
+    openTaskSteps: new Set(),
+    taskDragging: false,
     vaultFilter: 'inbox',
     vaultSearch: '',
     vaultTag: null,
@@ -120,6 +122,8 @@ const icons = {
   sparkle: '<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2ZM19 3v4M17 5h4"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   pin: '<path d="M9 3h6l-1 6 4 4H6l4-4ZM12 13v8"/>',
+  grip: '<circle cx="8" cy="5" r="1"/><circle cx="16" cy="5" r="1"/><circle cx="8" cy="12" r="1"/><circle cx="16" cy="12" r="1"/><circle cx="8" cy="19" r="1"/><circle cx="16" cy="19" r="1"/>',
+  chevron: '<path d="m8 10 4 4 4-4"/>',
   repeat: '<path d="m17 2 4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4m14-5v2a3 3 0 0 1-3 3H3"/>',
 };
 export function icon(name, cls = '') {

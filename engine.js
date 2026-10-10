@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.17.2';
-import {validHabitIcon} from './habit-icons.js?v=0.17.2';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.18.0';
+import {validHabitIcon} from './habit-icons.js?v=0.18.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -177,18 +177,61 @@ export function nextOccurrence(day, repeat) {
   } else throw new Error('Unknown repeat.');
   return key();
 }
-export function saveTask(s, { id, title, tier, repeat = null, sort = false }, today) {
+export const MAX_TASK_STEPS = 30;
+function taskSteps(steps) {
+  if (!Array.isArray(steps) || steps.length > MAX_TASK_STEPS) throw new Error(`Use up to ${MAX_TASK_STEPS} steps.`);
+  const result = steps.map(step => ({ id: step.id || uid(), title: String(step.title || '').trim(), done: step.done === true }));
+  if (result.some(step => !step.title || step.title.length > 160) || new Set(result.map(step => step.id)).size !== result.length)
+    throw new Error('Give each step a short name.');
+  return result;
+}
+export function saveTask(s, { id, title, tier, repeat = null, sort = false, steps }, today) {
   title = String(title || '').trim();
   if (!title) throw new Error('Give this task a name.');
   if (repeat !== null && !Object.hasOwn(REPEATS, repeat)) throw new Error('Unknown repeat.');
+  const nextSteps = steps === undefined ? undefined : taskSteps(steps);
   let task = s.tasks.find(t => t.id === id);
+  if (!task?.done && !Object.hasOwn(TASK_GOLD, tier)) throw new Error('Choose a task size.');
   if (!task) { task = { id: uid(), title, tier, done: false, earned: 0 }; s.tasks.unshift(task); }
   task.title = title;
+  if (!task.done && nextSteps !== undefined) {
+    const previous = new Map((task.steps || []).map(step => [step.id, step.done]));
+    task.steps = nextSteps.map(step => ({ ...step, done: previous.get(step.id) ?? false }));
+    if (!task.steps.length) delete task.steps;
+  }
   if (!task.done) task.tier = tier;
   if (sort) task.inbox = false;
   if (repeat) { task.repeat = repeat; task.due = task.done ? nextOccurrence(task.doneOn || today, repeat) : null; }
   else { delete task.repeat; delete task.due; }
   return task;
+}
+export function pinTask(s, id) {
+  const task = s.tasks.find(t => t.id === id);
+  if (!task || task.done) throw new Error('Choose an open task to focus on.');
+  if (task.pinned) { delete task.pinned; return false; }
+  if (s.tasks.filter(t => !t.done && t.pinned).length >= 3) throw new Error('Focus holds three tasks. Unpin one to make room.');
+  task.pinned = true;
+  return true;
+}
+// Array order is the saved order, including through filters, backups, and sync.
+export function moveTask(s, id, targetId, { after = false, pinned } = {}) {
+  const task = s.tasks.find(t => t.id === id), target = s.tasks.find(t => t.id === targetId);
+  if (!task || task.done || (targetId && (!target || target.done))) throw new Error('Choose an open task to move.');
+  const focus = pinned ?? !!target?.pinned;
+  if (focus && !task.pinned && s.tasks.filter(t => !t.done && t.pinned).length >= 3)
+    throw new Error('Focus holds three tasks. Unpin one to make room.');
+  if (focus) task.pinned = true; else delete task.pinned;
+  if (id === targetId) return task;
+  s.tasks.splice(s.tasks.indexOf(task), 1);
+  const index = target ? s.tasks.indexOf(target) + (after ? 1 : 0) : s.tasks.length;
+  s.tasks.splice(index, 0, task);
+  return task;
+}
+export function toggleTaskStep(s, id, stepId) {
+  const task = s.tasks.find(t => t.id === id), step = task?.steps?.find(step => step.id === stepId);
+  if (!step || task.done) throw new Error('Choose a step in an open task.');
+  step.done = !step.done;
+  return step.done;
 }
 export function toggleTask(s, id, today) {
   const task = s.tasks.find(t => t.id === id);
@@ -199,9 +242,18 @@ export function toggleTask(s, id, today) {
     const record = s.history?.[task.doneOn || today];
     if (record) { record.tasks = Math.max(0, record.tasks - 1); record.gold = Math.max(0, record.gold - amount); }
     delete task.doneOn; if (task.repeat) task.due = null;
+    if (task.stepsBeforeDone) {
+      for (const step of task.steps || []) step.done = task.stepsBeforeDone.includes(step.id);
+      delete task.stepsBeforeDone;
+    }
     return -amount;
   }
   progress.tasks++;
+  delete task.pinned;
+  if (task.steps?.length) {
+    task.stepsBeforeDone = task.steps.filter(step => step.done).map(step => step.id);
+    for (const step of task.steps) step.done = true;
+  }
   const amount = TASK_GOLD[task.tier]; task.done = true; task.earned = amount; s.gold += amount;
   if (today) { task.doneOn = today; const record = historyDay(s, today); record.tasks++; record.gold += amount; pruneHistory(s); }
   if (task.repeat) task.due = nextOccurrence(today, task.repeat);
@@ -210,7 +262,11 @@ export function toggleTask(s, id, today) {
 // Recurring tasks whose next date has arrived return to the to-do list. Earned gold stays earned.
 export function reopenTasks(s, today) {
   let reopened = 0;
-  for (const t of s.tasks) if (t.repeat && t.done && t.due && t.due <= today) { t.done = false; t.earned = 0; t.due = null; delete t.doneOn; reopened++; }
+  for (const t of s.tasks) if (t.repeat && t.done && t.due && t.due <= today) {
+    t.done = false; t.earned = 0; t.due = null; delete t.doneOn; delete t.stepsBeforeDone; delete t.pinned;
+    for (const step of t.steps || []) step.done = false;
+    reopened++;
+  }
   return reopened;
 }
 export function saveNote(s, { id, text, kind = 'note', recovery = false }, today) {
@@ -248,7 +304,8 @@ export function convertNote(s, id, tier = 'quick') {
   if (note.taskTitle) {
     const task = { id: uid(), title: note.taskTitle, tier: note.taskTier || tier, done: false, earned: 0, source: note.id, inbox: true };
     if (note.taskRepeat) { task.repeat = note.taskRepeat; task.due = null; }
-    delete note.taskTitle; delete note.taskTier; delete note.taskRepeat;
+    if (note.taskSteps) task.steps = structuredClone(note.taskSteps);
+    delete note.taskTitle; delete note.taskTier; delete note.taskRepeat; delete note.taskSteps;
     s.tasks.unshift(task); note.taskId = task.id; note.status = 'kept'; return task;
   }
   // Hashtags carry over, so a captured task joins the note's projects.
@@ -265,7 +322,7 @@ export function returnTaskToVault(s, id) {
   if (!task) throw new Error('Task not found.');
   if (task.done) throw new Error('Completed tasks stay in your wins.');
   const source = s.notes.find(n => n.id === task.source && n.taskId === task.id);
-  const undo = { task: { ...task }, index, noteId: null, created: !source, previous: source ? { status: source.status } : null };
+  const undo = { task: structuredClone(task), index, noteId: null, created: !source, previous: source ? { status: source.status } : null };
   let note = source;
   if (note) { delete note.taskId; note.status = 'inbox'; }
   else {
@@ -274,6 +331,7 @@ export function returnTaskToVault(s, id) {
   }
   note.taskTitle = task.title; note.taskTier = task.tier;
   if (task.repeat) note.taskRepeat = task.repeat; else delete note.taskRepeat;
+  if (task.steps?.length) note.taskSteps = structuredClone(task.steps); else delete note.taskSteps;
   s.tasks.splice(index, 1);
   undo.noteId = note.id;
   return { note, undo };
@@ -283,7 +341,8 @@ export function undoReturnTaskToVault(s, undo) {
   if (!note || note.status !== 'inbox' || note.taskId) throw new Error('That note has changed since; convert it from the Vault instead.');
   if (s.tasks.some(t => t.id === undo.task.id)) throw new Error('This task is already back.');
   if (undo.created) s.notes = s.notes.filter(n => n !== note);
-  else { note.status = undo.previous.status; note.taskId = undo.task.id; delete note.taskTitle; delete note.taskTier; delete note.taskRepeat; }
+  else { note.status = undo.previous.status; note.taskId = undo.task.id; delete note.taskTitle; delete note.taskTier; delete note.taskRepeat; delete note.taskSteps; }
+  if (s.tasks.filter(t => !t.done && t.pinned).length >= 3) delete undo.task.pinned;
   s.tasks.splice(Math.min(undo.index, s.tasks.length), 0, undo.task);
   return undo.task;
 }
@@ -624,6 +683,12 @@ export function validateState(value) {
   if (![s.tasks,s.habits,s.notes].every(unique)) fail();
   for(const t of s.tasks) if(!id(t.id)||!text(t.title,500)||!Object.hasOwn(TASK_GOLD,t.tier)||typeof t.done!=='boolean'||!integer(t.earned,0,40)||(t.done?t.earned!==TASK_GOLD[t.tier]:t.earned!==0)) fail();
   for(const t of s.tasks) if((t.repeat!==undefined&&!Object.hasOwn(REPEATS,t.repeat))||(t.due!=null&&!date(t.due))||(t.doneOn!==undefined&&!date(t.doneOn))||(t.repeat&&t.done&&!t.due)) fail();
+  const validSteps=steps=>array(steps,MAX_TASK_STEPS)&&unique(steps)&&steps.every(step=>step&&id(step.id)&&text(step.title,160)&&step.title.trim()&&typeof step.done==='boolean');
+  if(s.tasks.filter(t=>!t.done&&t.pinned).length>3)fail();
+  for(const t of s.tasks) {
+    if((t.pinned!==undefined&&(t.pinned!==true||t.done))||(t.steps!==undefined&&!validSteps(t.steps)))fail();
+    if(t.stepsBeforeDone!==undefined&&(!t.done||!array(t.stepsBeforeDone,MAX_TASK_STEPS)||new Set(t.stepsBeforeDone).size!==t.stepsBeforeDone.length||!t.stepsBeforeDone.every(id=>t.steps?.some(step=>step.id===id))))fail();
+  }
   for(const h of s.habits) {
     if(h.icon!==undefined&&!validHabitIcon(h.icon))fail();
     if(!id(h.id)||!text(h.title,200)||![...CATEGORIES,'harm'].includes(h.category)||!(h.category==='harm'?[3,7,12]:[10,20,30]).includes(h.base)||!array(h.logs)||!array(h.harmLogs)) fail();
@@ -631,6 +696,7 @@ export function validateState(value) {
   }
   for(const n of s.notes) if(!id(n.id)||!text(n.text)||(!text(n.created,100)||Number.isNaN(Date.parse(n.created)))||!integer(n.paid,0,3)||!['inbox','kept','archived'].includes(n.status)||!['note','journal'].includes(n.kind)||typeof n.healed!=='boolean'||(n.pinned!==undefined&&n.pinned!==true)) fail();
   for(const n of s.notes) if((n.taskTitle!==undefined&&!text(n.taskTitle,500))||(n.taskTier!==undefined&&!Object.hasOwn(TASK_GOLD,n.taskTier))||(n.taskRepeat!==undefined&&!Object.hasOwn(REPEATS,n.taskRepeat))) fail();
+  for(const n of s.notes)if(n.taskSteps!==undefined&&!validSteps(n.taskSteps))fail();
   for(const battle of s.battles) {
     if(!id(battle.id)||!date(battle.day)||!integer(battle.monster,1,500)||typeof battle.won!=='boolean'||!integer(battle.hp)||!array(battle.events,2000)||!battle.events.length) fail();
     for(const event of battle.events) {

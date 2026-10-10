@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createSync, fingerprint, cloudState, withDeviceSettings, SYNC_META_KEY } from '../sync-engine.js';
 import { createCloudAdapter } from '../sync-remote.js';
-import { freshState, validateState } from '../engine.js';
+import { freshState, validateState, saveTask, pinTask, moveTask, toggleTaskStep } from '../engine.js';
 function memory() {
   const data = new Map();
   return { getItem: k => data.get(k) ?? null, setItem: (k, v) => data.set(k, v), removeItem: k => data.delete(k) };
@@ -150,4 +150,16 @@ test('shared browser storage cannot advance another tab’s unsynced base', asyn
   const b = harness(a.server, storage); b.state = structuredClone(a.state); await b.sync.tick();
   change(a, 'Tab A'); change(b, 'Tab B'); await a.sync.tick(); await b.sync.tick();
   assert.equal(b.sync.status.phase, 'conflict'); assert.equal(a.server.row.payload.name, 'Tab A');
+});
+
+// The new task fields travel in the same guarded whole-save transaction as rewards.
+test('focus, task order, and checked steps arrive together on another device', async () => {
+  const a = harness(); await a.sync.tick();
+  const b = harness(a.server); b.state = structuredClone(a.state); await b.sync.tick();
+  const t = saveTask(a.state, { title: 'Build something', tier: 'quest', steps: [{ title: 'Sketch' }, { title: 'Build' }] }, '2026-10-10');
+  pinTask(a.state, t.id); toggleTaskStep(a.state, t.id, t.steps[0].id);
+  moveTask(a.state, a.state.tasks.at(-1).id, a.state.tasks[1].id);
+  a.state.revision++; await a.sync.tick(); await b.sync.tick();
+  assert.equal(b.sync.status.phase, 'synced'); assert.deepEqual(b.state.tasks, a.state.tasks);
+  assert.equal(b.state.gold, 0); assert.equal(b.state.progress.tasks, 0);
 });

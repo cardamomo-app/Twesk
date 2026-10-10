@@ -24,14 +24,17 @@ test('manual order spans sizes and leaves tasks hidden by a filter in their rela
   assert.deepEqual(s.tasks.map(t => t.id), [c.id, a.id, d.id, b.id]);
   assert.deepEqual(E.validateState(s).tasks.map(t => t.id), s.tasks.map(t => t.id));
 });
-test('dragging into focus observes the cap atomically and dragging out unpins', () => {
+test('reordering preserves focus membership and cannot move tasks across lists', () => {
   const s = E.freshState(), fourth = add(s, 'Fourth'), [a, b, c] = s.tasks.slice(1);
-  E.moveTask(s, a.id, null, { pinned: true });
-  E.moveTask(s, b.id, a.id); E.moveTask(s, c.id, a.id, { after: true });
+  E.pinTask(s, a.id); E.pinTask(s, b.id); E.pinTask(s, c.id);
+  E.moveTask(s, c.id, a.id); E.moveTask(s, a.id, b.id, { after: true });
+  assert.deepEqual(s.tasks.filter(t => t.pinned).map(t => t.id), [c.id, b.id, a.id]);
   const before = structuredClone(s);
-  assert.throws(() => E.moveTask(s, fourth.id, a.id), /three/); assert.deepEqual(s, before);
-  E.moveTask(s, b.id, fourth.id); assert.equal(b.pinned, undefined);
-  E.moveTask(s, fourth.id, null, { pinned: true }); assert.equal(fourth.pinned, true);
+  assert.throws(() => E.moveTask(s, fourth.id, a.id), /within the list/); assert.deepEqual(s, before);
+  assert.throws(() => E.moveTask(s, b.id, fourth.id), /within the list/); assert.deepEqual(s, before);
+  E.moveTask(s, c.id, null); assert.equal(c.pinned, true);
+  E.pinTask(s, b.id); E.pinTask(s, fourth.id);
+  assert.equal(b.pinned, undefined); assert.equal(fourth.pinned, true);
 });
 test('steps track progress without paying, parent completion pays once, and undo restores the checklist', () => {
   const s = E.freshState(), t = add(s, 'Large task', { steps: [{ title: 'Plan' }, { title: 'Make' }] });

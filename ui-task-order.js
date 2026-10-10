@@ -1,25 +1,26 @@
 // Pointer dragging uses a dedicated handle so touch scrolling and task clicks stay natural.
-import * as E from './engine.js?v=0.18.1';
-import { $, app, toast, view } from './ui-core.js?v=0.18.1';
-import { commit } from './ui-modal.js?v=0.18.1';
+import * as E from './engine.js?v=0.18.2';
+import { $, app, toast, view } from './ui-core.js?v=0.18.2';
+import { commit } from './ui-modal.js?v=0.18.2';
 
 export function installTaskOrder() {
   let drag = null, frame = null;
-  const clearMarks = () => document.querySelectorAll('.task-drop-before,.task-drop-after,.task-drop-zone').forEach(el => el.classList.remove('task-drop-before', 'task-drop-after', 'task-drop-zone'));
+  const clearMarks = () => document.querySelectorAll('.task-drop-before,.task-drop-after').forEach(el => el.classList.remove('task-drop-before', 'task-drop-after'));
   function locate() {
     clearMarks();
     const hit = document.elementFromPoint(drag.x, drag.y), list = hit?.closest('[data-task-list]');
     drag.drop = null;
-    if (!list) return;
-    const row = hit.closest('[data-task-id]'), pinned = list.dataset.taskList === 'focus';
+    if (!list || list.dataset.taskList !== drag.list) return;
+    let row = hit.closest('[data-task-id]');
+    if (!row) {
+      const rows = [...list.querySelectorAll('[data-task-id]')].filter(row => row.dataset.taskId !== drag.id);
+      row = rows.find(row => drag.y < row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2) || rows.at(-1);
+    }
     if (row?.dataset.taskId === drag.id) return;
     if (row) {
       const after = drag.y > row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
       row.classList.add(after ? 'task-drop-after' : 'task-drop-before');
-      drag.drop = { targetId: row.dataset.taskId, after, pinned };
-    } else {
-      list.classList.add('task-drop-zone');
-      drag.drop = { targetId: null, pinned };
+      drag.drop = { targetId: row.dataset.taskId, after };
     }
   }
   function scroll() {
@@ -52,7 +53,7 @@ export function installTaskOrder() {
   $('#app').addEventListener('pointerdown', event => {
     const handle = event.target.closest('[data-task-grip]');
     if (!handle || event.button !== 0 || app.modal || app.busy) return;
-    drag = { id: handle.dataset.id, handle, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY, active: false };
+    drag = { id: handle.dataset.id, list: handle.closest('[data-task-list]').dataset.taskList, handle, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY, active: false };
     handle.setPointerCapture(event.pointerId);
   });
   document.addEventListener('pointermove', event => {

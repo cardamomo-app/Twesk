@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.18.1';
-import {validHabitIcon} from './habit-icons.js?v=0.18.1';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.18.2';
+import {validHabitIcon} from './habit-icons.js?v=0.18.2';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -214,13 +214,10 @@ export function pinTask(s, id) {
   return true;
 }
 // Array order is the saved order, including through filters, backups, and sync.
-export function moveTask(s, id, targetId, { after = false, pinned } = {}) {
+export function moveTask(s, id, targetId, { after = false } = {}) {
   const task = s.tasks.find(t => t.id === id), target = s.tasks.find(t => t.id === targetId);
   if (!task || task.done || (targetId && (!target || target.done))) throw new Error('Choose an open task to move.');
-  const focus = pinned ?? !!target?.pinned;
-  if (focus && !task.pinned && s.tasks.filter(t => !t.done && t.pinned).length >= 3)
-    throw new Error('Focus holds three tasks. Unpin one to make room.');
-  if (focus) task.pinned = true; else delete task.pinned;
+  if (target && !!target.pinned !== !!task.pinned) throw new Error('Reorder within the list. Change focus in the task editor.');
   if (id === targetId) return task;
   s.tasks.splice(s.tasks.indexOf(task), 1);
   const index = target ? s.tasks.indexOf(target) + (after ? 1 : 0) : s.tasks.length;

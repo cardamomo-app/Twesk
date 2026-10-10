@@ -589,21 +589,14 @@ button.hashtag:hover{text-decoration:underline}
 .sync-body #sync-auth-message:empty {display:none;}
 
 /* Focus, manual task order, and small steps. */
-.task-focus{margin:4px 0 12px;border:1px solid var(--line);border-radius:10px;padding:11px 10px 4px;background:var(--panel)}
-.task-focus.has-focus{background:color-mix(in srgb,var(--accent-soft) 48%,var(--panel));border-color:color-mix(in srgb,var(--accent) 18%,var(--line))}
-.focus-heading{display:flex;align-items:center;gap:6px;color:var(--accent);padding:0 2px 7px}
-.focus-heading>.icon{width:13px;height:13px}.focus-heading h3{font-size:11px;font-weight:650;margin:0}.focus-heading>span{margin-left:auto;font-size:9px;color:var(--muted)}
-.task-focus:not(.has-focus){border:0;border-radius:0;padding:2px 0 0;margin-bottom:3px;background:none}
-.task-focus:not(.has-focus) .focus-heading{color:var(--muted)}
-.task-focus:not(.has-focus) .focus-heading h3{font-weight:500}
+.task-focus{margin:2px 0 10px;padding:0 0 5px;border-bottom:1px solid var(--line)}
+.focus-heading{display:flex;align-items:center;gap:5px;color:var(--muted);padding:0 0 5px}
+.focus-heading>.icon{width:11px;height:11px}.focus-heading h3{font-size:10px;font-weight:550;margin:0}.focus-heading>span{margin-left:auto;font-size:9px;color:var(--muted)}
 .task-list{min-height:12px;padding-bottom:8px}
-.other-tasks-heading{font-size:9px;color:var(--muted);padding:6px 0 3px}
 .task-item{position:relative;border-bottom:1px solid var(--line)}.task-item:last-child{border-bottom:0}
 .task-item>.task-row{border:0;gap:7px;padding:11px 0;min-height:55px}
 .task-grip{display:flex;align-items:center;justify-content:center;flex:0 0 14px;width:14px;align-self:stretch;color:var(--muted);opacity:.55;cursor:grab;touch-action:none;border-radius:4px}
 .task-grip>.icon{width:12px;height:16px}.task-grip:hover,.task-grip:focus-visible{opacity:1;color:var(--accent);background:var(--accent-soft)}
-.task-pin{display:flex;align-items:center;justify-content:center;width:22px;height:28px;flex:0 0 22px;color:var(--muted);border-radius:5px;opacity:.65}
-.task-pin>.icon{width:13px;height:13px}.task-pin:hover,.task-pin:focus-visible,.task-pin.selected{color:var(--accent);opacity:1;background:var(--accent-soft)}
 .task-item .task-meta{font-size:8px;gap:6px;flex-wrap:wrap;line-height:1.6}.task-meta>span{display:inline-flex;align-items:center;gap:3px}
 .task-item .task-title{font-size:12px}.task-item .task-reward{font-size:9px}.task-item .voxel-gold-value{gap:2px}
 .task-step-summary{display:flex;align-items:center;align-self:flex-start;gap:5px;color:var(--muted);font-size:9px;padding:4px 0 0;line-height:1.6}
@@ -615,11 +608,10 @@ button.hashtag:hover{text-decoration:underline}
 .task-step-editor{border:0;padding:0;margin:22px 0 0;min-width:0}.task-step-editor legend{font-size:11px;color:var(--secondary);font-weight:600;margin-bottom:10px}.task-step-editor legend>span{font-weight:400;color:var(--muted);font-size:10px;margin-left:5px}
 .step-editor-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}.step-editor-row input[name=stepTitle]{flex:1;min-width:0;margin:0;font-size:12px}.step-editor-row>.icon-button{flex-shrink:0;width:25px;height:30px;color:var(--muted)}
 .task-step-editor .add-step{font-size:11px;padding:6px 0;min-height:28px;gap:5px}.task-step-editor .add-step>.icon{width:13px;height:13px}.task-step-editor .form-help{margin:5px 0 0}
-.focus-drop-hint{display:none;font-size:10px;color:var(--accent);text-align:center;padding:12px 0}
-.task-dragging{user-select:none;cursor:grabbing}.task-dragging .task-grip{cursor:grabbing}.task-dragging .task-focus:not(.has-focus){border:1px dashed var(--accent);padding:9px;border-radius:9px;margin-bottom:10px;background:var(--accent-soft)}
-.task-dragging .focus-drop-hint{display:block}.task-being-dragged{opacity:.3}.task-drop-before:before,.task-drop-after:after{content:'';position:absolute;left:0;right:0;height:2px;background:var(--accent);z-index:2;border-radius:2px}.task-drop-before:before{top:-1px}.task-drop-after:after{bottom:-1px}
-.task-drop-zone{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}.task-drag-ghost{position:fixed;z-index:1000;pointer-events:none;width:200px;background:var(--panel);border:1px solid var(--accent);border-radius:8px;padding:12px;font-size:12px;color:var(--text);box-shadow:0 8px 26px #0002;overflow-wrap:anywhere}
-@media(max-width:560px){.task-item>.task-row{gap:6px}.task-grip{flex-basis:18px;width:18px}.task-step{padding:8px 0}.task-steps{padding-left:42px}.task-pin{height:32px}.step-editor-row input[name=stepTitle]{font-size:16px}.task-item .task-title{font-size:12px}}
+.task-dragging{user-select:none;cursor:grabbing}.task-dragging .task-grip{cursor:grabbing}
+.task-being-dragged{opacity:.3}.task-drop-before{box-shadow:inset 0 2px var(--accent)}.task-drop-after{box-shadow:inset 0 -2px var(--accent)}
+.task-drag-ghost{position:fixed;z-index:1000;pointer-events:none;width:200px;background:var(--panel);border:1px solid var(--accent);border-radius:8px;padding:12px;font-size:12px;color:var(--text);box-shadow:0 8px 26px #0002;overflow-wrap:anywhere}
+@media(max-width:560px){.task-item>.task-row{gap:6px}.task-grip{flex-basis:18px;width:18px}.task-step{padding:8px 0}.task-steps{padding-left:42px}.step-editor-row input[name=stepTitle]{font-size:16px}.task-item .task-title{font-size:12px}}
 
 /* A lighter task dialog: tactile reward choices, quiet repeat chips, compact steps. */
 .task-modal{width:490px}
@@ -664,3 +656,10 @@ button.hashtag:hover{text-decoration:underline}
 .task-dialog-actions>.button{min-height:36px;padding:8px 15px}
 .task-form>.checkbox-label{margin:14px 0 0}
 @media(max-width:560px){.task-modal .modal-header{padding:20px 20px 15px}.task-modal .task-form{padding:0 20px 20px}.task-name-field>input{font-size:16px}.task-size-face{padding:10px 9px;gap:4px}.task-size-face>span:first-child{font-size:10px}.task-size-face .gold-pile{width:28px;height:23px}.task-size-face .gold-value{font-size:10px;gap:2px}.task-repeat-choice>span{font-size:9px;padding:5px 2px}.task-form .step-editor-row input[name=stepTitle]{font-size:16px;height:36px}.task-form fieldset{margin-top:18px}}
+
+/* Pinning is an explicit edit; dragging only changes order and never grows a drop zone. */
+.task-form>.task-focus-setting{display:flex;flex-direction:row;align-items:center;gap:6px;margin:16px 0 0;padding:3px 0;min-height:25px;font-size:11px;font-weight:400;color:var(--secondary);cursor:pointer}
+.task-focus-setting>input{appearance:auto;accent-color:var(--accent);width:13px;height:13px;padding:0;margin:0 3px 0 0;flex-shrink:0}
+.task-focus-setting>.icon{width:12px;height:12px;color:var(--muted)}.task-focus-setting>small{margin-left:auto;font-size:9px;color:var(--muted)}
+.task-focus-setting:has(input:checked){color:var(--accent)}.task-focus-setting:has(input:checked)>.icon{color:var(--accent)}.task-focus-setting.is-full{cursor:default;color:var(--muted)}
+.task-form .task-focus-setting+.task-step-editor{margin-top:14px}

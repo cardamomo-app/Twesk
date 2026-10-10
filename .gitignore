@@ -3,3 +3,5 @@ node_modules/
 tests/ui/artifacts/
 test-saves/
 _site/
+# Personal backups exported from the app (the repository is public)
+twesk-backup-*.json

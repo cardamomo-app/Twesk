@@ -1,7 +1,7 @@
 // Shared interface foundation: the app store, saving, small HTML helpers, and toasts.
-import * as E from './engine.js?v=0.18.2';
-import { goldArt } from './art.js?v=0.18.2';
-import { HABIT_ICONS } from './habit-icons.js?v=0.18.2';
+import * as E from './engine.js?v=0.19.0';
+import { goldArt } from './art.js?v=0.19.0';
+import { HABIT_ICONS } from './habit-icons.js?v=0.19.0';
 export const $ = s => document.querySelector(s);
 export const $$ = s => [...document.querySelectorAll(s)];
 export const esc = v =>
@@ -121,6 +121,9 @@ const icons = {
   helmet: '<path d="M4 15a8 8 0 0 1 16 0v2H4ZM12 7V4M4 17h16l-1 3H5Z"/>',
   sparkle: '<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2ZM19 3v4M17 5h4"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  compass: '<circle cx="12" cy="12" r="9"/><path d="m16 8-3 5-5 3 3-5Z"/>',
+  play: '<path d="m9 5 11 7-11 7Z"/>',
+  pause: '<path d="M8 5v14M16 5v14"/>',
   pin: '<path d="M9 3h6l-1 6 4 4H6l4-4ZM12 13v8"/>',
   trash: '<path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7"/>',
   grip: '<circle cx="8" cy="5" r="1"/><circle cx="16" cy="5" r="1"/><circle cx="8" cy="12" r="1"/><circle cx="16" cy="12" r="1"/><circle cx="8" cy="19" r="1"/><circle cx="16" cy="19" r="1"/>',

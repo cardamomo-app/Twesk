@@ -223,6 +223,11 @@ function comboStep() {
 }
 
 const SOUNDS = {
+  // A small campsite wind chime: an invitation to rest, rather than a victory fanfare.
+  trailBell(t) {
+    [880, 1174.66, 1318.51, 987.77].forEach((f, i) => bell(f, t + i * .23, .065, 1.5, .55, (i - 1.5) * .18));
+    pluck(440, t + .8, .045, 1, .4);
+  },
   // Ticking a task: a bright two-note pluck that climbs with a combo.
   check(t) {
     const root = C5 * semis(PENTATONIC[comboStep()]);

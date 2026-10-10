@@ -213,3 +213,29 @@ export function avatarArt(weapon=null,armor=null,large=false,{angle=-.45,appeara
   const label=`Your voxel adventurer${armor?' wearing armor':''}${helmet?' and a helmet':''}${weapon?' holding a sword':''}`;
   return `<svg xmlns="http://www.w3.org/2000/svg" class="voxel-art avatar-art ${large?'large':''}" viewBox="0 0 240 260" role="img" aria-label="${label}" data-angle="${angle.toFixed(3)}"><ellipse cx="120" cy="229" rx="64" ry="13" fill="currentColor" opacity=".07"/>${faces.map(f=>`<polygon points="${f.projected.map(p=>p.map(n=>n.toFixed(2)).join(',')).join(' ')}" fill="${shade(f.color,f.light)}" data-part="${f.part}"/>`).join('')}</svg>`;
 }
+
+// Two gait poses are projected as complete scenes, so armor and overlapping limbs stay solid.
+const journeyArt = new Map();
+export function avatarJourneyArt(weapon, armor, appearance, helmet) {
+  const key = JSON.stringify([weapon?.tier, armor?.tier, appearance, helmet?.tier]);
+  if (journeyArt.has(key)) return journeyArt.get(key);
+  const legs = new Set(['trousers', 'seam', 'boot', 'sole', 'boot cuff', 'boot buckle', 'greave']);
+  const arms = new Set(['sleeve', 'forearm', 'bracer', 'hand', 'thumb', 'gauntlet', 'gauntlet trim']);
+  const frames = [-1, 1].map(stride => {
+    const boxes = avatarGeometry(weapon, armor, appearance, helmet).filter(b => !['plinth', 'moss'].includes(b.part)).map(b => {
+      const side = b.x < 0 ? -1 : 1;
+      if (legs.has(b.part)) return { ...b, y: b.y + side * stride * 4, z: b.z + Math.max(0, side * stride * 2) };
+      if (arms.has(b.part) || /sword|blade|pommel|crossguard|guard wing/.test(b.part)) return { ...b, y: b.y - side * stride * 3 };
+      return b;
+    });
+    return visibleCuboidFaces(createCuboidScene(boxes), -.85);
+  });
+  const points = frames.flatMap(faces => faces.flatMap(f => f.projected));
+  const minX = Math.min(...points.map(p => p[0])) - 5, minY = Math.min(...points.map(p => p[1])) - 5;
+  const width = Math.max(...points.map(p => p[0])) - minX + 5, height = Math.max(...points.map(p => p[1])) - minY + 5;
+  const viewBox = [minX, minY, width, height].map(n => n.toFixed(2)).join(' ');
+  const art = frames.map(faces => `<svg viewBox="${viewBox}" aria-hidden="true">${faces.map(f => `<polygon points="${f.projected.map(p => p.map(n => n.toFixed(2)).join(',')).join(' ')}" fill="${shade(f.color, f.light)}"/>`).join('')}</svg>`).join('');
+  const result = `<span class="journey-walker">${art}</span>`;
+  if (journeyArt.size >= 8) journeyArt.delete(journeyArt.keys().next().value);
+  journeyArt.set(key, result); return result;
+}

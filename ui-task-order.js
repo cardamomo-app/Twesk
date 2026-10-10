@@ -1,15 +1,18 @@
 // Pointer dragging uses a dedicated handle so touch scrolling and task clicks stay natural.
-import * as E from './engine.js?v=0.18.2';
-import { $, app, toast, view } from './ui-core.js?v=0.18.2';
-import { commit } from './ui-modal.js?v=0.18.2';
+import * as E from './engine.js?v=0.19.0';
+import { $, app, toast, view } from './ui-core.js?v=0.19.0';
+import { commit } from './ui-modal.js?v=0.19.0';
+import { sound } from './ui-effects.js?v=0.19.0';
 
 export function installTaskOrder() {
   let drag = null, frame = null;
-  const clearMarks = () => document.querySelectorAll('.task-drop-before,.task-drop-after').forEach(el => el.classList.remove('task-drop-before', 'task-drop-after'));
+  const clearMarks = () => document.querySelectorAll('.task-drop-before,.task-drop-after,.quest-drop-ready').forEach(el => el.classList.remove('task-drop-before', 'task-drop-after', 'quest-drop-ready'));
   function locate() {
     clearMarks();
     const hit = document.elementFromPoint(drag.x, drag.y), list = hit?.closest('[data-task-list]');
     drag.drop = null;
+    const quest = hit?.closest('[data-quest-drop]');
+    if (quest) { quest.classList.add('quest-drop-ready'); drag.drop = { quest: true }; return; }
     if (!list || list.dataset.taskList !== drag.list) return;
     let row = hit.closest('[data-task-id]');
     if (!row) {
@@ -47,7 +50,10 @@ export function installTaskOrder() {
     if (handle.hasPointerCapture?.(drag.pointerId)) handle.releasePointerCapture(drag.pointerId);
     drag = null;
     app.taskDragging = false;
-    if (!cancel && active && drop) commit(() => E.moveTask(app.state, id, drop.targetId, drop));
+    if (!cancel && active && drop) {
+      const moved = commit(() => drop.quest ? E.setCurrentQuest(app.state, id) : E.moveTask(app.state, id, drop.targetId, drop));
+      if (moved && drop.quest) { sound('note'); $('[data-action="quest-play"]')?.focus({ preventScroll: true }); }
+    }
     view.modalClosed();
   }
   $('#app').addEventListener('pointerdown', event => {
@@ -91,9 +97,9 @@ export function installTaskOrder() {
     $('[data-task-grip][data-id="' + CSS.escape(handle.dataset.id) + '"]')?.focus({ preventScroll: true });
     toast('Task moved ' + (down ? 'down.' : 'up.'));
   });
-  $('#app').addEventListener('change', event => {
+  document.addEventListener('change', event => {
     const input = event.target.closest('[data-task-step]');
-    if (!input) return;
+    if (!input || app.busy) return;
     const id = input.dataset.id, stepId = input.dataset.stepId;
     commit(() => E.toggleTaskStep(app.state, id, stepId));
     $('.task-step input[data-step-id="' + CSS.escape(stepId) + '"]')?.focus({ preventScroll: true });

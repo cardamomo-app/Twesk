@@ -1,25 +1,26 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.18.2';
-import { avatarFaceArt } from './art.js?v=0.18.2';
-import { awardAchievements } from './achievements.js?v=0.18.2';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.18.2';
-import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.18.2';
-import { closeModal, openModal } from './ui-modal.js?v=0.18.2';
-import * as tasks from './ui-tasks.js?v=0.18.2';
-import * as habits from './ui-habits.js?v=0.18.2';
-import * as vault from './ui-vault.js?v=0.18.2';
-import * as character from './ui-character.js?v=0.18.2';
-import * as shop from './ui-shop.js?v=0.18.2';
-import * as battle from './ui-battle.js?v=0.18.2';
-import * as collection from './ui-collection.js?v=0.18.2';
-import * as settings from './ui-settings.js?v=0.18.2';
-import * as sync from './ui-sync.js?v=0.18.2';
-import * as history from './ui-history.js?v=0.18.2';
-import { installDelights, renderAmbience } from './ui-delights.js?v=0.18.2';
-import { installTagSuggest } from './ui-tag-suggest.js?v=0.18.2';
-import { installTaskOrder } from './ui-task-order.js?v=0.18.2';
+import * as E from './engine.js?v=0.19.0';
+import { avatarFaceArt } from './art.js?v=0.19.0';
+import { awardAchievements } from './achievements.js?v=0.19.0';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.19.0';
+import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.19.0';
+import { closeModal, openModal } from './ui-modal.js?v=0.19.0';
+import * as tasks from './ui-tasks.js?v=0.19.0';
+import * as quest from './ui-quest.js?v=0.19.0';
+import * as habits from './ui-habits.js?v=0.19.0';
+import * as vault from './ui-vault.js?v=0.19.0';
+import * as character from './ui-character.js?v=0.19.0';
+import * as shop from './ui-shop.js?v=0.19.0';
+import * as battle from './ui-battle.js?v=0.19.0';
+import * as collection from './ui-collection.js?v=0.19.0';
+import * as settings from './ui-settings.js?v=0.19.0';
+import * as sync from './ui-sync.js?v=0.19.0';
+import * as history from './ui-history.js?v=0.19.0';
+import { installDelights, renderAmbience } from './ui-delights.js?v=0.19.0';
+import { installTagSuggest } from './ui-tag-suggest.js?v=0.19.0';
+import { installTaskOrder } from './ui-task-order.js?v=0.19.0';
 
-const features = [tasks, habits, vault, character, shop, battle, collection, settings, history, sync];
+const features = [tasks, quest, habits, vault, character, shop, battle, collection, settings, history, sync];
 const modals = Object.assign({}, ...features.map(f => f.modals));
 const actions = Object.assign({}, ...features.map(f => f.actions));
 const forms = Object.assign({}, ...features.map(f => f.forms || {}));
@@ -57,6 +58,8 @@ function render() {
     focused = $('#app').contains(document.activeElement) ? controlSelector(document.activeElement) : null;
   const day = today();
   E.rollover(app.state, day);
+  // Older focus lists become one adventure; all other tasks return to the ordinary list.
+  E.setCurrentQuest(app.state, app.state.tasks.find(t => !t.done && t.pinned)?.id || null);
   app.lastDay = day;
   document.documentElement.dataset.theme = app.state.settings.theme;
   document.documentElement.dataset.motion = app.state.settings.reducedMotion ? 'reduced' : 'full';
@@ -73,6 +76,7 @@ function render() {
       <section class="panel tasks-panel" aria-labelledby="tasks-heading"><div class="panel-heading"><div><span class="section-kicker">MAKE THINGS HAPPEN</span><h2 id="tasks-heading">Tasks <span class="count">${app.state.tasks.filter(t => !t.done).length}</span></h2></div>${iconButton('new-task', 'plus', 'Add a task')}</div>
       <div class="task-tabs" role="group" aria-label="Task view"><button data-action="task-view" data-view="active" class="${app.taskView === 'active' ? 'selected' : ''}">To do</button><button data-action="task-view" data-view="done" class="${app.taskView === 'done' ? 'selected' : ''}">Completed <span>${completed}</span></button></div>${tasks.renderProjects()}
       <div class="tasks-scroll">${tasks.renderTasks()}</div>
+      ${quest.renderQuest()}
       <button class="vault-card" data-action="vault"><span class="vault-symbol">${icon('vault')}</span><span><strong>The Vault</strong><small>${app.state.notes.filter(n => n.status === 'inbox').length ? app.state.notes.filter(n => n.status === 'inbox').length + (app.state.notes.filter(n => n.status === 'inbox').length === 1 ? ' idea waiting to be sorted' : ' ideas waiting to be sorted') : 'A home for thoughts, before they become plans'}</small></span>${icon('arrow')}</button>
       </section>
       <section class="panel habits-panel" aria-labelledby="habits-heading"><div class="panel-heading"><div><span class="section-kicker">GROW AT YOUR OWN PACE</span><h2 id="habits-heading">Habits</h2></div>${iconButton('new-habit', 'plus', 'Add a habit')}</div><div class="habits-scroll">${[...E.CATEGORIES, 'harm'].map(habits.renderCategory).join('')}</div></section>
@@ -99,6 +103,7 @@ function renderModal() {
 }
 installTagSuggest();
 installTaskOrder();
+quest.installQuest();
 installDelights();
 Object.assign(view, { render, renderModal, finishBattlePlayback: battle.finishBattlePlayback });
 

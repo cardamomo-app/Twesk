@@ -24,17 +24,25 @@ test('manual order spans sizes and leaves tasks hidden by a filter in their rela
   assert.deepEqual(s.tasks.map(t => t.id), [c.id, a.id, d.id, b.id]);
   assert.deepEqual(E.validateState(s).tasks.map(t => t.id), s.tasks.map(t => t.id));
 });
-test('reordering preserves focus membership and cannot move tasks across lists', () => {
-  const s = E.freshState(), fourth = add(s, 'Fourth'), [a, b, c] = s.tasks.slice(1);
+test('an adventure replaces earlier focus pins, can be released, and survives a backup', () => {
+  const s = E.freshState(), [a, b, c] = s.tasks;
   E.pinTask(s, a.id); E.pinTask(s, b.id); E.pinTask(s, c.id);
-  E.moveTask(s, c.id, a.id); E.moveTask(s, a.id, b.id, { after: true });
-  assert.deepEqual(s.tasks.filter(t => t.pinned).map(t => t.id), [c.id, b.id, a.id]);
+  const order = s.tasks.map(t => t.id);
+  E.setCurrentQuest(s, b.id);
+  assert.deepEqual(s.tasks.filter(t => t.pinned).map(t => t.id), [b.id]);
+  assert.deepEqual(E.validateState(s).tasks.filter(t => t.pinned).map(t => t.id), [b.id]);
+  assert.deepEqual(s.tasks.map(t => t.id), order); assert.equal(s.gold, 0);
   const before = structuredClone(s);
-  assert.throws(() => E.moveTask(s, fourth.id, a.id), /within the list/); assert.deepEqual(s, before);
-  assert.throws(() => E.moveTask(s, b.id, fourth.id), /within the list/); assert.deepEqual(s, before);
-  E.moveTask(s, c.id, null); assert.equal(c.pinned, true);
-  E.pinTask(s, b.id); E.pinTask(s, fourth.id);
-  assert.equal(b.pinned, undefined); assert.equal(fourth.pinned, true);
+  assert.throws(() => E.setCurrentQuest(s, 'missing')); assert.deepEqual(s, before);
+  E.toggleTask(s, c.id, day);
+  assert.throws(() => E.setCurrentQuest(s, c.id)); assert.equal(b.pinned, true);
+  E.moveTask(s, a.id, b.id, { after: true }); assert.equal(b.pinned, true);
+  E.setCurrentQuest(s); assert.ok(s.tasks.every(t => !t.pinned));
+  E.setCurrentQuest(s, a.id);
+  const moved = E.returnTaskToVault(s, a.id); E.setCurrentQuest(s, b.id); E.undoReturnTaskToVault(s, moved.undo);
+  assert.deepEqual(s.tasks.filter(t => t.pinned).map(t => t.id), [b.id]);
+  E.setCurrentQuest(s, a.id); E.toggleTask(s, a.id, day);
+  assert.equal(s.tasks.find(t => t.id === a.id).pinned, undefined);
 });
 test('steps track progress without paying, parent completion pays once, and undo restores the checklist', () => {
   const s = E.freshState(), t = add(s, 'Large task', { steps: [{ title: 'Plan' }, { title: 'Make' }] });

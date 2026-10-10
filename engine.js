@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.18.2';
-import {validHabitIcon} from './habit-icons.js?v=0.18.2';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.19.0';
+import {validHabitIcon} from './habit-icons.js?v=0.19.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -213,11 +213,19 @@ export function pinTask(s, id) {
   task.pinned = true;
   return true;
 }
+// One active adventure, stored with task progress so selection follows backups and sync.
+// Older saves may have three pins; choosing an adventure folds them into one without losing tasks.
+export function setCurrentQuest(s, id = null) {
+  const task = id === null ? null : s.tasks.find(t => t.id === id && !t.done);
+  if (id !== null && !task) throw new Error('Choose an open task for your adventure.');
+  for (const t of s.tasks) delete t.pinned;
+  if (task) task.pinned = true;
+  return task;
+}
 // Array order is the saved order, including through filters, backups, and sync.
 export function moveTask(s, id, targetId, { after = false } = {}) {
   const task = s.tasks.find(t => t.id === id), target = s.tasks.find(t => t.id === targetId);
   if (!task || task.done || (targetId && (!target || target.done))) throw new Error('Choose an open task to move.');
-  if (target && !!target.pinned !== !!task.pinned) throw new Error('Reorder within the list. Change focus in the task editor.');
   if (id === targetId) return task;
   s.tasks.splice(s.tasks.indexOf(task), 1);
   const index = target ? s.tasks.indexOf(target) + (after ? 1 : 0) : s.tasks.length;
@@ -339,7 +347,7 @@ export function undoReturnTaskToVault(s, undo) {
   if (s.tasks.some(t => t.id === undo.task.id)) throw new Error('This task is already back.');
   if (undo.created) s.notes = s.notes.filter(n => n !== note);
   else { note.status = undo.previous.status; note.taskId = undo.task.id; delete note.taskTitle; delete note.taskTier; delete note.taskRepeat; delete note.taskSteps; }
-  if (s.tasks.filter(t => !t.done && t.pinned).length >= 3) delete undo.task.pinned;
+  if (s.tasks.some(t => !t.done && t.pinned)) delete undo.task.pinned;
   s.tasks.splice(Math.min(undo.index, s.tasks.length), 0, undo.task);
   return undo.task;
 }

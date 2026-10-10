@@ -47,3 +47,19 @@ test('profile portraits show the customized face with bounded hair and no body o
   assert.equal(avatarFaceArt({...DEFAULT_APPEARANCE,outfit:'rose'}),defaultFace);
   assert.notEqual(avatarFaceArt({...DEFAULT_APPEARANCE,hair:'copper'}),defaultFace);
 });
+
+test('walking miniatures keep both gait poses, hair and equipment inside a shared viewBox', async () => {
+  const { avatarJourneyArt } = await import('../avatar-model.js');
+  for (const tier of [null, 'basic', 'large', 'special', 'legendary']) {
+    const art = avatarJourneyArt(tier && { tier }, tier && { tier }, { style: 'mohawk', beard: 'full' }, tier && { tier });
+    const frames = [...art.matchAll(/<svg viewBox="([^"]+)"[^>]*>(.*?)<\/svg>/g)];
+    assert.equal(frames.length, 2); assert.equal(frames[0][1], frames[1][1]); assert.notEqual(frames[0][2], frames[1][2]);
+    const [x, y, w, h] = frames[0][1].split(' ').map(Number);
+    for (const frame of frames) for (const m of frame[2].matchAll(/points="([^"]+)"/g)) {
+      for (const p of m[1].split(' ').map(p => p.split(',').map(Number))) {
+        assert.ok(Number.isFinite(p[0]) && Number.isFinite(p[1]));
+        assert.ok(p[0] >= x && p[0] <= x + w && p[1] >= y && p[1] <= y + h);
+      }
+    }
+  }
+});

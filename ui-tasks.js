@@ -1,8 +1,8 @@
 // Task list, project filter, task dialog, and task actions.
-import * as E from './engine.js?v=0.18.2';
-import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.18.2';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.18.2';
-import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.18.2';
+import * as E from './engine.js?v=0.19.0';
+import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.19.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.19.0';
+import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.19.0';
 
 const inProject = t => !app.taskProject || E.tags(t.title).includes(app.taskProject);
 // Open tasks per project tag, in order of first appearance.
@@ -59,9 +59,9 @@ export function renderTasks() {
   const shown = app.state.tasks.filter(t => (app.taskView === 'done' ? t.done : !t.done) && inProject(t));
   if (!shown.length) return '';
   if (app.taskView === 'done') return shown.map(taskRow).join('');
-  const focus = shown.filter(t => t.pinned), others = shown.filter(t => !t.pinned);
-  const totalFocus = app.state.tasks.filter(t => !t.done && t.pinned).length;
-  return `${focus.length ? `<section class="task-focus" data-task-list="focus" aria-label="Focus tasks"><div class="focus-heading">${icon('pin')}<h3>Focus</h3><span>${totalFocus}/3</span></div>${focus.map(taskRow).join('')}</section>` : ''}${others.length ? `<section class="task-list" data-task-list="other" aria-label="Other tasks">${others.map(taskRow).join('')}</section>` : ''}`;
+  const current = app.state.tasks.find(t => !t.done && t.pinned);
+  const others = shown.filter(t => t.id !== current?.id);
+  return `<section class="task-list" data-task-list="other" aria-label="Other tasks">${others.map(taskRow).join('')}</section>`;
 }
 function stepEditor(step = { id: '', title: '' }) {
   return `<div class="step-editor-row"><input type="hidden" name="stepId" value="${esc(step.id)}"><input name="stepTitle" aria-label="Step" maxlength="160" placeholder="A small next step" value="${esc(step.title)}"><button type="button" class="icon-button" data-action="remove-task-step" aria-label="Remove step">${icon('close')}</button></div>`;
@@ -69,8 +69,6 @@ function stepEditor(step = { id: '', title: '' }) {
 export const modals = {
   task() {
     const t = app.state.tasks.find(t => t.id === app.modal.id);
-    const focusCount = app.state.tasks.filter(task => !task.done && task.pinned).length;
-    const focusFull = !t?.pinned && focusCount >= 3;
     const tiers = Object.entries(E.TASK_GOLD)
       .map(([key, gold]) => `<label class="task-size-choice"><input type="radio" name="tier" value="${key}" aria-label="${tierLabel(key)}, ${gold} gold" ${(t?.tier || 'quick') === key ? 'checked' : ''} ${t?.done ? 'disabled' : ''}><span class="task-size-face"><span>${tierLabel(key)}</span>${coin(gold, true)}</span></label>`)
       .join('');
@@ -83,7 +81,6 @@ export const modals = {
         <div class="task-name-field"><label for="task-title">Task</label><input id="task-title" name="title" required maxlength="160" placeholder="What’s your next move?" data-tag-suggest aria-autocomplete="list" aria-describedby="task-tag-hint" autocomplete="off" value="${esc(t?.title || app.modal.prefill || '')}" autofocus><p id="task-tag-hint">Add a <span>#tag</span> to group into a project.</p></div>
         <fieldset class="task-size-picker"><legend>Reward</legend><div class="task-size-options">${tiers}</div></fieldset>
         <fieldset class="task-repeat-picker"><legend>${icon('repeat')}Repeat</legend><div class="task-repeat-options">${repeats}</div></fieldset>
-        ${!t?.done ? `<label class="task-focus-setting ${focusFull ? 'is-full' : ''}" ${focusFull ? 'title="Focus is full. Unpin a task to make room."' : ''}><input type="checkbox" name="pinned" aria-label="Pin to focus" ${t?.pinned ? 'checked' : ''} ${focusFull ? 'disabled' : ''}>${icon('pin')}<span>Pin to focus</span><small>${focusFull ? '3/3 · Full' : 'Up to 3'}</small></label>` : ''}
         ${!t?.done ? `<fieldset class="task-step-editor"><legend>Steps</legend><div id="task-step-fields">${(t?.steps || []).map(stepEditor).join('')}</div><button type="button" class="button secondary subtle add-step" data-action="add-task-step">${icon('plus')}Add a step</button></fieldset>` : ''}
         ${t?.inbox ? '<label class="checkbox-label"><input type="checkbox" name="sort" checked>Move out of the task inbox</label>' : ''}
         <div class="form-actions task-dialog-actions">${t ? `<span class="task-form-secondary"><button type="button" class="icon-button task-delete" data-action="delete-task" data-id="${t.id}" aria-label="Delete task" title="Delete task">${icon('trash')}</button>${!t.done ? `<button type="button" class="button secondary subtle" data-action="task-to-vault" data-id="${t.id}" title="Take it off your list and keep it in the Vault to look into later">${icon('vault')}To Vault</button>` : ''}</span>` : '<span></span>'}<button class="button primary" type="submit">${t ? 'Save changes' : 'Add task'}${icon(t ? 'check' : 'plus')}</button></div>
@@ -192,7 +189,6 @@ export const forms = {
         },
         today(),
       );
-      if (!task.done && !!task.pinned !== !!data.get('pinned')) E.pinTask(app.state, task.id);
       return task;
     });
     if (r) {

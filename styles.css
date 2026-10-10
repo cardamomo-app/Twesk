@@ -620,3 +620,47 @@ button.hashtag:hover{text-decoration:underline}
 .task-dragging .focus-drop-hint{display:block}.task-being-dragged{opacity:.3}.task-drop-before:before,.task-drop-after:after{content:'';position:absolute;left:0;right:0;height:2px;background:var(--accent);z-index:2;border-radius:2px}.task-drop-before:before{top:-1px}.task-drop-after:after{bottom:-1px}
 .task-drop-zone{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}.task-drag-ghost{position:fixed;z-index:1000;pointer-events:none;width:200px;background:var(--panel);border:1px solid var(--accent);border-radius:8px;padding:12px;font-size:12px;color:var(--text);box-shadow:0 8px 26px #0002;overflow-wrap:anywhere}
 @media(max-width:560px){.task-item>.task-row{gap:6px}.task-grip{flex-basis:18px;width:18px}.task-step{padding:8px 0}.task-steps{padding-left:42px}.task-pin{height:32px}.step-editor-row input[name=stepTitle]{font-size:16px}.task-item .task-title{font-size:12px}}
+
+/* A lighter task dialog: tactile reward choices, quiet repeat chips, compact steps. */
+.task-modal{width:490px}
+.task-modal .modal-header{padding:22px 25px 16px;border-bottom:0}
+.task-dialog-title{display:flex;align-items:center;gap:10px}
+.task-dialog-mark{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:10px;background:var(--accent-soft);color:var(--accent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 9%,transparent)}
+.task-dialog-mark>.icon{width:16px;height:16px}
+.task-modal .task-form{padding:0 25px 22px}
+.task-name-field>label,.task-form fieldset>legend{display:block;font-size:10px;font-weight:600;letter-spacing:.3px;color:var(--secondary);margin-bottom:8px}
+.task-name-field>input{font-size:15px;line-height:1.5;padding:11px 13px;background:var(--surface);border-radius:10px}
+.task-name-field>p{font-size:10px;line-height:1.5;color:var(--muted);margin:5px 2px 0;font-weight:400}
+.task-name-field>p>span{color:var(--accent)}
+.task-form fieldset{min-width:0;padding:0;border:0;margin:21px 0 0}
+.task-size-options{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.task-size-choice,.task-repeat-choice{position:relative;cursor:pointer;min-width:0}
+.task-size-choice>input,.task-repeat-choice>input{position:absolute;width:1px;height:1px;padding:0;margin:0;border:0;overflow:hidden;clip-path:inset(50%);opacity:0}
+.task-size-face{display:flex;align-items:center;justify-content:space-between;gap:7px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);min-height:49px;transition:background .15s,border-color .15s}
+.task-size-face>span:first-child{font-size:11px;font-weight:500;color:var(--secondary)}
+.task-size-face .gold-value{font-size:11px;gap:4px}.task-size-face .gold-pile{width:33px;height:25px}
+.task-size-choice:hover .task-size-face{background:var(--surface)}
+.task-size-choice>input:checked+.task-size-face{border-color:color-mix(in srgb,var(--accent) 48%,var(--line));background:var(--accent-soft)}
+.task-size-choice>input:checked+.task-size-face>span:first-child{color:var(--accent);font-weight:650}
+.task-size-choice>input:focus-visible+.task-size-face,.task-repeat-choice>input:focus-visible+span{outline:2px solid var(--accent);outline-offset:3px}
+.task-size-choice:has(input:disabled){cursor:default}.task-size-choice>input:disabled+.task-size-face{opacity:.6}
+.task-repeat-picker>legend .icon{width:12px;height:12px;vertical-align:-2px;margin-right:5px;color:var(--muted)}
+.task-repeat-options{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:9px}
+.task-repeat-choice>span{display:flex;align-items:center;justify-content:center;min-height:29px;padding:5px 4px;border-radius:6px;font-size:10px;line-height:1.4;color:var(--muted);border:1px solid transparent;transition:background .15s,color .15s}
+.task-repeat-choice:hover>span{color:var(--text)}
+.task-repeat-choice>input:checked+span{background:var(--panel);border-color:var(--line);color:var(--accent);font-weight:600;box-shadow:0 1px 3px #00000006}
+.task-form .task-step-editor{margin-top:20px}
+.task-form .task-step-editor>legend{margin-bottom:7px}
+.task-form .step-editor-row{gap:7px;margin-bottom:5px}
+.task-form .step-editor-row input[name=stepTitle]{height:34px;padding:7px 10px;font-size:12px;line-height:18px;border-radius:7px;background:var(--surface)}
+.task-form .step-editor-row>.icon-button{width:24px;height:28px}.task-form .step-editor-row>.icon-button>.icon{width:13px;height:13px}
+.task-form .task-step-editor .add-step{display:inline-flex;width:auto;min-height:28px;height:28px;padding:4px 7px;border:0;border-radius:6px;margin-left:-4px;color:var(--accent);font-weight:500;font-size:11px}
+.task-form .task-step-editor .add-step:hover{background:var(--accent-soft)}
+.task-form .task-dialog-actions{padding-top:17px;margin-top:18px;border-top:1px solid var(--line)}
+.task-dialog-actions .task-form-secondary{flex-wrap:nowrap;gap:2px;align-items:center}
+.task-dialog-actions .task-form-secondary .button{font-size:10px;padding:6px 8px;min-height:32px;color:var(--muted);font-weight:400;gap:5px}
+.task-dialog-actions .task-delete{width:28px;height:30px;color:var(--muted);border-radius:6px}
+.task-dialog-actions .task-delete:hover{color:var(--danger);background:var(--heart-bg)}.task-dialog-actions .task-delete>.icon{width:14px;height:14px}
+.task-dialog-actions>.button{min-height:36px;padding:8px 15px}
+.task-form>.checkbox-label{margin:14px 0 0}
+@media(max-width:560px){.task-modal .modal-header{padding:20px 20px 15px}.task-modal .task-form{padding:0 20px 20px}.task-name-field>input{font-size:16px}.task-size-face{padding:10px 9px;gap:4px}.task-size-face>span:first-child{font-size:10px}.task-size-face .gold-pile{width:28px;height:23px}.task-size-face .gold-value{font-size:10px;gap:2px}.task-repeat-choice>span{font-size:9px;padding:5px 2px}.task-form .step-editor-row input[name=stepTitle]{font-size:16px;height:36px}.task-form fieldset{margin-top:18px}}

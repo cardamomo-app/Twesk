@@ -89,7 +89,7 @@ uiTest('recurring tasks and #project filters', async page => {
     await page.click('#app .tasks-panel [data-action="new-task"]');
     await page.waitFor(() => document.querySelector('#task-form'));
     await page.fill('#task-form [name="title"]', title);
-    await page.select('#task-form [name="repeat"]', repeat);
+    await page.click(`#task-form .task-repeat-choice:has([name="repeat"][value="${repeat}"])`);
     await page.click('#task-form [type="submit"]');
     await page.waitFor(() => !document.querySelector('#task-form'));
   };

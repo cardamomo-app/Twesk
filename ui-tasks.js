@@ -1,8 +1,8 @@
 // Task list, project filter, task dialog, and task actions.
-import * as E from './engine.js?v=0.18.0';
-import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.18.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.18.0';
-import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.18.0';
+import * as E from './engine.js?v=0.18.1';
+import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.18.1';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.18.1';
+import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.18.1';
 
 const inProject = t => !app.taskProject || E.tags(t.title).includes(app.taskProject);
 // Open tasks per project tag, in order of first appearance.
@@ -40,8 +40,9 @@ function taskTitle(title) {
     .join('');
 }
 function taskMeta(t) {
+  if (!t.repeat) return '';
   const back = t.done && t.due ? ` · back ${dueLabel(t.due)}` : '';
-  return `<small class="task-meta"><span>${t.inbox ? 'From the Vault' : tierLabel(t.tier)}</span>${t.repeat ? `<span>${icon('repeat')}${E.REPEATS[t.repeat]}${back}</span>` : ''}</small>`;
+  return `<small class="task-meta"><span>${icon('repeat')}${E.REPEATS[t.repeat]}${back}</span></small>`;
 }
 const tierLabel = tier => ({ quick: 'Little thing', standard: 'A little focus', hard: 'Deep work', quest: 'Side quest' }[tier]);
 function taskRow(t) {
@@ -70,21 +71,22 @@ export const modals = {
   task() {
     const t = app.state.tasks.find(t => t.id === app.modal.id);
     const tiers = Object.entries(E.TASK_GOLD)
-      .map(
-        ([k, v]) =>
-          `<option value="${k}" ${(t?.tier || 'quick') === k ? 'selected' : ''}>${{ quick: 'Little thing', standard: 'A little focus', hard: 'Deep work', quest: 'Side quest' }[k]} · ${v} gold</option>`,
-      )
+      .map(([key, gold]) => `<label class="task-size-choice"><input type="radio" name="tier" value="${key}" aria-label="${tierLabel(key)}, ${gold} gold" ${(t?.tier || 'quick') === key ? 'checked' : ''} ${t?.done ? 'disabled' : ''}><span class="task-size-face"><span>${tierLabel(key)}</span>${coin(gold, true)}</span></label>`)
       .join('');
-    const repeats = [['', 'Doesn’t repeat'], ...Object.entries(E.REPEATS)]
-      .map(
-        ([k, label]) => `<option value="${k}" ${(t?.repeat || '') === k ? 'selected' : ''}>${label}</option>`,
-      )
+    const repeats = [['', 'Once'], ['daily', 'Daily'], ['weekdays', 'Weekdays'], ['weekly', 'Weekly'], ['monthly', 'Monthly']]
+      .map(([key, label]) => `<label class="task-repeat-choice"><input type="radio" name="repeat" value="${key}" ${(t?.repeat || '') === key ? 'checked' : ''}><span>${label}</span></label>`)
       .join('');
     return modalShell(
-      t ? 'Edit task' : 'A little thing to do',
-      `<form id="task-form" class="form-body"><label>What’s on your mind?<input name="title" required maxlength="160" placeholder="Give this task a name" data-tag-suggest aria-autocomplete="list" autocomplete="off" value="${esc(t?.title || app.modal.prefill || '')}" autofocus></label><p class="form-help">Add a #tag to group tasks into a project.</p><div class="form-grid"><label>How much does it ask of you?<select name="tier" ${t?.done ? 'disabled' : ''}>${tiers}</select></label><label>Repeats<select name="repeat">${repeats}</select></label></div><p class="form-help" id="repeat-help">${t?.repeat ? 'Earns gold each time. After you complete it, it comes back on its next date. Missed days don’t pile up.' : 'A repeating task earns gold each time and comes back on its next date.'}</p>
-      ${!t?.done ? `<fieldset class="task-step-editor"><legend>Small steps <span>optional</span></legend><div id="task-step-fields">${(t?.steps || []).map(stepEditor).join('')}</div><button type="button" class="button secondary subtle add-step" data-action="add-task-step">${icon('plus')}Add a step</button><p class="form-help">Steps keep it manageable. Finish the whole task to earn its gold.</p></fieldset>` : ''}
-      ${t?.inbox ? '<label class="checkbox-label"><input type="checkbox" name="sort" checked>Move out of the task inbox</label>' : ''}<div class="form-actions">${t ? `<span class="task-form-secondary"><button type="button" class="button danger subtle" data-action="delete-task" data-id="${t.id}">Delete task</button>${!t.done ? `<button type="button" class="button secondary subtle" data-action="task-to-vault" data-id="${t.id}" title="Take it off your list and keep it in the Vault to look into later">${icon('vault')}Move to Vault</button>` : ''}</span>` : '<span></span>'}<button class="button primary" type="submit">${t ? 'Save changes' : 'Add task'}${icon('plus')}</button></div></form>`,
+      `<span class="task-dialog-title"><span class="task-dialog-mark">${icon('check')}</span>${t ? 'Edit task' : 'New task'}</span>`,
+      `<form id="task-form" class="form-body task-form">
+        <div class="task-name-field"><label for="task-title">Task</label><input id="task-title" name="title" required maxlength="160" placeholder="What’s your next move?" data-tag-suggest aria-autocomplete="list" aria-describedby="task-tag-hint" autocomplete="off" value="${esc(t?.title || app.modal.prefill || '')}" autofocus><p id="task-tag-hint">Add a <span>#tag</span> to group into a project.</p></div>
+        <fieldset class="task-size-picker"><legend>Reward</legend><div class="task-size-options">${tiers}</div></fieldset>
+        <fieldset class="task-repeat-picker"><legend>${icon('repeat')}Repeat</legend><div class="task-repeat-options">${repeats}</div></fieldset>
+        ${!t?.done ? `<fieldset class="task-step-editor"><legend>Steps</legend><div id="task-step-fields">${(t?.steps || []).map(stepEditor).join('')}</div><button type="button" class="button secondary subtle add-step" data-action="add-task-step">${icon('plus')}Add a step</button></fieldset>` : ''}
+        ${t?.inbox ? '<label class="checkbox-label"><input type="checkbox" name="sort" checked>Move out of the task inbox</label>' : ''}
+        <div class="form-actions task-dialog-actions">${t ? `<span class="task-form-secondary"><button type="button" class="icon-button task-delete" data-action="delete-task" data-id="${t.id}" aria-label="Delete task" title="Delete task">${icon('trash')}</button>${!t.done ? `<button type="button" class="button secondary subtle" data-action="task-to-vault" data-id="${t.id}" title="Take it off your list and keep it in the Vault to look into later">${icon('vault')}To Vault</button>` : ''}</span>` : '<span></span>'}<button class="button primary" type="submit">${t ? 'Save changes' : 'Add task'}${icon(t ? 'check' : 'plus')}</button></div>
+      </form>`,
+      'task-modal',
     );
   },
 };

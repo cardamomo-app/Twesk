@@ -578,3 +578,12 @@ button.hashtag:hover{text-decoration:underline}
 .sync-copy p {font-size:12px;line-height:1.7;}
 .sync-conflict-modal {width:650px;max-width:calc(100vw - 24px);}
 @media(max-width:520px){.sync-copies{grid-template-columns:1fr}.sync-body .form-actions{flex-wrap:wrap}.sync-body .form-actions .button{flex:1 1 100%}}
+
+/* Keep sync metadata quiet and give nested sign-in labels the standard field spacing. */
+.sync-settings-actions {flex-direction:row;align-items:center;flex-wrap:wrap;gap:10px;}
+.sync-settings-actions>.button {flex:0 0 auto;}
+.sync-settings-status {font-size:10px;font-weight:400;line-height:1.5;color:var(--secondary);}
+.sync-body>p:first-child {margin-bottom:20px;}
+.sync-body form label {display:flex;flex-direction:column;gap:8px;font-size:11px;font-weight:550;}
+.sync-body #sync-details {margin:12px 0;}
+.sync-body #sync-auth-message:empty {display:none;}

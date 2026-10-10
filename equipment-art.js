@@ -1,4 +1,4 @@
-import {avatarGeometry} from './avatar-model.js?v=0.17.0';
+import {avatarGeometry} from './avatar-model.js?v=0.17.1';
 import {createCuboidScene,visibleCuboidFaces} from './cuboid-renderer.js';
 
 const weaponParts=new Set(['sword grip','pommel','crossguard','blade','blade ridge','sword point','sword tip','blade shoulders','blade rune','guard wing']);

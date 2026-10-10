@@ -1,11 +1,11 @@
 // Account controls and the browser adapter for the independently tested sync engine.
-import * as E from './engine.js?v=0.17.0';
-import { createCloudAdapter } from './sync-remote.js?v=0.17.0';
-import { createSync } from './sync-engine.js?v=0.17.0';
-import { SYNC_CONFIG } from './sync-config.js?v=0.17.0';
-import { PREVIOUS_SAVE_KEY, replaceSave } from './save-recovery.js?v=0.17.0';
-import { $, KEY, app, esc, icon, modalShell, toast, view, viewDefaults } from './ui-core.js?v=0.17.0';
-import { openModal } from './ui-modal.js?v=0.17.0';
+import * as E from './engine.js?v=0.17.1';
+import { createCloudAdapter } from './sync-remote.js?v=0.17.1';
+import { createSync } from './sync-engine.js?v=0.17.1';
+import { SYNC_CONFIG } from './sync-config.js?v=0.17.1';
+import { PREVIOUS_SAVE_KEY, replaceSave } from './save-recovery.js?v=0.17.1';
+import { $, KEY, app, esc, icon, modalShell, toast, view, viewDefaults } from './ui-core.js?v=0.17.1';
+import { openModal } from './ui-modal.js?v=0.17.1';
 
 let client = null, coordinator = null, user = null, timer = null, authBusy = false, emailSent = '', authMessage = '';
 let phase = 'signed-out', message = '';
@@ -14,7 +14,7 @@ const labels = { 'signed-out': 'Saved on this device', pending: 'Changes waiting
 export const hasPendingSync = () => !!user && phase !== 'synced';
 export function syncLabel() { return app.saveError ? 'Save unavailable' : labels[phase] || labels['signed-out']; }
 export function syncSettings() {
-  return `<div class="backup-box"><h3>${icon('cloud')}Sync across devices</h3><p>Keep your tasks, habits, character, and Vault together on desktop and mobile. Works offline, then catches up when you reconnect.</p><div class="backup-actions"><button type="button" class="button secondary" data-action="sync">${icon('cloud')}${user ? 'Manage sync' : 'Set up sync'}</button><span class="backup-status" data-sync-label>${esc(syncLabel())}</span></div></div>`;
+  return `<div class="backup-box"><h3>${icon('cloud')}Sync across devices</h3><p>Keep your tasks, habits, character, and Vault together on desktop and mobile. Works offline, then catches up when you reconnect.</p><div class="backup-actions sync-settings-actions"><button type="button" class="button secondary" data-action="sync">${icon('cloud')}${user ? 'Manage sync' : 'Set up sync'}</button><span class="sync-settings-status" data-sync-label>${esc(syncLabel())}</span></div></div>`;
 }
 function updateStatus(next) {
   phase = navigator.onLine === false && user ? 'offline' : next.phase;

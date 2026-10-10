@@ -1,7 +1,7 @@
-import {ACHIEVEMENTS,ACHIEVEMENT_GROUPS,achievementValue,defeatedCount,monsterStatus} from './achievements.js?v=0.17.1';
-import {badgeArt} from './badge-art.js?v=0.17.1';
-import {monsterArt,monsterInfo,monsterName} from './monster-art.js?v=0.17.1';
-import {monsterStats} from './engine.js?v=0.17.1';
+import {ACHIEVEMENTS,ACHIEVEMENT_GROUPS,achievementValue,defeatedCount,monsterStatus} from './achievements.js?v=0.17.2';
+import {badgeArt} from './badge-art.js?v=0.17.2';
+import {monsterArt,monsterInfo,monsterName} from './monster-art.js?v=0.17.2';
+import {monsterStats} from './engine.js?v=0.17.2';
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const smallIcon=kind=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">${kind==='check'?'<path d="m5 12 4 4 10-11"/>':'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>'}</svg>`;
 export function collectionBody(s,{tab='seals',filter='all',earnedOnly=false,chapter=1,selectedMonster=s.monster.number}={}){

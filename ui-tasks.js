@@ -1,8 +1,8 @@
 // Task list, project filter, task dialog, and task actions.
-import * as E from './engine.js?v=0.17.1';
-import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.17.1';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.17.1';
-import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.17.1';
+import * as E from './engine.js?v=0.17.2';
+import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.17.2';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.17.2';
+import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.17.2';
 
 const inProject = t => !app.taskProject || E.tags(t.title).includes(app.taskProject);
 // Open tasks per project tag, in order of first appearance.
@@ -46,24 +46,7 @@ function taskMeta(t) {
 }
 export function renderTasks() {
   const shown = app.state.tasks.filter(t => (app.taskView === 'done' ? t.done : !t.done) && inProject(t));
-  if (!shown.length) {
-    const project = app.taskProject ? esc(app.taskProject) : '';
-    const heading =
-      app.taskView === 'done'
-        ? project
-          ? `Nothing completed in ${project} yet`
-          : 'Your wins will live here'
-        : project
-          ? `${project} is all clear`
-          : 'A little breathing room';
-    const detail =
-      app.taskView === 'done'
-        ? 'Complete a task to start your collection.'
-        : project
-          ? 'Add the next step for this project.'
-          : 'Add a task, or bring an idea over from the Vault.';
-    return `<div class="empty-state"><span class="empty-symbol">${icon('check')}</span><h3>${heading}</h3><p>${detail}</p>${app.taskView === 'active' ? `<button class="button secondary" data-action="new-task">${project ? 'Add a task' : 'Add your first task'}</button>` : ''}</div>`;
-  }
+  if (!shown.length) return '';
   const groups = [
     ['inbox', 'From the Vault', 'Ready to find a place'],
     ['quick', 'Little things', 'Quick wins · 4 gold'],

@@ -1,7 +1,7 @@
 // Shared interface foundation: the app store, saving, small HTML helpers, and toasts.
-import * as E from './engine.js?v=0.16.1';
-import { goldArt } from './art.js?v=0.16.1';
-import { HABIT_ICONS } from './habit-icons.js?v=0.16.1';
+import * as E from './engine.js?v=0.17.0';
+import { goldArt } from './art.js?v=0.17.0';
+import { HABIT_ICONS } from './habit-icons.js?v=0.17.0';
 export const $ = s => document.querySelector(s);
 export const $$ = s => [...document.querySelectorAll(s)];
 export const esc = v =>
@@ -51,7 +51,7 @@ export const app = {
   ...viewDefaults(),
 };
 // Top-level views, registered by app.js so feature modules can redraw without importing it.
-export const view = { render() {}, renderModal() {}, finishBattlePlayback() {} };
+export const view = { render() {}, renderModal() {}, finishBattlePlayback() {}, saved() {}, modalClosed() {} };
 
 try {
   app.rawSave = localStorage.getItem(KEY);
@@ -72,12 +72,15 @@ export function persist() {
   try {
     localStorage.setItem(KEY, JSON.stringify(app.state));
     app.saveError = false;
+    view.saved();
+    return true;
   } catch {
     app.saveError = true;
     toast('Saving is unavailable. Export a backup to keep your progress.');
   }
 }
 const icons = {
+  cloud: '<path d="M7 18a5 5 0 1 1 1-10 6 6 0 0 1 11 3 4 4 0 0 1-1 7ZM9 13l3-3 3 3m-3-3v9"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   close: '<path d="m6 6 12 12M18 6 6 18"/>',
   check: '<path d="m5 12 4 4L19 6"/>',

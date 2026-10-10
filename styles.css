@@ -566,3 +566,15 @@ button.hashtag:hover{text-decoration:underline}
 /* The monster joins the disco (overrides its idle float while dancing) */
 .disco-dancing #app .monster-scene .monster-art{animation:monster-dance .62s ease-in-out infinite alternate;transform-origin:50% 92%}
 @keyframes monster-dance{0%{transform:translateY(0) rotate(5deg) scaleY(1)}50%{transform:translateY(-10px) rotate(0) scaleY(1.04)}100%{transform:translateY(0) rotate(-5deg) scaleY(.97)}}
+
+/* Sync stays in Settings, with a quiet status beside the daily summary. */
+.app-footer .footer-sync {display:inline-flex;align-items:center;gap:7px;text-align:left;}
+.sync-body form {display:grid;gap:14px;}
+.sync-body form .button {justify-self:start;}
+.sync-status {font-weight:600;color:var(--text);}
+.sync-copies {display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.sync-copy {padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);min-width:0;overflow-wrap:anywhere;}
+.sync-copy h3 {margin-bottom:12px;}
+.sync-copy p {font-size:12px;line-height:1.7;}
+.sync-conflict-modal {width:650px;max-width:calc(100vw - 24px);}
+@media(max-width:520px){.sync-copies{grid-template-columns:1fr}.sync-body .form-actions{flex-wrap:wrap}.sync-body .form-actions .button{flex:1 1 100%}}

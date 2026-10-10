@@ -1,8 +1,8 @@
-import {freshState,validateState} from './engine.js?v=0.16.1';
+import {freshState,validateState} from './engine.js?v=0.17.0';
 
 export const SAVE_KEY='twesk.v1';
 export const PREVIOUS_SAVE_KEY='twesk.v1.previous';
-function replaceSave(storage,currentRaw,next){
+export function replaceSave(storage,currentRaw,next){
   const previous=storage.getItem(PREVIOUS_SAVE_KEY);
   storage.setItem(PREVIOUS_SAVE_KEY,currentRaw);
   try{storage.setItem(SAVE_KEY,JSON.stringify(next));}

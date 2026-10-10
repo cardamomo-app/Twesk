@@ -55,10 +55,12 @@ const workerSource=await bundle('combat-worker.js');
 const appSource=await bundle('app.js',{workerSource});
 if(!applied.has('worker')||!applied.has('home'))throw new Error('Standalone source edits did not apply; update the packager.');
 const template=await readFile(resolve(root,'index.html'),'utf8');
+const vendor=await readFile(resolve(root,'vendor/supabase.js'),'utf8');
 const css=await readFile(resolve(root,'styles.css'),'utf8');
 // The single file has no service worker or install manifest; it runs from wherever it is opened.
 const output=template.replace(/  <link rel="(?:manifest|apple-touch-icon)"[^>]*>\n/g,'').replace(/  <meta name="(?:apple-mobile-web-app-capable|mobile-web-app-capable|apple-mobile-web-app-title)"[^>]*>\n/g,'')
   .replace(/  <link rel="stylesheet"[^>]+>/,()=>`  <style>\n${css}\n  </style>`)
+  .replace(/  <script src="\.\/vendor\/supabase\.js[^"]*"><\/script>/,()=>`  <script>\n${vendor.replace(/<\/script/gi,'<\\/script')}\n  </script>`)
   .replace(/  <script type="module"[^>]+><\/script>/,'')
   .replace('</body>',()=>`  <script>window.__TWESK_STANDALONE__=true;</script>\n  <script>\n${appSource.replace(/<\/script/gi,'<\\/script')}\n  </script>\n</body>`);
 await writeFile(resolve(root,'Twesk.html'),output);

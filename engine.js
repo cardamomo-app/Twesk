@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.19.1';
-import {validHabitIcon} from './habit-icons.js?v=0.19.1';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.20.0';
+import {validHabitIcon} from './habit-icons.js?v=0.20.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -215,6 +215,15 @@ export function pinTask(s, id) {
 }
 // One active adventure, stored with task progress so selection follows backups and sync.
 // Older saves may have three pins; choosing an adventure folds them into one without losing tasks.
+// Focus sessions restore 1 HP per finished minute, never above maximum HP. Works from 0 HP too.
+export const FOCUS_HP_PER_MINUTE = 1;
+export function focusHeal(s, minutes) {
+  if (!Number.isInteger(minutes) || minutes < 0) throw new Error('Minutes must be a whole number.');
+  const amount = Math.min(minutes * FOCUS_HP_PER_MINUTE, maxHP(s) - s.hp);
+  s.hp += amount;
+  s.pendingRecovery = s.hp < maxHP(s) && s.pendingRecovery;
+  return amount;
+}
 export function setCurrentQuest(s, id = null) {
   const task = id === null ? null : s.tasks.find(t => t.id === id && !t.done);
   if (id !== null && !task) throw new Error('Choose an open task for your adventure.');

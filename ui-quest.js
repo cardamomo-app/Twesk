@@ -1,14 +1,14 @@
 // One task, a little trail, and a device-local focus timer.
-import * as E from './engine.js?v=0.19.1';
-import * as T from './quest-timer.js?v=0.19.1';
-import { avatarJourneyArt } from './avatar-model.js?v=0.19.1';
-import { $, app, coin, esc, icon, iconButton, modalShell, toast, view } from './ui-core.js?v=0.19.1';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.19.1';
-import { sound } from './ui-effects.js?v=0.19.1';
-import { unlockSfx } from './sfx.js?v=0.19.1';
+import * as E from './engine.js?v=0.20.0';
+import * as T from './quest-timer.js?v=0.20.0';
+import { avatarJourneyArt } from './avatar-model.js?v=0.20.0';
+import { $, app, coin, esc, icon, modalShell, toast, view } from './ui-core.js?v=0.20.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.20.0';
+import { rewardEffect, sound } from './ui-effects.js?v=0.20.0';
+import { unlockSfx } from './sfx.js?v=0.20.0';
 
 const TIMER_KEY = 'twesk.quest-timer.v1';
-let timer = T.freshTimer(), dialDrag = null;
+let timer = T.freshTimer(), dialDrag = null, owed = 0;
 try { timer = T.readTimer(JSON.parse(localStorage.getItem(TIMER_KEY))); } catch {}
 export const currentQuest = () => app.state.tasks.find(t => !t.done && t.pinned);
 function saveClock() {
@@ -16,14 +16,61 @@ function saveClock() {
 }
 function reconcile() {
   const id = currentQuest()?.id || null;
-  if (timer.taskId !== id) { timer = T.freshTimer(id, timer.minutes); saveClock(); }
+  // A finished or changed adventure keeps the minutes it earned; they are credited on the next calm tick.
+  if (timer.taskId !== id) { owed += T.minutesDue(timer); timer = T.freshTimer(id, timer.minutes); saveClock(); }
 }
+// Crediting saves and redraws, so it waits while a dialog, drag, or encounter is in progress.
+const calm = () => !app.modal && !app.taskDragging && !dialDrag && !app.busy;
+function creditFocus() {
+  const due = T.minutesDue(timer), minutes = due + owed;
+  if (!minutes) return;
+  const healed = commit(() => E.focusHeal(app.state, minutes));
+  if (healed === undefined) return;
+  timer = T.creditMinutes(timer, due); owed = 0; saveClock();
+  if (healed > 0) {
+    sound('focusHeal');
+    rewardEffect($('[data-focus-meter]'), healed, 'hp');
+  }
+}
+// The health meter: current HP, plus a softly shimmering segment for what this session can still
+// restore (1 HP per minute), filling smoothly as the current minute passes.
+function meterValues(now = Date.now()) {
+  const max = E.maxHP(app.state), hp = app.state.hp;
+  const restore = Math.min(timer.minutes - timer.credited + owed, max - hp);
+  const minute = timer.status === 'running' ? ((timer.minutes * 60000 - T.remaining(timer, now)) % 60000) / 60000 : 0;
+  return { max, hp, restore, earned: Math.min(restore, T.minutesDue(timer, now) + owed + minute) };
+}
+function focusMeter() {
+  const v = meterValues(), pct = n => `${((100 * n) / v.max).toFixed(2)}%`;
+  const label = v.restore
+    ? `Focus restores up to ${v.restore} HP · ${v.hp} of ${v.max} HP`
+    : `Full health · ${v.hp} of ${v.max} HP`;
+  return `<div class="focus-meter ${v.restore ? '' : 'is-full'}" role="img" aria-label="${label}" title="${label}" data-focus-meter>${icon('heart')}<span class="focus-bar"><span class="focus-hp" style="width:${pct(v.hp)}"></span><span class="focus-gain" style="left:${pct(v.hp)};width:${pct(v.restore)}"><span class="focus-earned" style="width:${v.restore ? ((100 * v.earned) / v.restore).toFixed(1) : 0}%"></span></span></span></div>`;
+}
+// Update the meter in place, so its shimmer and smooth width changes keep running between ticks.
+function refreshMeter() {
+  const meter = $('[data-focus-meter]');
+  if (!meter) return;
+  const v = meterValues(), pct = n => `${((100 * n) / v.max).toFixed(2)}%`;
+  const label = v.restore ? `Focus restores up to ${v.restore} HP · ${v.hp} of ${v.max} HP` : `Full health · ${v.hp} of ${v.max} HP`;
+  if (meter.getAttribute('aria-label') !== label) { meter.setAttribute('aria-label', label); meter.title = label; }
+  meter.classList.toggle('is-full', !v.restore);
+  meter.querySelector('.focus-hp').style.width = pct(v.hp);
+  Object.assign(meter.querySelector('.focus-gain').style, { left: pct(v.hp), width: pct(v.restore) });
+  meter.querySelector('.focus-earned').style.width = `${v.restore ? ((100 * v.earned) / v.restore).toFixed(1) : 0}%`;
+}
+const canReset = () => timer.status !== 'ready' || timer.remainingMs !== timer.minutes * 60000;
 const timeText = ms => `${Math.floor(Math.ceil(ms / 1000) / 60).toString().padStart(2, '0')}:${(Math.ceil(ms / 1000) % 60).toString().padStart(2, '0')}`;
 const statusText = () => ({ ready: '', running: 'On the trail', paused: 'Resting a moment', finished: 'Time to take a breath' }[timer.status]);
 function clockFace(task) {
   const minutes = timer.minutes, angle = -135 + (minutes - 5) / 55 * 270;
   return `<div class="quest-dial ${timer.status === 'running' ? 'is-locked' : ''}" role="slider" tabindex="${task ? '0' : '-1'}" aria-label="Focus duration" aria-valuemin="5" aria-valuemax="60" aria-valuenow="${minutes}" aria-valuetext="${minutes} minutes" aria-disabled="${!task || timer.status === 'running'}" title="Drag around the dial · 5 to 60 minutes · Arrow keys adjust">
     <svg viewBox="0 0 72 72" aria-hidden="true"><circle class="dial-track" cx="36" cy="36" r="30" pathLength="100"/><circle class="dial-fill" cx="36" cy="36" r="30" pathLength="100" stroke-dasharray="${(minutes - 5) / 55 * 75} 100"/><g transform="rotate(${angle} 36 36)" data-dial-hand><circle class="dial-knob" cx="36" cy="6" r="3.5"/></g></svg><span><strong data-clock>${timeText(T.remaining(timer))}</strong><small>MINUTES</small></span></div>`;
+}
+function playButton(task) {
+  const running = timer.status === 'running';
+  const label = running ? 'Pause focus timer' : timer.status === 'paused' ? 'Resume focus timer' : 'Start focus timer';
+  return `<button class="quest-play ${running ? 'is-running' : ''}" data-action="quest-play" ${task ? '' : 'disabled'} aria-label="${label}" title="${label}">${icon(running ? 'pause' : 'play')}</button>`;
 }
 export function renderQuest() {
   reconcile();
@@ -32,7 +79,7 @@ export function renderQuest() {
   return `<section class="quest-card ${task ? 'has-quest' : ''} ${timer.status === 'running' ? 'is-walking' : ''}" data-quest-drop aria-labelledby="quest-heading">
     <header class="quest-heading"><span class="quest-symbol">${icon('compass')}</span><h3 id="quest-heading">One small adventure</h3><button class="quest-choose ${task ? 'quest-manage' : ''}" data-action="quest-choose" aria-label="${task ? 'Manage adventure' : 'Choose an adventure'}" title="${task ? 'Change or return this task' : 'Choose an adventure'}">${task ? icon('more') : `Choose${icon('chevron')}`}</button></header>
     <div class="quest-task-slot">${task ? `<div class="quest-task"><button class="task-check" data-action="toggle-task" data-id="${task.id}" aria-label="Complete ${esc(task.title)}"></button><span class="quest-task-text"><button class="quest-title" data-action="edit-task" data-id="${task.id}" title="${esc(task.title)}">${esc(task.title)}</button>${steps.length ? `<button class="quest-step-link" data-action="quest-steps">${done}/${steps.length} steps</button>` : ''}</span><span class="task-reward">${coin(E.TASK_GOLD[task.tier], true)}</span></div>` : ''}</div>
-    <div class="quest-bottom">${clockFace(task)}<div class="quest-controls"><small data-clock-status>${statusText()}</small><div class="quest-play-row"><button class="quest-play" data-action="quest-play" ${task ? '' : 'disabled'} aria-label="${timer.status === 'running' ? 'Pause focus timer' : timer.status === 'paused' ? 'Resume focus timer' : 'Start focus timer'}">${icon(timer.status === 'running' ? 'pause' : 'play')}<span>${timer.status === 'running' ? 'Pause' : timer.status === 'paused' ? 'Resume' : timer.status === 'finished' ? 'Go again' : 'Set off'}</span></button>${iconButton('quest-reset', 'undo', 'Reset focus timer', task ? '' : 'disabled')}</div></div><div class="quest-trail" aria-hidden="true"><svg class="trail-ground" viewBox="0 0 90 74"><path class="trail-path" d="M-5 65Q17 70 30 58T65 60T100 48"/><path d="m10 54 3-6 3 6m55 0 3-7 3 7M55 67l2-4 2 4" stroke="currentColor" fill="none"/><path d="m8 61 5-2 5 2-5 2Z" fill="currentColor" opacity=".25"/></svg>${avatarJourneyArt(equipment.weapon, equipment.armor, app.state.appearance, equipment.helmet)}</div></div>
+    <div class="quest-bottom">${clockFace(task)}<div class="quest-controls"><span class="sr-only" data-clock-status aria-live="polite">${statusText()}</span>${focusMeter()}<div class="quest-play-row">${playButton(task)}<button class="quest-reset" data-action="quest-reset" aria-label="Reset focus timer" title="Reset" ${task && canReset() ? '' : 'disabled'}>${icon('reset')}</button></div></div><div class="quest-trail" aria-hidden="true"><svg class="trail-ground" viewBox="0 0 90 74"><path class="trail-path" d="M-5 65Q17 70 30 58T65 60T100 48"/><path d="m10 54 3-6 3 6m55 0 3-7 3 7M55 67l2-4 2 4" stroke="currentColor" fill="none"/><path d="m8 61 5-2 5 2-5 2Z" fill="currentColor" opacity=".25"/></svg>${avatarJourneyArt(equipment.weapon, equipment.armor, app.state.appearance, equipment.helmet)}</div></div>
     <span class="quest-session-progress" aria-hidden="true"><span data-session-progress style="width:${100 * (1 - T.remaining(timer) / (timer.minutes * 60000))}%"></span></span>
   </section>`;
 }
@@ -55,9 +102,17 @@ export const actions = {
   'quest-play'() {
     reconcile(); unlockSfx();
     timer = timer.status === 'running' ? T.pauseTimer(timer) : T.startTimer(timer);
-    saveClock(); view.render();
+    saveClock();
+    creditFocus();
+    view.render();
+    $('[data-action="quest-play"]')?.focus({ preventScroll: true });
   },
-  'quest-reset'() { timer = T.freshTimer(currentQuest()?.id || null, timer.minutes); saveClock(); view.render(); },
+  'quest-reset'() {
+    // Minutes already focused keep their HP; only the clock starts over.
+    timer = T.pauseTimer(timer); creditFocus();
+    timer = T.freshTimer(currentQuest()?.id || null, timer.minutes); saveClock(); view.render();
+    $('[data-action="quest-play"]')?.focus({ preventScroll: true });
+  },
   'quest-steps'() { openModal({ type: 'questSteps' }); },
 };
 export const modals = {
@@ -78,8 +133,10 @@ function tick() {
     sound('trailBell');
     toast('A little journey, well spent. Take a breath.');
     // Keep an open editor and its draft intact.
-    if (!app.modal && !app.taskDragging && !dialDrag && !app.busy) view.render();
+    if (calm()) view.render();
   }
+  if (calm()) creditFocus();
+  refreshMeter();
   const clock = $('[data-clock]');
   if (clock) clock.textContent = timeText(T.remaining(timer));
   const status = $('[data-clock-status]');
@@ -90,12 +147,14 @@ function tick() {
   // If the clock finished while editing, refresh only its controls after closing.
   const play = $('[data-action="quest-play"]');
   if (play && timer.status === 'finished' && play.getAttribute('aria-label') !== 'Start focus timer') {
-    play.innerHTML = `${icon('play')}<span>Go again</span>`; play.setAttribute('aria-label', 'Start focus timer');
+    play.outerHTML = playButton(currentQuest());
     $('.quest-dial')?.setAttribute('aria-disabled', 'false'); $('.quest-dial')?.classList.remove('is-locked');
   }
 }
 function setMinutes(minutes) {
-  timer = T.durationTimer(timer, minutes); saveClock();
+  const next = T.durationTimer(timer, minutes);
+  if (next !== timer) owed += T.minutesDue(timer); // a new duration starts a fresh session; keep what was earned
+  timer = next; saveClock();
   const dial = $('.quest-dial');
   if (!dial) return;
   dial.setAttribute('aria-valuenow', timer.minutes); dial.setAttribute('aria-valuetext', `${timer.minutes} minutes`);
@@ -104,8 +163,8 @@ function setMinutes(minutes) {
   $('[data-clock]').textContent = timeText(timer.remainingMs);
   $('[data-clock-status]').textContent = statusText();
   $('[data-session-progress]').style.width = '0%';
-  $('[data-action="quest-play"]').innerHTML = `${icon('play')}<span>Set off</span>`;
-  $('[data-action="quest-play"]').setAttribute('aria-label', 'Start focus timer');
+  $('[data-action="quest-play"]').outerHTML = playButton(currentQuest());
+  refreshMeter();
 }
 export function installQuest() {
   const updateDial = event => {

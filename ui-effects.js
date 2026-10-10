@@ -1,9 +1,9 @@
 // Celebration: reward sounds, flying coins, particle bursts, confetti, count-ups, and level banners.
 // Sounds respect Mute; motion respects Reduce motion and the system preference.
-import { goldArt } from './art.js?v=0.19.1';
-import * as E from './engine.js?v=0.19.1';
-import { configureSfx, playSfx } from './sfx.js?v=0.19.1';
-import { $, app, icon } from './ui-core.js?v=0.19.1';
+import { goldArt } from './art.js?v=0.20.0';
+import * as E from './engine.js?v=0.20.0';
+import { configureSfx, playSfx } from './sfx.js?v=0.20.0';
+import { $, app, icon } from './ui-core.js?v=0.20.0';
 
 configureSfx({ muted: () => app.state.settings.muted });
 export const sound = (name = 'reward', options) => playSfx(name, options);
@@ -88,7 +88,7 @@ export function rewardEffect(target, amount, kind = 'gold') {
   const rect = target.getBoundingClientRect ? target.getBoundingClientRect() : target,
     el = document.createElement('span');
   el.className = 'reward-pop ' + kind;
-  el.textContent = `+${amount}${kind === 'gold' ? ' gold' : ' XP'}`;
+  el.textContent = `+${amount}${{ gold: ' gold', hp: ' HP' }[kind] ?? ' XP'}`;
   el.style.left = rect.left + rect.width / 2 + 'px';
   el.style.top = rect.top + 'px';
   $('#effects').append(el);

@@ -1,7 +1,7 @@
 // Shared interface foundation: the app store, saving, small HTML helpers, and toasts.
-import * as E from './engine.js?v=0.19.1';
-import { goldArt } from './art.js?v=0.19.1';
-import { HABIT_ICONS } from './habit-icons.js?v=0.19.1';
+import * as E from './engine.js?v=0.20.0';
+import { goldArt } from './art.js?v=0.20.0';
+import { HABIT_ICONS } from './habit-icons.js?v=0.20.0';
 export const $ = s => document.querySelector(s);
 export const $$ = s => [...document.querySelectorAll(s)];
 export const esc = v =>
@@ -124,6 +124,7 @@ const icons = {
   compass: '<circle cx="12" cy="12" r="9"/><path d="m16 8-3 5-5 3 3-5Z"/>',
   play: '<path d="m9 5 11 7-11 7Z"/>',
   pause: '<path d="M8 5v14M16 5v14"/>',
+  reset: '<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4v4.5H9"/>',
   pin: '<path d="M9 3h6l-1 6 4 4H6l4-4ZM12 13v8"/>',
   trash: '<path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7"/>',
   grip: '<circle cx="8" cy="5" r="1"/><circle cx="16" cy="5" r="1"/><circle cx="8" cy="12" r="1"/><circle cx="16" cy="12" r="1"/><circle cx="8" cy="19" r="1"/><circle cx="16" cy="19" r="1"/>',

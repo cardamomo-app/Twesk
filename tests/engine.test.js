@@ -256,3 +256,12 @@ test('merging keeps each hashtag once, at its last appearance, and tidies what i
   assert.equal(E.dedupeTags('  - indented item #x\n  - second #y'),'  - indented item #x\n  - second #y','untouched lines keep their spacing');
   assert.equal(E.dedupeTags('email@#x then #x'),'email@#x then #x','only hashtags that start a word count');
 });
+test('focus heals 1 HP per minute, capped at maximum HP, and works from 0 HP',()=>{
+  const s=E.freshState();s.hp=90;
+  assert.equal(E.focusHeal(s,4),4);assert.equal(s.hp,94);
+  assert.equal(E.focusHeal(s,25),6,'capped at the missing HP');assert.equal(s.hp,100);
+  assert.equal(E.focusHeal(s,5),0,'nothing to restore at full health');
+  s.hp=0;s.pendingRecovery=true;assert.equal(E.focusHeal(s,10),10);assert.equal(s.pendingRecovery,true,'still recovering');
+  E.focusHeal(s,200);assert.equal(s.pendingRecovery,false,'recovered once full');
+  assert.throws(()=>E.focusHeal(s,-1));assert.throws(()=>E.focusHeal(s,1.5));
+});

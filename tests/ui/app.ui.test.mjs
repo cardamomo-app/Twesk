@@ -74,9 +74,15 @@ uiTest(
     await page.open();
     const id = await page.evaluate(() => document.querySelector('#app [data-action="toggle-task"]').dataset.id);
     await page.click(`#app [data-action="toggle-task"][data-id="${id}"]`);
-    assert.ok(await page.exists('#app .task-row.completing'), 'row plays its completing animation');
-    assert.ok(await page.count('.burst-particle'), 'sparks fly from the checkbox');
-    assert.equal((await page.save()).tasks.find(t => t.id === id).done, false, 'not saved until the animation ends');
+    // Read all three in one step, inside the ~430 ms animation window, so a slow machine cannot miss it.
+    const moment = await page.evaluate(id => ({
+      completing: !!document.querySelector('#app .task-row.completing'),
+      sparks: document.querySelectorAll('.burst-particle').length,
+      saved: JSON.parse(localStorage.getItem('twesk.v1')).tasks.find(t => t.id === id).done,
+    }), id);
+    assert.ok(moment.completing, 'row plays its completing animation');
+    assert.ok(moment.sparks, 'sparks fly from the checkbox');
+    assert.equal(moment.saved, false, 'not saved until the animation ends');
     await page.waitFor(id => JSON.parse(localStorage.getItem('twesk.v1')).tasks.find(t => t.id === id).done, { args: [id] });
     assert.ok(await page.count('.flying-coin'), 'coins fly to the purse');
   },
@@ -153,6 +159,51 @@ uiTest(
   },
   { reducedMotion: false },
 );
+
+uiTest('focus restores 1 HP per minute: credited as it passes, kept on reset, and paid when the task is done', async page => {
+  const s = E.freshState();
+  s.hp = 60;
+  E.setCurrentQuest(s, s.tasks[0].id);
+  const id = s.tasks[0].id;
+  await page.open({ save: s });
+  // Icon-only controls; reset waits until there is something to reset.
+  assert.equal(await page.text('[data-action="quest-play"]'), '');
+  assert.ok(await page.evaluate(() => document.querySelector('[data-action="quest-reset"]').disabled));
+  assert.match(await page.evaluate(() => document.querySelector('[data-focus-meter]').getAttribute('aria-label')), /restores up to 25 HP · 60 of 100 HP/);
+  // A session already 3½ minutes in (as after a reload) credits 3 HP.
+  const running = elapsed => ({ taskId: id, minutes: 25, remainingMs: 25 * 60000, endAt: Date.now() + (25 - elapsed) * 60000, status: 'running', credited: 0 });
+  await page.evaluate(t => localStorage.setItem('twesk.quest-timer.v1', JSON.stringify(t)), running(3.5));
+  await page.goto('/');
+  await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).hp === 63, { message: '3 minutes credited' });
+  assert.equal(await page.evaluate(() => document.querySelector('[data-action="quest-play"]').getAttribute('aria-label')), 'Pause focus timer');
+  // Reset keeps the HP and starts the clock over, without crediting again.
+  await page.click('[data-action="quest-reset"]');
+  assert.equal(await page.text('[data-clock]'), '25:00');
+  await new Promise(r => setTimeout(r, 700));
+  assert.equal((await page.save()).hp, 63, 'no minute is credited twice');
+  // Completing the adventure mid-session still pays out the minutes focused.
+  await page.evaluate(t => { t.credited = 0; localStorage.setItem('twesk.quest-timer.v1', JSON.stringify(t)); }, running(5.2));
+  await page.goto('/');
+  await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).hp === 68);
+  await page.evaluate(t => localStorage.setItem('twesk.quest-timer.v1', JSON.stringify({ ...t, credited: 5 })), running(7.1));
+  await page.goto('/');
+  await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).hp === 70, { message: 'two more minutes' });
+  await page.click(`.quest-card [data-action="toggle-task"][data-id="${id}"]`);
+  await page.waitFor(id => JSON.parse(localStorage.getItem('twesk.v1')).tasks.find(t => t.id === id).done, { args: [id] });
+  await new Promise(r => setTimeout(r, 900));
+  assert.equal((await page.save()).hp, 70, 'finishing the task keeps HP exact');
+  // Never above maximum HP.
+  const full = E.freshState();
+  full.hp = 99;
+  E.setCurrentQuest(full, full.tasks[0].id);
+  await page.open({ save: full });
+  await page.evaluate(t => localStorage.setItem('twesk.quest-timer.v1', JSON.stringify(t)), { ...running(10), taskId: full.tasks[0].id });
+  await page.goto('/');
+  await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).hp === 100);
+  await new Promise(r => setTimeout(r, 700));
+  assert.equal((await page.save()).hp, 100);
+  assert.match(await page.evaluate(() => document.querySelector('[data-focus-meter]').getAttribute('aria-label')), /^Full health/);
+});
 
 uiTest('a level-up shows its banner, glowing stat chip, and toast', async page => {
   const s = E.freshState();

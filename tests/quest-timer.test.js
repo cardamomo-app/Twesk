@@ -43,3 +43,22 @@ test('corrupt local clocks reset safely and deadlines never produce negative tim
   assert.equal(T.remaining(timer, 1e10), 0);
   assert.equal(T.pauseTimer(timer, 1e10).status, 'finished');
 });
+
+test('focus minutes are credited once each, whole minutes only, and reset for a new session',()=>{
+  let t=T.startTimer(T.freshTimer('task',10),0);
+  assert.equal(T.minutesDue(t,59_999),0,'a minute counts once it is finished');
+  assert.equal(T.minutesDue(t,3*60000+5000),3);
+  t=T.creditMinutes(t,3);assert.equal(T.minutesDue(t,3*60000+5000),0,'credited minutes are not due again');
+  t=T.pauseTimer(t,4*60000+30000);assert.equal(T.minutesDue(t),1,'pausing keeps the earned minute');
+  t=T.creditMinutes(t,1);t=T.startTimer(t,10*60000);t=T.finishTimer(t,10*60000+6*60000);
+  assert.equal(t.status,'finished');assert.equal(T.minutesDue(t),6,'the rest of the session arrives at the end');
+  t=T.creditMinutes(t,6);assert.equal(t.credited,10);
+  t=T.startTimer(t,30*60000);assert.equal(t.credited,0,'going again starts a fresh count');
+  assert.equal(T.creditMinutes(T.freshTimer('x',5),9).credited,5,'never more than the session length');
+});
+test('saved timers from before HP rewards still load, and bad credit is rejected',()=>{
+  const old={taskId:'a',minutes:25,remainingMs:25*60000,endAt:null,status:'ready'};
+  assert.equal(T.readTimer(old).credited,0);
+  assert.equal(T.readTimer({...old,credited:30}).taskId,null,'credit above the session length resets the clock');
+  assert.equal(T.readTimer({...old,credited:1.5}).taskId,null);
+});

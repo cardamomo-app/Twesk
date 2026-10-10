@@ -482,6 +482,11 @@ const SOUNDS = {
     const f = rand(1400, 1900);
     tone({ t: t + 0.08, f, f2: f * 1.35, dur: 0.32, vol: 0.09, verb: 0.5, pan: -0.25 });
   },
+  // A soft two-bell chime when a minute of focus restores HP.
+  focusHeal(t) {
+    bell(784, t, 0.03, 0.9, 0.6, -0.15);
+    bell(1175, t + 0.12, 0.025, 1.1, 0.6, 0.15);
+  },
   heal(t) {
     [523.25, 659.3, 784, 1046.5, 1318.5].forEach((f, i) =>
       tone({ t: t + i * 0.07, f, dur: 0.6, vol: 0.045, verb: 0.6, pan: -0.25 }),

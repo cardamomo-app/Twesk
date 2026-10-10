@@ -707,3 +707,20 @@ button.hashtag:hover{text-decoration:underline}
 .is-walking .focus-gain{animation:focus-shimmer 2.4s ease-in-out infinite}
 @keyframes focus-shimmer{50%{opacity:.6}}
 .reward-pop.hp{color:var(--heart)}
+/* Smaller adventure buttons with room for the focus ring below the health meter */
+.quest-play-row{gap:6px;margin-top:10px}
+.quest-play{width:30px;height:30px}
+.quest-play>.icon{width:12px;height:12px}
+.quest-reset{width:26px;height:26px}
+.quest-reset>.icon{width:13px;height:13px}
+.quest-play:focus-visible,.quest-reset:focus-visible{outline-offset:2px}
+/* A clearer little landscape behind the adventurer: two hill layers, two trees, and the path */
+.trail-ground{opacity:1}
+.trail-hill.far{fill:color-mix(in srgb,var(--body) 14%,var(--panel))}
+.trail-hill.near{fill:color-mix(in srgb,var(--body) 26%,var(--panel))}
+.trail-tree{fill:color-mix(in srgb,var(--body) 62%,var(--panel))}
+.trail-tree rect{fill:color-mix(in srgb,#7a5a46 55%,var(--panel))}
+.trail-tree.round circle{fill:color-mix(in srgb,var(--body) 48%,var(--panel))}
+.trail-tree .trail-shine{fill:color-mix(in srgb,#fff 35%,transparent)}
+.trail-path{stroke:color-mix(in srgb,var(--gold) 34%,var(--panel));stroke-width:6;stroke-dasharray:none}
+.trail-ground{-webkit-mask-image:radial-gradient(ellipse 60% 64% at 50% 50%,#000 58%,transparent 100%);mask-image:radial-gradient(ellipse 60% 64% at 50% 50%,#000 58%,transparent 100%)}

@@ -1,11 +1,11 @@
 // One task, a little trail, and a device-local focus timer.
-import * as E from './engine.js?v=0.20.0';
-import * as T from './quest-timer.js?v=0.20.0';
-import { avatarJourneyArt } from './avatar-model.js?v=0.20.0';
-import { $, app, coin, esc, icon, modalShell, toast, view } from './ui-core.js?v=0.20.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.20.0';
-import { rewardEffect, sound } from './ui-effects.js?v=0.20.0';
-import { unlockSfx } from './sfx.js?v=0.20.0';
+import * as E from './engine.js?v=0.20.3';
+import * as T from './quest-timer.js?v=0.20.3';
+import { avatarJourneyArt } from './avatar-model.js?v=0.20.3';
+import { $, app, coin, esc, icon, modalShell, toast, view } from './ui-core.js?v=0.20.3';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.20.3';
+import { rewardEffect, sound } from './ui-effects.js?v=0.20.3';
+import { unlockSfx } from './sfx.js?v=0.20.3';
 
 const TIMER_KEY = 'twesk.quest-timer.v1';
 let timer = T.freshTimer(), dialDrag = null, owed = 0;
@@ -79,7 +79,7 @@ export function renderQuest() {
   return `<section class="quest-card ${task ? 'has-quest' : ''} ${timer.status === 'running' ? 'is-walking' : ''}" data-quest-drop aria-labelledby="quest-heading">
     <header class="quest-heading"><span class="quest-symbol">${icon('compass')}</span><h3 id="quest-heading">One small adventure</h3><button class="quest-choose ${task ? 'quest-manage' : ''}" data-action="quest-choose" aria-label="${task ? 'Manage adventure' : 'Choose an adventure'}" title="${task ? 'Change or return this task' : 'Choose an adventure'}">${task ? icon('more') : `Choose${icon('chevron')}`}</button></header>
     <div class="quest-task-slot">${task ? `<div class="quest-task"><button class="task-check" data-action="toggle-task" data-id="${task.id}" aria-label="Complete ${esc(task.title)}"></button><span class="quest-task-text"><button class="quest-title" data-action="edit-task" data-id="${task.id}" title="${esc(task.title)}">${esc(task.title)}</button>${steps.length ? `<button class="quest-step-link" data-action="quest-steps">${done}/${steps.length} steps</button>` : ''}</span><span class="task-reward">${coin(E.TASK_GOLD[task.tier], true)}</span></div>` : ''}</div>
-    <div class="quest-bottom">${clockFace(task)}<div class="quest-controls"><span class="sr-only" data-clock-status aria-live="polite">${statusText()}</span>${focusMeter()}<div class="quest-play-row">${playButton(task)}<button class="quest-reset" data-action="quest-reset" aria-label="Reset focus timer" title="Reset" ${task && canReset() ? '' : 'disabled'}>${icon('reset')}</button></div></div><div class="quest-trail" aria-hidden="true"><svg class="trail-ground" viewBox="0 0 90 74"><path class="trail-path" d="M-5 65Q17 70 30 58T65 60T100 48"/><path d="m10 54 3-6 3 6m55 0 3-7 3 7M55 67l2-4 2 4" stroke="currentColor" fill="none"/><path d="m8 61 5-2 5 2-5 2Z" fill="currentColor" opacity=".25"/></svg>${avatarJourneyArt(equipment.weapon, equipment.armor, app.state.appearance, equipment.helmet)}</div></div>
+    <div class="quest-bottom">${clockFace(task)}<div class="quest-controls"><span class="sr-only" data-clock-status aria-live="polite">${statusText()}</span>${focusMeter()}<div class="quest-play-row">${playButton(task)}<button class="quest-reset" data-action="quest-reset" aria-label="Reset focus timer" title="Reset" ${task && canReset() ? '' : 'disabled'}>${icon('reset')}</button></div></div><div class="quest-trail" aria-hidden="true"><svg class="trail-ground" viewBox="0 0 90 74"><path class="trail-hill far" d="M-4 47Q10 35 24 41T52 34T94 40V76H-4Z"/><path class="trail-hill near" d="M-4 58Q18 47 38 53T94 50V76H-4Z"/><g class="trail-tree"><rect x="13" y="45" width="2" height="5" rx=".6"/><path d="M14 30 18.8 38.5H9.2ZM14 34.5 19.8 44.5H8.2Z"/></g><g class="trail-tree round"><rect x="74" y="42" width="2" height="6" rx=".6"/><circle cx="75" cy="38.5" r="5.2"/><circle cx="73.2" cy="36.6" r="1.6" class="trail-shine"/></g><path class="trail-path" d="M-5 68Q17 72 30 61T65 62T100 51"/></svg>${avatarJourneyArt(equipment.weapon, equipment.armor, app.state.appearance, equipment.helmet)}</div></div>
     <span class="quest-session-progress" aria-hidden="true"><span data-session-progress style="width:${100 * (1 - T.remaining(timer) / (timer.minutes * 60000))}%"></span></span>
   </section>`;
 }

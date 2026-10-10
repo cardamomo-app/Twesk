@@ -9,6 +9,7 @@
     "test:ui": "node --test --test-concurrency=1 tests/ui/*.ui.test.mjs",
     "test:all": "npm test && npm run test:ui",
     "build": "node scripts/build-sw.mjs && node scripts/build-standalone.mjs",
+    "build:pages": "npm run build && node scripts/build-pages.mjs",
     "build:standalone": "node scripts/build-standalone.mjs",
     "build:icons": "node scripts/make-icons.mjs"
   }

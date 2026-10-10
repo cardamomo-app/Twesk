@@ -2,3 +2,4 @@
 node_modules/
 tests/ui/artifacts/
 test-saves/
+_site/

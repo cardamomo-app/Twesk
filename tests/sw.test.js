@@ -21,3 +21,14 @@ test('the manifest describes an installable standalone app',()=>{
   for(const icon of manifest.icons)assert.ok(existsSync(resolve(ROOT,icon.src)),icon.src);
   assert.ok(manifest.icons.some(i=>i.sizes==='512x512'));
 });
+
+test('home and combat worker stay within a GitHub Pages project path',()=>{
+  const base=new URL('https://example.github.io/Twesk/');
+  const app=readFileSync(resolve(ROOT,'app.js'),'utf8');
+  const odds=readFileSync(resolve(ROOT,'ui-odds.js'),'utf8');
+  const home=app.match(/href="([^"]+)" aria-label="Twesk home"/)[1];
+  const worker=odds.match(/new Worker\('([^']+)'/)[1];
+  assert.equal(new URL(home,base).pathname,'/Twesk/');
+  assert.equal(new URL(worker,base).pathname,'/Twesk/combat-worker.js');
+  for(const url of precacheList())assert.ok(new URL(url,base).pathname.startsWith('/Twesk/'),url);
+});

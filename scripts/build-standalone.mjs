@@ -7,8 +7,8 @@ import {Script} from 'node:vm';
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 // Source edits for running from a single file; each must apply exactly once across the app bundle.
-const WORKER=/^const worker = new Worker\('\/combat-worker\.js(?:\?[^']*)?', \{ type: 'module' \}\);$/m;
-const HOME_LINK='href="/" aria-label="Twesk home"';
+const WORKER=/^const worker = new Worker\('\.\/combat-worker\.js(?:\?[^']*)?', \{ type: 'module' \}\);$/m;
+const HOME_LINK='href="./" aria-label="Twesk home"';
 const applied=new Set();
 async function bundle(entry,{workerSource}={}){
   const modules=new Map();

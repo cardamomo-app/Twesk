@@ -2,6 +2,14 @@
 
 A local-first, single-page dashboard for tasks, habits, captured thoughts, and a small voxel adventure.
 
+## Use online
+
+Open **https://cardamomo-app.github.io/Twesk/** on desktop or mobile. On a phone, use the browser's **Add to Home Screen** option to install it. Once opened and cached, the installed app also works offline.
+
+Progress is private to each browser/device and is not uploaded to GitHub. To bring your existing adventure online, export a backup from the local app and import it in the hosted app's Settings. Desktop and mobile currently have separate saves; automatic cross-device sync is not implemented.
+
+The GitHub Pages workflow publishes updates from `main` after the domain tests pass. `npm run build:pages` regenerates the offline and standalone versions and prepares `_site/` with only application assets. Development files, screenshots, and local saves are excluded from the hosted artifact. All app URLs are relative so project paths such as `/Twesk/` work correctly.
+
 ## Open the app
 
 From this folder, run:
@@ -80,7 +88,7 @@ Quick capture: **Command/Ctrl-K**. Vault: **Command/Ctrl-J**. Escape closes dial
 npm test
 ```
 
-The 92 domain checks cover independent XP, the weekly progression target, momentum and missed days, reward undo, note caps, conversion/review, health, equipment, exact combat odds versus independent sampling, loot, rollover, backup validation, milestone persistence/migration, monster collection statuses, artwork bounds, habit icon compatibility/validation, personalized face portraits, reset/recovery, failed-storage preservation, device-timezone defaults, backup-reminder timing, recurring-task schedules, project tags, loadout comparisons, habit details, pinned notes, capped Soul deflection and monster gold, helmets, pet/spell/tonic bonuses, the wardrobe, rendering of every style and helmet from every side, and the daily history record (undo, level-up removal, migration, bounds).
+The 93 domain checks cover independent XP, the weekly progression target, momentum and missed days, reward undo, note caps, conversion/review, health, equipment, exact combat odds versus independent sampling, loot, rollover, backup validation, milestone persistence/migration, monster collection statuses, artwork bounds, habit icon compatibility/validation, personalized face portraits, reset/recovery, failed-storage preservation, device-timezone defaults, backup-reminder timing, recurring-task schedules, project tags, loadout comparisons, habit details, pinned notes, capped Soul deflection and monster gold, helmets, pet/spell/tonic bonuses, the wardrobe, rendering of every style and helmet from every side, and the daily history record (undo, level-up removal, migration, bounds).
 
 ### Interface tests
 

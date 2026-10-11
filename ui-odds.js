@@ -1,6 +1,6 @@
 // Victory-chance estimates, computed off the main thread and cached by the combat-relevant state.
-import * as E from './engine.js?v=0.21.1';
-const worker = new Worker('./combat-worker.js?v=0.21.1', { type: 'module' });
+import * as E from './engine.js?v=0.21.2';
+const worker = new Worker('./combat-worker.js?v=0.21.2', { type: 'module' });
 const cache = new Map(),
   waiting = new Map();
 worker.onmessage = ({ data }) => {

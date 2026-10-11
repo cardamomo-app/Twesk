@@ -808,3 +808,5 @@ button.hashtag:hover{text-decoration:underline}
 @media(hover:none){.task-grip{opacity:.4}}
 .habit-icon[data-habit-drag]{cursor:grab}
 .task-dragging .habit-icon[data-habit-drag]{cursor:grabbing}
+/* Full screen is a desktop and tablet affair; phones have no room for it in the top bar */
+@media(max-width:560px){.fullscreen-button{display:none}}

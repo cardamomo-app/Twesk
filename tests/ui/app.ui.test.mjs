@@ -695,6 +695,35 @@ uiTest(
   { width: 375, height: 812 },
 );
 
+uiTest('F and the top-bar button go full screen and back, but not while typing', async page => {
+  await page.open();
+  assert.ok(await page.exists('[data-action="fullscreen"]'), 'the button shows on desktop');
+  await page.press('f');
+  await page.waitFor(() => document.fullscreenElement === document.documentElement);
+  await page.waitFor(() => document.querySelector('[data-action="fullscreen"]').getAttribute('aria-pressed') === 'true');
+  await page.press('f');
+  await page.waitFor(() => !document.fullscreenElement);
+  await page.click('[data-action="fullscreen"]');
+  await page.waitFor(() => document.fullscreenElement);
+  await page.click('[data-action="fullscreen"]');
+  await page.waitFor(() => !document.fullscreenElement);
+  // Typing an F in a field is just a letter.
+  await page.press('k', ['Meta']);
+  await page.waitFor(() => document.querySelector('#overlay textarea, #overlay input'));
+  await page.press('f');
+  await new Promise(r => setTimeout(r, 200));
+  assert.ok(!(await page.evaluate(() => document.fullscreenElement)), 'no full screen while typing');
+});
+
+uiTest(
+  'the full-screen button is hidden on phones',
+  async page => {
+    await page.open();
+    assert.ok(await page.evaluate(() => { const b = document.querySelector('[data-action="fullscreen"]'); return !b || getComputedStyle(b).display === 'none'; }));
+  },
+  { width: 375, height: 812 },
+);
+
 uiTest('older saves without newer fields load cleanly', async page => {
   const s = E.freshState();
   delete s.history;

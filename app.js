@@ -1,26 +1,27 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.21.1';
-import { avatarFaceArt } from './art.js?v=0.21.1';
-import { awardAchievements } from './achievements.js?v=0.21.1';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.21.1';
-import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.21.1';
-import { closeModal, openModal } from './ui-modal.js?v=0.21.1';
-import * as tasks from './ui-tasks.js?v=0.21.1';
-import * as quest from './ui-quest.js?v=0.21.1';
-import * as habits from './ui-habits.js?v=0.21.1';
-import * as vault from './ui-vault.js?v=0.21.1';
-import * as character from './ui-character.js?v=0.21.1';
-import * as shop from './ui-shop.js?v=0.21.1';
-import * as battle from './ui-battle.js?v=0.21.1';
-import * as collection from './ui-collection.js?v=0.21.1';
-import * as settings from './ui-settings.js?v=0.21.1';
-import * as sync from './ui-sync.js?v=0.21.1';
-import * as history from './ui-history.js?v=0.21.1';
-import { installDelights, renderAmbience } from './ui-delights.js?v=0.21.1';
-import { installTagSuggest } from './ui-tag-suggest.js?v=0.21.1';
-import { installTaskOrder } from './ui-task-order.js?v=0.21.1';
+import * as E from './engine.js?v=0.21.2';
+import { avatarFaceArt } from './art.js?v=0.21.2';
+import { awardAchievements } from './achievements.js?v=0.21.2';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.21.2';
+import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.21.2';
+import { closeModal, openModal } from './ui-modal.js?v=0.21.2';
+import * as tasks from './ui-tasks.js?v=0.21.2';
+import * as quest from './ui-quest.js?v=0.21.2';
+import * as habits from './ui-habits.js?v=0.21.2';
+import * as vault from './ui-vault.js?v=0.21.2';
+import * as character from './ui-character.js?v=0.21.2';
+import * as shop from './ui-shop.js?v=0.21.2';
+import * as battle from './ui-battle.js?v=0.21.2';
+import * as collection from './ui-collection.js?v=0.21.2';
+import * as settings from './ui-settings.js?v=0.21.2';
+import * as sync from './ui-sync.js?v=0.21.2';
+import * as history from './ui-history.js?v=0.21.2';
+import { installDelights, renderAmbience } from './ui-delights.js?v=0.21.2';
+import { installTagSuggest } from './ui-tag-suggest.js?v=0.21.2';
+import { installTaskOrder } from './ui-task-order.js?v=0.21.2';
+import * as fullscreen from './ui-fullscreen.js?v=0.21.2';
 
-const features = [tasks, quest, habits, vault, character, shop, battle, collection, settings, history, sync];
+const features = [tasks, quest, habits, vault, character, shop, battle, collection, settings, history, sync, fullscreen];
 const modals = Object.assign({}, ...features.map(f => f.modals));
 const actions = Object.assign({}, ...features.map(f => f.actions));
 const forms = Object.assign({}, ...features.map(f => f.forms || {}));
@@ -69,7 +70,7 @@ function render() {
   ).length;
   $('#app').innerHTML = `
     <header class="topbar"><div class="topbar-brand"><a class="wordmark" href="./" aria-label="Twesk home"><span class="logo-cube"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="m3 8 13-6 13 6v16l-13 6-13-6Z" fill="#7461d4"/><path d="m3 8 13 6 13-6-13-6Z" fill="#b9a8f2"/><path d="M16 14v16L3 24V8Z" fill="#937be2"/></svg></span>twesk</a><time class="topbar-date" datetime="${day}">${esc(dateLabel())}</time></div>
-    <div class="topbar-actions"><button class="capture-button" data-action="capture">${icon('plus')}Quick capture<kbd>⌘ K</kbd></button><span class="toolbar-divider"></span><button class="collection-button" data-action="history" title="Progress history" aria-label="Open progress history">${icon('calendar')}</button><button class="collection-button" data-action="achievements" title="Achievements and monster collection" aria-label="Open achievements">${icon('medal')}</button>${iconButton('theme', app.state.settings.theme === 'dark' ? 'sun' : 'moon', 'Switch to ' + (app.state.settings.theme === 'dark' ? 'light' : 'dark') + ' mode')}${iconButton('mute', app.state.settings.muted ? 'mute' : 'sound', app.state.settings.muted ? 'Unmute sounds' : 'Mute sounds')}${iconButton('settings', 'settings', 'Settings and backup')}<button class="profile-dot" data-action="settings" aria-label="Your profile">${avatarFaceArt(app.state.appearance)}</button></div></header>
+    <div class="topbar-actions"><button class="capture-button" data-action="capture">${icon('plus')}Quick capture<kbd>⌘ K</kbd></button><span class="toolbar-divider"></span><button class="collection-button" data-action="history" title="Progress history" aria-label="Open progress history">${icon('calendar')}</button><button class="collection-button" data-action="achievements" title="Achievements and monster collection" aria-label="Open achievements">${icon('medal')}</button>${iconButton('theme', app.state.settings.theme === 'dark' ? 'sun' : 'moon', 'Switch to ' + (app.state.settings.theme === 'dark' ? 'light' : 'dark') + ' mode')}${iconButton('mute', app.state.settings.muted ? 'mute' : 'sound', app.state.settings.muted ? 'Unmute sounds' : 'Mute sounds')}${fullscreen.fullscreenButton()}${iconButton('settings', 'settings', 'Settings and backup')}<button class="profile-dot" data-action="settings" aria-label="Your profile">${avatarFaceArt(app.state.appearance)}</button></div></header>
     <main>
     ${app.saveError ? '<div class="save-warning">' + esc(app.startupWarning || 'Browser saving is unavailable. Export a backup in Settings to keep your progress.') + '</div>' : E.backupDue(app.state, day) ? settings.backupReminder() : ''}
     <div class="dashboard">
@@ -103,6 +104,7 @@ function renderModal() {
 }
 installTagSuggest();
 installTaskOrder();
+fullscreen.installFullscreen();
 quest.installQuest();
 installDelights();
 Object.assign(view, { render, renderModal, finishBattlePlayback: battle.finishBattlePlayback });

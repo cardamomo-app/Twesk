@@ -259,9 +259,12 @@ uiTest('a habit drags onto the adventure, reorders in its category, and leaves t
   await dragTo(page, `[data-habit-grip][data-id="${harm.id}"]`, '.quest-card');
   await new Promise(r => setTimeout(r, 200));
   assert.ok(!(await page.exists('.quest-task')), 'a Harm habit is not an adventure');
-  // A positive habit becomes the adventure; its row notes it.
-  await dragTo(page, `[data-habit-grip][data-id="${first.id}"]`, '.quest-card');
+  // A positive habit becomes the adventure by dragging its icon, without completing it; its row notes it.
+  await dragTo(page, `[data-habit-drag][data-id="${first.id}"]`, '.quest-card');
   await page.waitFor(() => document.querySelector('.quest-task.quest-habit'));
+  await new Promise(r => setTimeout(r, 200));
+  assert.equal((await page.save()).habits.find(h => h.id === first.id).logs.length, 0, 'dragging the icon does not complete the habit');
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('#app .task-item .task-grip')).opacity), '0', 'task grips hide until hover');
   assert.equal(await page.text('.quest-habit .quest-title'), first.title);
   assert.match(await page.text('.quest-habit .xp-badge'), /^\+\d+ XP$/);
   assert.match(await page.text(`#app [data-habit-id="${first.id}"] .habit-name small`), /On your adventure/);
@@ -271,6 +274,9 @@ uiTest('a habit drags onto the adventure, reorders in its category, and leaves t
   await page.waitFor(id => JSON.parse(localStorage.getItem('twesk.v1')).habits.find(h => h.id === id).logs.length === 1, { args: [first.id] });
   await page.waitFor(() => !document.querySelector('.quest-task'));
   assert.equal((await page.save()).habits.find(h => h.id === first.id).pinned, undefined);
+  // A plain click on a row's icon still completes that habit.
+  await page.click(`[data-habit-drag][data-id="${second.id}"]`);
+  await page.waitFor(id => JSON.parse(localStorage.getItem('twesk.v1')).habits.find(h => h.id === id).logs.length === 1, { args: [second.id] });
 });
 
 uiTest('adventure steps open and close inside the box, and repeats sit beside the gold', async page => {

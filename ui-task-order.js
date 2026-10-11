@@ -1,19 +1,19 @@
 // Pointer dragging uses a dedicated handle so touch scrolling and task clicks stay natural.
 // Tasks reorder in their list and habits within their category; either can be dropped on the adventure box.
-import * as E from './engine.js?v=0.21.0';
-import { $, app, toast, today, view } from './ui-core.js?v=0.21.0';
-import { commit } from './ui-modal.js?v=0.21.0';
-import { sound } from './ui-effects.js?v=0.21.0';
+import * as E from './engine.js?v=0.21.1';
+import { $, app, toast, today, view } from './ui-core.js?v=0.21.1';
+import { commit } from './ui-modal.js?v=0.21.1';
+import { sound } from './ui-effects.js?v=0.21.1';
 
 const KINDS = {
   task: { grip: 'data-task-grip', list: 'taskList', row: 'taskId', panel: '.tasks-panel', scroller: '.tasks-scroll', items: s => s.tasks, move: E.moveTask },
   habit: { grip: 'data-habit-grip', list: 'habitList', row: 'habitId', panel: '.habits-panel', scroller: '.habits-scroll', items: s => s.habits, move: E.moveHabit },
 };
 const attr = key => key.replace(/[A-Z]/g, c => '-' + c.toLowerCase());
-const kindOf = handle => (handle.hasAttribute('data-habit-grip') ? 'habit' : 'task');
+const kindOf = handle => (handle.matches('[data-habit-grip],[data-habit-drag]') ? 'habit' : 'task');
 
 export function installTaskOrder() {
-  let drag = null, frame = null;
+  let drag = null, frame = null, swallowClick = false;
   const clearMarks = () => document.querySelectorAll('.task-drop-before,.task-drop-after,.quest-drop-ready,.task-drop-end').forEach(el => el.classList.remove('task-drop-before', 'task-drop-after', 'quest-drop-ready', 'task-drop-end'));
   function locate() {
     clearMarks();
@@ -68,6 +68,8 @@ export function installTaskOrder() {
     if (handle.hasPointerCapture?.(drag.pointerId)) handle.releasePointerCapture(drag.pointerId);
     drag = null;
     app.taskDragging = false;
+    // A drag that started on a habit's icon must not also complete the habit when released.
+    if (active && handle.hasAttribute('data-habit-drag')) { swallowClick = true; setTimeout(() => (swallowClick = false)); }
     if (!cancel && active && drop) {
       const moved = commit(() => {
         if (drop.quest) return E.setCurrentQuest(app.state, id, today());
@@ -80,7 +82,8 @@ export function installTaskOrder() {
     view.modalClosed();
   }
   $('#app').addEventListener('pointerdown', event => {
-    const handle = event.target.closest('[data-task-grip],[data-habit-grip]');
+    // A habit's icon also works as a handle with a mouse or pen; on touch it stays a tap target, so lists still scroll.
+    const handle = event.target.closest('[data-task-grip],[data-habit-grip]') || (event.pointerType !== 'touch' && event.target.closest('[data-habit-drag]'));
     if (!handle || event.button !== 0 || app.modal || app.busy) return;
     // The adventure task stays put while its timer runs.
     const fromQuest = handle.hasAttribute('data-quest-grip');
@@ -111,6 +114,7 @@ export function installTaskOrder() {
       locate();
     }
   }, { passive: false });
+  document.addEventListener('click', event => { if (swallowClick) { swallowClick = false; event.preventDefault(); event.stopPropagation(); } }, true);
   document.addEventListener('pointerup', event => { if (event.pointerId === drag?.pointerId) finish(); });
   document.addEventListener('pointercancel', () => finish(true));
   window.addEventListener('blur', () => finish(true));

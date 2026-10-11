@@ -801,3 +801,10 @@ button.hashtag:hover{text-decoration:underline}
 .quest-habit-check:hover .quest-habit-glyph,.quest-habit-check:focus-visible .quest-habit-glyph{opacity:0}
 .quest-habit .quest-title:hover{color:var(--cat)}
 .quest-habit .xp-badge{margin-left:auto}
+/* Task grips keep their space but show only on hover or keyboard focus (always faintly on touch screens) */
+.task-grip{opacity:0;transition:opacity .15s,color .15s,background .15s}
+.task-item:hover .task-grip,.quest-task:hover>.quest-grip,.task-grip:focus-visible{opacity:.55}
+.task-grip:hover,.task-grip:focus-visible{opacity:1}
+@media(hover:none){.task-grip{opacity:.4}}
+.habit-icon[data-habit-drag]{cursor:grab}
+.task-dragging .habit-icon[data-habit-drag]{cursor:grabbing}

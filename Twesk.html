@@ -811,6 +811,13 @@ button.hashtag:hover{text-decoration:underline}
 .quest-habit-check:hover .quest-habit-glyph,.quest-habit-check:focus-visible .quest-habit-glyph{opacity:0}
 .quest-habit .quest-title:hover{color:var(--cat)}
 .quest-habit .xp-badge{margin-left:auto}
+/* Task grips keep their space but show only on hover or keyboard focus (always faintly on touch screens) */
+.task-grip{opacity:0;transition:opacity .15s,color .15s,background .15s}
+.task-item:hover .task-grip,.quest-task:hover>.quest-grip,.task-grip:focus-visible{opacity:.55}
+.task-grip:hover,.task-grip:focus-visible{opacity:1}
+@media(hover:none){.task-grip{opacity:.4}}
+.habit-icon[data-habit-drag]{cursor:grab}
+.task-dragging .habit-icon[data-habit-drag]{cursor:grabbing}
 
   </style>
   <script>
@@ -4159,7 +4166,7 @@ function renderCategory(cat) {
             const harmCount = harm ? h.harmLogs.filter(l => l.day === today()).length : 0;
             // The grip sits in the row's left gutter: drag to reorder, or onto the adventure box.
             const grip = `<button class="habit-grip" data-habit-grip data-id="${h.id}" aria-label="Move ${esc(h.title)}${harm ? '' : ' or drag it to your adventure'}" title="Drag to reorder${harm ? '' : ' or start an adventure'} · Arrow keys move">${icon('grip')}</button>`;
-            return `<div class="habit-row ${log ? 'done' : ''} ${h.pinned ? 'is-adventure' : ''}" data-habit-id="${h.id}">${grip}<button class="habit-complete" data-action="${harm ? 'harm' : 'habit'}" data-id="${h.id}" ${!harm ? `aria-pressed="${!!log}"` : ''} title="${esc(harm ? 'Log ' + h.title : log ? 'Completed today · click to undo' : 'Complete ' + h.title)}"><span class="habit-icon">${icon(log ? 'check' : resolvedHabitIcon(h))}</span><span class="habit-name">${esc(h.title)}${harmCount ? `<small>Logged ${harmCount}× today</small>` : log ? '<small>Done for today</small>' : h.pinned ? `<small>${icon('compass')}On your adventure</small>` : ''}</span><span class="xp-badge">${harm ? '−' : '+'}${reward} ${harm ? 'HP' : 'XP'}</span></button>${iconButton('edit-habit', 'more', 'Edit ' + h.title, `data-id="${h.id}"`)}</div>`;
+            return `<div class="habit-row ${log ? 'done' : ''} ${h.pinned ? 'is-adventure' : ''}" data-habit-id="${h.id}">${grip}<button class="habit-complete" data-action="${harm ? 'harm' : 'habit'}" data-id="${h.id}" ${!harm ? `aria-pressed="${!!log}"` : ''} title="${esc(harm ? 'Log ' + h.title : log ? 'Completed today · click to undo' : 'Complete ' + h.title)}"><span class="habit-icon" data-habit-drag data-id="${h.id}">${icon(log ? 'check' : resolvedHabitIcon(h))}</span><span class="habit-name">${esc(h.title)}${harmCount ? `<small>Logged ${harmCount}× today</small>` : log ? '<small>Done for today</small>' : h.pinned ? `<small>${icon('compass')}On your adventure</small>` : ''}</span><span class="xp-badge">${harm ? '−' : '+'}${reward} ${harm ? 'HP' : 'XP'}</span></button>${iconButton('edit-habit', 'more', 'Edit ' + h.title, `data-id="${h.id}"`)}</div>`;
           })
           .join(
             '',
@@ -7041,10 +7048,10 @@ const KINDS = {
   habit: { grip: 'data-habit-grip', list: 'habitList', row: 'habitId', panel: '.habits-panel', scroller: '.habits-scroll', items: s => s.habits, move: E.moveHabit },
 };
 const attr = key => key.replace(/[A-Z]/g, c => '-' + c.toLowerCase());
-const kindOf = handle => (handle.hasAttribute('data-habit-grip') ? 'habit' : 'task');
+const kindOf = handle => (handle.matches('[data-habit-grip],[data-habit-drag]') ? 'habit' : 'task');
 
 function installTaskOrder() {
-  let drag = null, frame = null;
+  let drag = null, frame = null, swallowClick = false;
   const clearMarks = () => document.querySelectorAll('.task-drop-before,.task-drop-after,.quest-drop-ready,.task-drop-end').forEach(el => el.classList.remove('task-drop-before', 'task-drop-after', 'quest-drop-ready', 'task-drop-end'));
   function locate() {
     clearMarks();
@@ -7099,6 +7106,8 @@ function installTaskOrder() {
     if (handle.hasPointerCapture?.(drag.pointerId)) handle.releasePointerCapture(drag.pointerId);
     drag = null;
     app.taskDragging = false;
+    // A drag that started on a habit's icon must not also complete the habit when released.
+    if (active && handle.hasAttribute('data-habit-drag')) { swallowClick = true; setTimeout(() => (swallowClick = false)); }
     if (!cancel && active && drop) {
       const moved = commit(() => {
         if (drop.quest) return E.setCurrentQuest(app.state, id, today());
@@ -7111,7 +7120,8 @@ function installTaskOrder() {
     view.modalClosed();
   }
   $('#app').addEventListener('pointerdown', event => {
-    const handle = event.target.closest('[data-task-grip],[data-habit-grip]');
+    // A habit's icon also works as a handle with a mouse or pen; on touch it stays a tap target, so lists still scroll.
+    const handle = event.target.closest('[data-task-grip],[data-habit-grip]') || (event.pointerType !== 'touch' && event.target.closest('[data-habit-drag]'));
     if (!handle || event.button !== 0 || app.modal || app.busy) return;
     // The adventure task stays put while its timer runs.
     const fromQuest = handle.hasAttribute('data-quest-grip');
@@ -7142,6 +7152,7 @@ function installTaskOrder() {
       locate();
     }
   }, { passive: false });
+  document.addEventListener('click', event => { if (swallowClick) { swallowClick = false; event.preventDefault(); event.stopPropagation(); } }, true);
   document.addEventListener('pointerup', event => { if (event.pointerId === drag?.pointerId) finish(); });
   document.addEventListener('pointercancel', () => finish(true));
   window.addEventListener('blur', () => finish(true));

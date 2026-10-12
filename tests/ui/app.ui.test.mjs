@@ -507,7 +507,8 @@ uiTest('the shop compares items, helmets raise HP, tonics activate, and styles c
   s.gold = 2000;
   await page.open({ save: s });
   await page.click('#app .character-actions [data-action="shop"]');
-  await page.click('[data-action="shop-tab"][data-category="helmet"]');
+  await page.click('[data-action="shop-tab"][data-category="armor"]');
+  assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#shop-items .shop-group')].map(h => h.textContent)), ['Body armor', 'Shields', 'Helmets', 'Boots'], 'worn gear shares one tab, grouped');
   await page.waitFor(() => [...document.querySelectorAll('[data-odds="with"]')].every(e => /%$/.test(e.textContent)), { message: 'comparison odds filled' });
   assert.match(await page.text('[data-compare="helm"]'), /\+12 max HP vs no helmet/);
   await page.click('[data-action="buy"][data-id="helm"]');
@@ -640,7 +641,7 @@ uiTest('a won fight plays out, celebrates, and pays its loot', async page => {
   await page.waitFor(() => /Next opponent arrives tomorrow/.test(document.querySelector('#app .monster-panel')?.textContent || ''));
 });
 
-uiTest('shields and boots are sold in their own tabs, and powered fights replay with their effects', async page => {
+uiTest('shields and boots are sold with armor, and powered fights replay with their effects', async page => {
   // A won fight with an axe stagger and a raised shield, made with the real rules.
   const base = strong();
   base.gold = 5000;
@@ -667,8 +668,8 @@ uiTest('shields and boots are sold in their own tabs, and powered fights replay 
   await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('twesk.v1')); s.equipped.boots = null; s.inventory = s.inventory.filter(id => id !== 'windstep'); localStorage.setItem('twesk.v1', JSON.stringify(s)); });
   await page.goto('/');
   await page.click('#app .character-actions [data-action="shop"]');
-  await page.click('[data-action="shop-tab"][data-category="boots"]');
-  await page.waitFor(() => document.querySelector('#shop-tab-boots[aria-selected="true"]'));
+  await page.click('[data-action="shop-tab"][data-category="armor"]');
+  await page.waitFor(() => document.querySelector('#shop-tab-armor[aria-selected="true"]'));
   await page.click('[data-action="buy"][data-id="trailboots"]');
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).equipped.boots === 'trailboots');
 });
@@ -742,7 +743,7 @@ uiTest('F and the top-bar button go full screen and back, but not while typing',
   await page.waitFor(() => !document.fullscreenElement);
   // Typing an F in a field is just a letter.
   await page.press('k', ['Meta']);
-  await page.waitFor(() => document.querySelector('#overlay textarea, #overlay input'));
+  await page.waitFor(() => document.activeElement?.matches('#overlay textarea, #overlay input'), { message: 'the capture field has focus' });
   await page.press('f');
   await new Promise(r => setTimeout(r, 200));
   assert.ok(!(await page.evaluate(() => document.fullscreenElement)), 'no full screen while typing');

@@ -1,11 +1,11 @@
 // Account controls and the browser adapter for the independently tested sync engine.
-import * as E from './engine.js?v=0.22.0';
-import { createCloudAdapter } from './sync-remote.js?v=0.22.0';
-import { createSync } from './sync-engine.js?v=0.22.0';
-import { SYNC_CONFIG } from './sync-config.js?v=0.22.0';
-import { PREVIOUS_SAVE_KEY, replaceSave } from './save-recovery.js?v=0.22.0';
-import { $, KEY, app, esc, icon, modalShell, toast, view, viewDefaults } from './ui-core.js?v=0.22.0';
-import { openModal } from './ui-modal.js?v=0.22.0';
+import * as E from './engine.js?v=0.22.1';
+import { createCloudAdapter } from './sync-remote.js?v=0.22.1';
+import { createSync } from './sync-engine.js?v=0.22.1';
+import { SYNC_CONFIG } from './sync-config.js?v=0.22.1';
+import { PREVIOUS_SAVE_KEY, replaceSave } from './save-recovery.js?v=0.22.1';
+import { $, KEY, app, esc, icon, modalShell, toast, view, viewDefaults } from './ui-core.js?v=0.22.1';
+import { openModal } from './ui-modal.js?v=0.22.1';
 
 let client = null, coordinator = null, user = null, timer = null, authBusy = false, emailSent = '', authMessage = '';
 let phase = 'signed-out', message = '';

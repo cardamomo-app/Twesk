@@ -1,13 +1,13 @@
 // Shop and inventory: buying, equipping, potions, spells, and pets.
-import * as E from './engine.js?v=0.22.0';
-import { avatarFaceArt, itemArt, monsterName, petArt } from './art.js?v=0.22.0';
+import * as E from './engine.js?v=0.22.1';
+import { avatarFaceArt, itemArt, monsterName, petArt } from './art.js?v=0.22.1';
 import { APPEARANCE, APPEARANCE_LABELS } from './appearance.js';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.22.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.22.0';
-import { burst, countUp, sound } from './ui-effects.js?v=0.22.0';
-import { potionCount } from './ui-character.js?v=0.22.0';
-import { playDelight } from './ui-delights.js?v=0.22.0';
-import { percent, requestOdds } from './ui-odds.js?v=0.22.0';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.22.1';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.22.1';
+import { burst, countUp, sound } from './ui-effects.js?v=0.22.1';
+import { potionCount } from './ui-character.js?v=0.22.1';
+import { playDelight } from './ui-delights.js?v=0.22.1';
+import { percent, requestOdds } from './ui-odds.js?v=0.22.1';
 // Odds are compared against the next opponent, at full health when currently at 0 HP.
 function comparisonBase() {
   const s = app.state;
@@ -101,12 +101,15 @@ function fillComparisons() {
     });
   }
 }
+// The Armor tab gathers everything worn: body armor, shields, helmets, and boots, each under its own small heading.
+const TAB_TYPES = { armor: ['armor', 'shield', 'helmet', 'boots'], pet: ['pet', 'pethat'] };
+const GROUPS = { armor: 'Body armor', shield: 'Shields', helmet: 'Helmets', boots: 'Boots' };
+const typeOrder = i => Math.max(0, (TAB_TYPES[app.shopCategory] || []).indexOf(i.type));
+const groupHeading = (item, previous) =>
+  GROUPS[item.type] && item.type !== previous?.type ? `<h3 class="shop-group">${esc(GROUPS[item.type])}</h3>` : '';
 const shopTabs = [
   ['weapon', 'Weapons', 'sword'],
   ['armor', 'Armor', 'armor'],
-  ['shield', 'Shields', 'shield'],
-  ['helmet', 'Helmets', 'helmet'],
-  ['boots', 'Boots', 'boot'],
   ['potion', 'Potions', 'heart'],
   ['spell', 'Spells', 'soul'],
   ['pet', 'Pets', 'pet'],
@@ -139,17 +142,14 @@ function renderShop(inventory) {
   queueMicrotask(fillComparisons);
   const items = E.SHOP.filter(
     i =>
-      (i.type === app.shopCategory || (app.shopCategory === 'pet' && i.type === 'pethat')) &&
+      (TAB_TYPES[app.shopCategory] || [app.shopCategory]).includes(i.type) &&
       (!inventory || E.itemCount(app.state, i.id) > 0),
-  ).sort((a, b) => (a.type === 'pethat') - (b.type === 'pethat') || a.price - b.price);
+  ).sort((a, b) => typeOrder(a) - typeOrder(b) || a.price - b.price);
   const labels = {
     weapon:
       'One weapon at a time. Swords hit hardest; daggers and axes trade a little attack for a power. New weapons fill an empty slot automatically.',
-    shield: 'One shield at a time, in your off hand. A raised shield halves a hit after armor; some strike back.',
-    boots: 'One pair at a time. Boots add to your deflect chance, alongside Soul.',
-    armor: 'One armor at a time. New armor fills an empty slot automatically.',
-    helmet:
-      'One helmet at a time. Helmets raise maximum HP; putting one on or taking it off shifts your current HP too.',
+    armor:
+      'One of each piece at a time: armor blocks damage, a raised shield halves a hit, helmets raise maximum HP (shifting current HP with it), and boots add deflect. New pieces fill an empty slot automatically.',
     potion:
       'Healing potions are used right away, capped at your maximum HP. Tonics last for your next fight, one at a time, alongside a spell.',
     spell:
@@ -168,7 +168,7 @@ function renderShop(inventory) {
         ? renderStyle(inventory)
         : items.length
           ? items
-              .map(i => {
+              .map((i, n, all) => {
                 const count = E.itemCount(app.state, i.id),
                   consumable = E.isConsumable(i),
                   owned = !consumable && count > 0;
@@ -215,7 +215,7 @@ function renderShop(inventory) {
                               : selected
                                 ? 'Equipped · remove'
                                 : 'Equip';
-                return `<article class="shop-item ${i.tier} ${i.type} ${owned ? 'owned' : ''} ${selected ? 'item-selected' : ''}">${count ? `<span class="item-count">${consumable ? count + ' owned' : selected ? icon('check') + 'Selected' : 'Owned'}</span>` : ''}<div class="item-art">${
+                return `${groupHeading(i, all[n - 1])}<article class="shop-item ${i.tier} ${i.type} ${owned ? 'owned' : ''} ${selected ? 'item-selected' : ''}">${count ? `<span class="item-count">${consumable ? count + ' owned' : selected ? icon('check') + 'Selected' : 'Owned'}</span>` : ''}<div class="item-art">${
                   i.type === 'pet' && app.state.petHat
                     ? petArt(
                         i,

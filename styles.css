@@ -814,3 +814,6 @@ button.hashtag:hover{text-decoration:underline}
 .capture-button{gap:7px;padding:6px 7px 6px 9px}
 .capture-button kbd{margin-left:0}
 .capture-button:hover .icon{color:var(--accent)}
+/* Group headings in the Armor tab (body armor, shields, helmets, boots) */
+.shop-group{grid-column:1/-1;margin:10px 0 -2px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--secondary)}
+.shop-group:first-child{margin-top:0}

@@ -515,6 +515,7 @@ uiTest('the shop compares items, helmets raise HP, tonics activate, and styles c
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).equipped.helmet === 'helm');
   assert.equal((await page.save()).hp, 112);
   await page.click('[data-action="shop-tab"][data-category="potion"]');
+  assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#shop-items .shop-group')].map(h => h.textContent)), ['Healing potions', 'Tonics', 'Spells'], 'potions and spells share one tab');
   await page.click('[data-action="buy"][data-id="swift-tonic"]');
   await page.click('[data-action="use-potion"][data-id="swift-tonic"]');
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).tonic === 'swift-tonic');
@@ -594,6 +595,7 @@ uiTest('pet hats are sold in the Pets tab and show on the companion', async page
   await page.click('#app .character-actions [data-action="shop"]');
   await page.click('[data-action="shop-tab"][data-category="pet"]');
   assert.equal(await page.count('.shop-item.pethat'), 4);
+  assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#shop-items .shop-group')].map(h => h.textContent)), ['Companions', 'Pet hats']);
   await page.click('[data-action="buy"][data-id="party-hat"]');
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).petHat === 'party-hat');
   assert.match(await page.evaluate(() => document.querySelector('#app .pet-companion').getAttribute('aria-label')), /Fern fox companion wearing a party hat/);

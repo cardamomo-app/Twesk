@@ -1,13 +1,13 @@
 // Shop and inventory: buying, equipping, potions, spells, and pets.
-import * as E from './engine.js?v=0.22.2';
-import { avatarFaceArt, itemArt, monsterName, petArt } from './art.js?v=0.22.2';
+import * as E from './engine.js?v=0.22.3';
+import { avatarFaceArt, itemArt, monsterName, petArt } from './art.js?v=0.22.3';
 import { APPEARANCE, APPEARANCE_LABELS } from './appearance.js';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.22.2';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.22.2';
-import { burst, countUp, sound } from './ui-effects.js?v=0.22.2';
-import { potionCount } from './ui-character.js?v=0.22.2';
-import { playDelight } from './ui-delights.js?v=0.22.2';
-import { percent, requestOdds } from './ui-odds.js?v=0.22.2';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.22.3';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.22.3';
+import { burst, countUp, sound } from './ui-effects.js?v=0.22.3';
+import { potionCount } from './ui-character.js?v=0.22.3';
+import { playDelight } from './ui-delights.js?v=0.22.3';
+import { percent, requestOdds } from './ui-odds.js?v=0.22.3';
 // Odds are compared against the next opponent, at full health when currently at 0 HP.
 function comparisonBase() {
   const s = app.state;
@@ -102,22 +102,21 @@ function fillComparisons() {
   }
 }
 // Some tabs gather several kinds, each under its own small heading: everything worn under Armor,
-// potions, tonics, and spells together, and companions with their hats.
+// and companions with their hats.
 const TAB_GROUPS = {
   armor: ['armor', 'shield', 'helmet', 'boots'],
-  potion: ['potion', 'tonic', 'spell'],
   pet: ['pet', 'pethat'],
 };
-const GROUPS = { armor: 'Body armor', shield: 'Shields', helmet: 'Helmets', boots: 'Boots', potion: 'Healing potions', tonic: 'Tonics', spell: 'Spells', pet: 'Companions', pethat: 'Pet hats' };
-const groupOf = i => (i.tonic ? 'tonic' : i.type);
+const GROUPS = { armor: 'Body armor', shield: 'Shields', helmet: 'Helmets', boots: 'Boots', pet: 'Companions', pethat: 'Pet hats' };
 const tabGroups = () => TAB_GROUPS[app.shopCategory] || [app.shopCategory];
-const typeOrder = i => Math.max(0, tabGroups().indexOf(groupOf(i)));
+const typeOrder = i => Math.max(0, tabGroups().indexOf(i.type));
 const groupHeading = (item, previous) =>
-  TAB_GROUPS[app.shopCategory] && groupOf(item) !== (previous && groupOf(previous)) ? `<h3 class="shop-group">${esc(GROUPS[groupOf(item)])}</h3>` : '';
+  TAB_GROUPS[app.shopCategory] && item.type !== previous?.type ? `<h3 class="shop-group">${esc(GROUPS[item.type])}</h3>` : '';
 const shopTabs = [
   ['weapon', 'Weapons', 'sword'],
   ['armor', 'Armor', 'armor'],
-  ['potion', 'Potions & spells', 'heart'],
+  ['potion', 'Potions', 'heart'],
+  ['spell', 'Spells', 'soul'],
   ['pet', 'Pets', 'pet'],
   ['delight', 'Delights', 'balloon'],
   ['style', 'Style', 'sparkle'],
@@ -148,7 +147,7 @@ function renderShop(inventory) {
   queueMicrotask(fillComparisons);
   const items = E.SHOP.filter(
     i =>
-      tabGroups().includes(groupOf(i)) &&
+      tabGroups().includes(i.type) &&
       (!inventory || E.itemCount(app.state, i.id) > 0),
   ).sort((a, b) => typeOrder(a) - typeOrder(b) || a.price - b.price);
   const labels = {
@@ -157,7 +156,9 @@ function renderShop(inventory) {
     armor:
       'One of each piece at a time: armor blocks damage, a raised shield halves a hit, helmets raise maximum HP (shifting current HP with it), and boots add deflect. New pieces fill an empty slot automatically.',
     potion:
-      'Healing potions work right away, capped at your maximum HP. A tonic and a prepared spell each last for your next fight, one of each at a time; a spell is used up even on defeat, and putting it away costs nothing.',
+      'Healing potions are used right away, capped at your maximum HP. Tonics last for your next fight, one at a time, alongside a spell.',
+    spell:
+      'Prepare one spell at a time. It is consumed when a fight starts, even on defeat. Switching or putting it away costs nothing.',
     pet: 'Choose one companion. Pets are permanent, and each lends a small bonus in every fight. Hats are just for fun and stay on when you switch companions.',
     delight:
       'Single-use moments of fun. Buy a few and set one off whenever you like. They never change stats or rewards; Escape ends one early.',
@@ -393,7 +394,7 @@ export const actions = {
     openModal({ type: 'inventory' });
   },
   'open-spells'(b, { a, id, sourceRect }) {
-    app.shopCategory = 'potion';
+    app.shopCategory = 'spell';
     openModal({ type: 'inventory' });
   },
   'shop-tab'(b, { a, id, sourceRect }) {

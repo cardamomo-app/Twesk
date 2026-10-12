@@ -1,4 +1,4 @@
-import {avatarGeometry} from './avatar-model.js?v=0.22.2';
+import {avatarGeometry} from './avatar-model.js?v=0.22.3';
 import {createCuboidScene,visibleCuboidFaces} from './cuboid-renderer.js';
 
 const illustrations=new Map();

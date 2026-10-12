@@ -515,7 +515,6 @@ uiTest('the shop compares items, helmets raise HP, tonics activate, and styles c
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).equipped.helmet === 'helm');
   assert.equal((await page.save()).hp, 112);
   await page.click('[data-action="shop-tab"][data-category="potion"]');
-  assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#shop-items .shop-group')].map(h => h.textContent)), ['Healing potions', 'Tonics', 'Spells'], 'potions and spells share one tab');
   await page.click('[data-action="buy"][data-id="swift-tonic"]');
   await page.click('[data-action="use-potion"][data-id="swift-tonic"]');
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).tonic === 'swift-tonic');

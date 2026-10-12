@@ -7,9 +7,11 @@ function shade(hex,amount) {
   const n=parseInt(hex.slice(1),16);
   return '#'+[n>>16,(n>>8)&255,n&255].map(c=>Math.max(0,Math.min(255,Math.round(c*amount))).toString(16).padStart(2,'0')).join('');
 }
-export function avatarGeometry(weapon=null,armor=null,appearance=DEFAULT_APPEARANCE,helmet=null) {
+export function avatarGeometry(weapon=null,armor=null,appearance=DEFAULT_APPEARANCE,helmet=null,{shield=null,boots=null}={}) {
   const boxes=[];
-  const add=(x,y,z,w,d,h,color,part)=>boxes.push({x,y,z,w,d,h,color,part});
+  // Every box records the gear slot it belongs to (null for the body), so item art can show one piece alone.
+  let slot=null;
+  const add=(x,y,z,w,d,h,color,part)=>boxes.push({x,y,z,w,d,h,color,part,slot});
   appearance={...DEFAULT_APPEARANCE,...appearance};
   const pick=key=>APPEARANCE[key].find(o=>o.id===appearance[key])?.color||APPEARANCE[key][0].color;
   const skin=pick('skin'),hair=pick('hair'),cloth=pick('outfit');
@@ -23,6 +25,7 @@ export function avatarGeometry(weapon=null,armor=null,appearance=DEFAULT_APPEARA
   for(const x of [-12,3]) {
     add(x,-5,11,9,10,26,pants,'trousers');
     add(x,4,17,9,1,17,shade(pants,1.14),'seam');
+    if(boots){slot='boots';bootPair(add,x,boots);slot=null;continue;}
     add(x-1,-6,3,11,15,9,boot,'boot');
     add(x-1,-6,3,11,16,2,'#262c33','sole');
     add(x-1,-6,11,11,12,3,leather,'boot cuff');
@@ -107,6 +110,7 @@ export function avatarGeometry(weapon=null,armor=null,appearance=DEFAULT_APPEARA
     add(-13,-9,86,1,21,1,'#2b2b33','eyepatch');add(12,-9,87,1,21,1,'#2b2b33','eyepatch');
   }
   if(helmet) {
+    slot='helmet';
     const tier=helmet.tier;
     if(tier==='basic') {
       const c='#8a6a4c';
@@ -131,13 +135,22 @@ export function avatarGeometry(weapon=null,armor=null,appearance=DEFAULT_APPEARA
     }
   }
   if(armor) {
+    slot='armor';
     if(armor.tier==='basic') {
-      const c='#96754f';
-      add(-13,8,41,10,3,22,c,'leather vest');add(3,8,41,10,3,22,c,'leather vest');
-      add(-13,-10,41,26,3,23,c,'vest back');
-      for(const x of [-12,8])add(x,-9,63,4,20,3,shade(c,.8),'shoulder strap');
-      for(const z of [46,54,61])add(-1,9,z,2,3,2,trim,'vest clasp');
-      add(-13,11,42,26,1,3,shade(c,.75),'stitched hem');
+      // A wrapped leather vest: open front with laces over the tunic, shoulder yokes, a collar, and stitched edges.
+      const c='#9a7651',dark=shade(c,.78),light=shade(c,1.18),stitch='#e6d3a8';
+      add(-14,-9,41,28,3,23,c,'vest back');
+      add(-14,-8,41,2,16,22,c,'vest side');add(12,-8,41,2,16,22,c,'vest side');
+      // Front panels step back into a V-neck; narrow straps leave the shoulders free.
+      add(-14,8,41,11,3,17,c,'leather vest');add(3,8,41,11,3,17,c,'leather vest');
+      add(-14,8,58,8,3,6,c,'leather vest');add(6,8,58,8,3,6,c,'leather vest');
+      add(-14,-9,62,7,19,3,dark,'shoulder strap');add(7,-9,62,7,19,3,dark,'shoulder strap');
+      add(-9,-9,63,18,4,5,dark,'vest collar');
+      add(-7,10.5,54,2,1.5,10,light,'lapel');add(5,10.5,54,2,1.5,10,light,'lapel');
+      add(-4,11,42,1,1,13,stitch,'stitched edge');add(3,11,42,1,1,13,stitch,'stitched edge');
+      add(-14,11,42,11,1,1,stitch,'stitched hem');add(3,11,42,11,1,1,stitch,'stitched hem');
+      for(const z of [45,49])add(-3,9.5,z,6,1,1,'#efe2c4','vest lace');
+      add(-12,11,44,6,1,6,dark,'vest pocket');add(-12,11,49,6,1.5,2,light,'pocket flap');
     } else {
       const legendary=armor.tier==='legendary',special=armor.tier==='special'||legendary;
       const metal=legendary?'#e6d3a0':special?'#a8a6db':'#80998e',edge=legendary?'#b8862f':special?'#dbca91':'#bdcbb4';
@@ -167,26 +180,82 @@ export function avatarGeometry(weapon=null,armor=null,appearance=DEFAULT_APPEARA
       }
     }
   } else {
+    slot=null;
     // Cross-body strap and a little satchel, rather than a flat colored torso.
     for(let i=0;i<6;i++)add(-11+i*4,9,59-i*3,4,2,5,leather,'satchel strap');
     add(12,0,39,6,10,13,leather,'satchel');add(13,1,50,6,10,3,trim,'satchel flap');
   }
+  if(shield){slot='shield';shieldGeometry(add,shield);}
   if(weapon) {
-    const legendary=weapon.tier==='legendary',special=weapon.tier==='special'||legendary,large=weapon.tier==='large';
-    const blade=legendary?'#f3e3a6':special?'#c9c2f3':large?'#a7bab9':'#c0c8c9';
-    const length=legendary?54:special?48:large?43:36,x=22,y=5;
-    add(x,-1,28,4,5,14,'#5b4540','sword grip');
-    add(x-1,-2,27,6,7,4,special?'#b59de3':trim,'pommel');
-    add(x-6,-3,41,16,9,4,special?'#d5b66f':trim,'crossguard');
-    add(x-1,0,45,6,4,length,blade,'blade');
-    add(x+1,4,46,2,1,length-2,shade(blade,1.18),'blade ridge');
-    add(x,0,45+length,4,4,5,blade,'sword point');
-    add(x+1,1,50+length,2,2,3,blade,'sword tip');
-    if(large||special){add(x-4,-2,45,12,8,5,special?'#a899d9':'#7d9990','blade shoulders');}
-    if(special)for(const z of [56,67,78])add(x,5,z,4,1,3,legendary?'#e2875a':'#e8d69b','blade rune');
-    if(legendary){add(x-9,-3,40,4,9,8,'#e2b84f','guard wing');add(x+9,-3,40,4,9,8,'#e2b84f','guard wing');add(x,5,89,4,1,4,'#e2875a','blade rune');}
+    slot='weapon';
+    if(weapon.kind==='dagger')daggerGeometry(add,weapon);
+    else if(weapon.kind==='axe')axeGeometry(add,weapon);
+    else {
+      const legendary=weapon.tier==='legendary',special=weapon.tier==='special'||legendary,large=weapon.tier==='large';
+      const blade=legendary?'#f3e3a6':special?'#c9c2f3':large?'#a7bab9':'#c0c8c9';
+      const length=legendary?54:special?48:large?43:36,x=22,y=5;
+      add(x,-1,28,4,5,14,'#5b4540','sword grip');
+      add(x-1,-2,27,6,7,4,special?'#b59de3':trim,'pommel');
+      add(x-6,-3,41,16,9,4,special?'#d5b66f':trim,'crossguard');
+      add(x-1,0,45,6,4,length,blade,'blade');
+      add(x+1,4,46,2,1,length-2,shade(blade,1.18),'blade ridge');
+      add(x,0,45+length,4,4,5,blade,'sword point');
+      add(x+1,1,50+length,2,2,3,blade,'sword tip');
+      if(large||special){add(x-4,-2,45,12,8,5,special?'#a899d9':'#7d9990','blade shoulders');}
+      if(special)for(const z of [56,67,78])add(x,5,z,4,1,3,legendary?'#e2875a':'#e8d69b','blade rune');
+      if(legendary){add(x-9,-3,40,4,9,8,'#e2b84f','guard wing');add(x+9,-3,40,4,9,8,'#e2b84f','guard wing');add(x,5,89,4,1,4,'#e2875a','blade rune');}
+    }
   }
   return boxes;
+}
+
+// Boots replace the plain boots on one leg; tiers differ in leather, height, straps, and trim.
+function bootPair(add,x,boots) {
+  const look={basic:{c:'#7a5838',cuff:'#a6845c',h:12},large:{c:'#56614f',cuff:'#7b8a6c',h:14},special:{c:'#8b84c4',cuff:'#dbca91',h:13}}[boots.tier]||{c:'#7a5838',cuff:'#a6845c',h:12};
+  add(x-1,-6,3,11,15,look.h,look.c,'boot');
+  add(x-1,-6,3,11,16,2,'#2b2a30','sole');
+  add(x-1.5,-6.5,3+look.h-3,12,16,4,look.cuff,'boot cuff');
+  add(x+.5,-4.5,3+look.h+.5,8,12,1,shade(look.c,.55),'boot opening');
+  add(x-.5,9,3,10,3,5,shade(look.c,1.08),'boot toe');add(x-.5,9,3,10,4,1.5,'#2b2a30','sole');
+  if(boots.tier==='basic'){for(const z of [6,9])add(x+2,9,z,5,1,1,'#e8d9b8','boot lace');}
+  else if(boots.tier==='large'){for(const z of [6,11])add(x-1.5,-6.5,z,12,16,2,'#3e4639','boot strap');add(x+2,9.5,6,3,1,2,'#c9a66b','boot buckle');add(x+2,9.5,11,3,1,2,'#c9a66b','boot buckle');}
+  else {const out=x<0?x-3:x+10;add(out,-6,9,2,6,6,'#f3ecd6','heel wing');add(out,-8,12,2,5,5,'#f3ecd6','heel wing');add(out,-9,15,2,3,3,'#fffaf0','heel wing');add(x+2,9.5,6,5,1,2,'#dbca91','boot trim');}
+}
+// Shields are held in front of the left forearm, facing forward. Stepped rows make round and kite shapes.
+function shieldGeometry(add,shield) {
+  const cx=-18.5,cz=45,y=9,tier=shield.tier;
+  const row=(x0,half,z,h,depth,color,part)=>add(x0-half,y+depth,z,half*2,2,h,color,part);
+  const disc=(r,depth,color,part)=>{for(let dz=-r;dz<r;dz+=2){const m=dz+1,half=Math.max(1,Math.round(Math.sqrt(Math.max(0,r*r-m*m))));row(cx,half,cz+dz,2,depth,color,part);}};
+  const kite=(top,depth,color,part,scale=1)=>{for(let z=-14*scale;z<10*scale;z+=2){const half=z>=-2*scale?top:Math.max(1,Math.round(top*(z+14*scale)/(12*scale)));row(cx,half,cz+z,2,depth,color,part);}};
+  if(tier==='basic'){disc(8,0,'#7d5c3d','shield rim');disc(6.5,1,'#a67c52','shield face');add(cx-1,y+2,cz-8,2,1,16,'#8a6a4c','shield plank');add(cx-2.5,y+2,cz-2.5,5,2,5,'#c7c9c9','shield boss');}
+  else if(tier==='large'){kite(9,0,'#55695f','shield rim');kite(7.5,1,'#80998e','shield face',.92);add(cx-1,y+2,cz-10,2,1,18,'#bdcbb4','shield emblem');add(cx-5,y+2,cz+2,10,1,2,'#bdcbb4','shield emblem');}
+  else if(tier==='special'){disc(9,0,'#7d77b6','shield rim');disc(7.5,1,'#a8a6db','shield face');add(cx-2,y+2,cz-2,4,2,4,'#dbca91','shield boss');for(const [dx,dz] of [[0,9],[0,-11],[8,-1],[-10,-1],[6,6],[-8,6],[6,-8],[-8,-8]])add(cx+dx,y+.5,cz+dz,2,2,2,'#efe0b0','shield thorn');}
+  else {kite(10,0,'#b8862f','shield rim');kite(8.5,1,'#e6d3a0','shield face',.92);add(cx-3,y+2,cz-1,6,1.5,6,'#f0c95a','sun emblem');for(const [dx,dz] of [[-1,6],[-1,-6],[4,1.5],[-6,1.5]])add(cx+dx,y+2,cz+dz,2,1.5,2,'#f0c95a','sun emblem');add(cx-1,y+3,cz+1,2,1,2,'#fff0b8','sun emblem');}
+}
+// Daggers sit in the right hand: a short blade, a small guard, and a tier-specific edge.
+function daggerGeometry(add,weapon) {
+  const x=22,tier=weapon.tier;
+  const look={basic:{blade:'#ece4cf',grip:'#6e5240',guard:'#a6845c',len:16},large:{blade:'#86b672',grip:'#3f5a3a',guard:'#c9a66b',len:19},special:{blade:'#6a5a8e',grip:'#2f2a3d',guard:'#b9a3f0',len:21},legendary:{blade:'#3b3652',grip:'#2b2638',guard:'#e2b84f',len:23}}[tier];
+  add(x,-1,30,4,5,11,look.grip,'dagger grip');add(x-.5,-1.5,28,5,6,3,look.guard,'pommel');
+  add(x-4,-2,41,12,8,3,look.guard,'dagger guard');
+  add(x,0,44,4,4,look.len,look.blade,'dagger blade');
+  add(x+1,1,44+look.len,2,3,4,look.blade,'dagger point');
+  if(tier==='basic')add(x+2,0,44+look.len+2,2,2,3,look.blade,'dagger point');
+  if(tier==='large'){add(x+1,4,46,2,1,look.len-3,'#4f7a46','blade ridge');add(x+1,-2.5,41.5,2,1,2,'#d95b5b','viper eye');}
+  if(tier==='special'){add(x-.5,0,46,1,4,look.len-3,'#c7b4ff','dagger edge');add(x+3.5,0,46,1,4,look.len-3,'#c7b4ff','dagger edge');}
+  if(tier==='legendary'){add(x-.5,0,45,1,4,look.len-1,'#e2b84f','dagger edge');add(x+3.5,0,45,1,4,look.len-1,'#e2b84f','dagger edge');add(x-8,-2,40,4,8,6,look.guard,'crescent guard');add(x+8,-2,40,4,8,6,look.guard,'crescent guard');add(x+1,4,52,2,1,3,'#f3e3a6','blade rune');}
+}
+// Axes: a long haft with the head flaring outward; the bearded axe hooks down and the frost axe grows crystals.
+function axeGeometry(add,weapon) {
+  const x=22,tier=weapon.tier;
+  const look={basic:{haft:'#8a6a4c',head:'#b9c0c2',edge:'#e3e8ea',top:76},large:{haft:'#6e5240',head:'#93a8a6',edge:'#d6e2e0',top:80},special:{haft:'#4d5a7a',head:'#9fd0e6',edge:'#e8f7fd',top:82}}[tier]||{haft:'#8a6a4c',head:'#b9c0c2',edge:'#e3e8ea',top:76};
+  add(x,0,26,4,4,look.top-26,look.haft,'axe haft');
+  for(const z of [32,37])add(x-.5,-.5,z,5,5,2,shade(look.haft,.75),'haft wrap');
+  const top=look.top-2;
+  if(tier==='basic'){add(x+4,-.5,top-10,5,5,10,look.head,'axe head');add(x+9,-.5,top-13,3,5,16,look.head,'axe head');add(x+12,-.5,top-14,2,5,18,look.edge,'axe edge');add(x-3,-.5,top-7,3,5,6,look.head,'axe poll');}
+  else if(tier==='large'){add(x+4,-.5,top-10,6,5,10,look.head,'axe head');add(x+10,-.5,top-20,3,5,20,look.head,'axe beard');add(x+13,-.5,top-22,2,5,23,look.edge,'axe edge');add(x+7,-.5,top-18,3,5,8,look.head,'axe beard');add(x-3,-.5,top-7,3,5,6,look.head,'axe poll');}
+  else {add(x+4,-.5,top-12,6,5,12,look.head,'axe head');add(x+10,-.5,top-16,3,5,20,look.head,'axe head');add(x+13,-.5,top-17,2,5,22,look.edge,'axe edge');add(x-6,-.5,top-11,6,5,10,look.head,'axe head');add(x-9,-.5,top-14,3,5,16,look.edge,'axe edge');
+    for(const [dx,dz,h] of [[1,0,5],[6,1,4],[-3,0,4]])add(x+dx,1,top+dz,2,2,h,'#e8f7fd','frost crystal');}
 }
 
 const scenes=new Map();
@@ -205,27 +274,28 @@ export function avatarFaceArt(appearance=DEFAULT_APPEARANCE){
   if(portraits.size>=16)portraits.delete(portraits.keys().next().value);
   portraits.set(key,art);return art;
 }
-export function avatarArt(weapon=null,armor=null,large=false,{angle=-.45,appearance=DEFAULT_APPEARANCE,helmet=null}={}) {
-  const look={...DEFAULT_APPEARANCE,...appearance},key=JSON.stringify([weapon?.tier,armor?.tier,helmet?.tier,look]);
+const gearKey=item=>item?(item.id||item.tier):null;
+export function avatarArt(weapon=null,armor=null,large=false,{angle=-.45,appearance=DEFAULT_APPEARANCE,helmet=null,shield=null,boots=null}={}) {
+  const look={...DEFAULT_APPEARANCE,...appearance},key=JSON.stringify([weapon,armor,helmet,shield,boots].map(gearKey).concat(look));
   let scene=scenes.get(key);
-  if(!scene){scene=createCuboidScene(avatarGeometry(weapon,armor,look,helmet));if(scenes.size>=16)scenes.delete(scenes.keys().next().value);scenes.set(key,scene);}
+  if(!scene){scene=createCuboidScene(avatarGeometry(weapon,armor,look,helmet,{shield,boots}));if(scenes.size>=16)scenes.delete(scenes.keys().next().value);scenes.set(key,scene);}
   const faces=visibleCuboidFaces(scene,angle);
-  const label=`Your voxel adventurer${armor?' wearing armor':''}${helmet?' and a helmet':''}${weapon?' holding a sword':''}`;
+  const label=`Your voxel adventurer${armor?' wearing armor':''}${helmet?' and a helmet':''}${boots?' and boots':''}${weapon?` holding ${weapon.kind==='axe'?'an axe':weapon.kind==='dagger'?'a dagger':'a sword'}`:''}${shield?' and a shield':''}`;
   return `<svg xmlns="http://www.w3.org/2000/svg" class="voxel-art avatar-art ${large?'large':''}" viewBox="0 0 240 260" role="img" aria-label="${label}" data-angle="${angle.toFixed(3)}"><ellipse cx="120" cy="229" rx="64" ry="13" fill="currentColor" opacity=".07"/>${faces.map(f=>`<polygon points="${f.projected.map(p=>p.map(n=>n.toFixed(2)).join(',')).join(' ')}" fill="${shade(f.color,f.light)}" data-part="${f.part}"/>`).join('')}</svg>`;
 }
 
 // Two gait poses are projected as complete scenes, so armor and overlapping limbs stay solid.
 const journeyArt = new Map();
-export function avatarJourneyArt(weapon, armor, appearance, helmet) {
-  const key = JSON.stringify([weapon?.tier, armor?.tier, appearance, helmet?.tier]);
+export function avatarJourneyArt(weapon, armor, appearance, helmet, { shield = null, boots = null } = {}) {
+  const key = JSON.stringify([[weapon, armor, helmet, shield, boots].map(gearKey), appearance]);
   if (journeyArt.has(key)) return journeyArt.get(key);
   const legs = new Set(['trousers', 'seam', 'boot', 'sole', 'boot cuff', 'boot buckle', 'greave']);
   const arms = new Set(['sleeve', 'forearm', 'bracer', 'hand', 'thumb', 'gauntlet', 'gauntlet trim']);
   const frames = [-1, 1].map(stride => {
-    const boxes = avatarGeometry(weapon, armor, appearance, helmet).filter(b => !['plinth', 'moss'].includes(b.part)).map(b => {
+    const boxes = avatarGeometry(weapon, armor, appearance, helmet, { shield, boots }).filter(b => !['plinth', 'moss'].includes(b.part)).map(b => {
       const side = b.x < 0 ? -1 : 1;
-      if (legs.has(b.part)) return { ...b, y: b.y + side * stride * 4, z: b.z + Math.max(0, side * stride * 2) };
-      if (arms.has(b.part) || /sword|blade|pommel|crossguard|guard wing/.test(b.part)) return { ...b, y: b.y - side * stride * 3 };
+      if (legs.has(b.part) || b.slot === 'boots') return { ...b, y: b.y + side * stride * 4, z: b.z + Math.max(0, side * stride * 2) };
+      if (arms.has(b.part) || b.slot === 'weapon' || b.slot === 'shield') return { ...b, y: b.y - side * stride * 3 };
       return b;
     });
     return visibleCuboidFaces(createCuboidScene(boxes), -.85);

@@ -640,6 +640,39 @@ uiTest('a won fight plays out, celebrates, and pays its loot', async page => {
   await page.waitFor(() => /Next opponent arrives tomorrow/.test(document.querySelector('#app .monster-panel')?.textContent || ''));
 });
 
+uiTest('shields and boots are sold in their own tabs, and powered fights replay with their effects', async page => {
+  // A won fight with an axe stagger and a raised shield, made with the real rules.
+  const base = strong();
+  base.gold = 5000;
+  for (const id of ['frostbite', 'thornwall', 'windstep']) E.buy(base, id);
+  let save = null;
+  for (let seed = 1; !save && seed < 500; seed++) {
+    let x = seed;
+    const rng = () => ((x = (Math.imul(1664525, x) + 1013904223) >>> 0), x / 4294967296);
+    const trial = structuredClone(base), r = E.fight(trial, today(trial), rng);
+    if (r.won && r.events.some(e => e.type === 'stagger') && r.events.some(e => e.shieldBlock !== undefined)) save = trial;
+  }
+  assert.ok(save, 'found a fight with both powers');
+  await page.open({ save });
+  assert.match(await page.evaluate(() => document.querySelector('#app .avatar-art').getAttribute('aria-label')), /holding an axe and a shield/);
+  await page.click('#app [data-action="replay-battle"]');
+  await page.waitFor(() => document.querySelector('.battle-modal'));
+  await page.click('[data-action="skip-battle"]');
+  await page.waitFor(() => document.querySelector('.combat-history[open]'));
+  const log = await page.text('.combat-history');
+  assert.match(log, /Frozen!/);
+  assert.match(log, /Thornwall shield raised/);
+  await page.click('.battle-result [data-action="close-modal"]');
+  // Shop: the Boots tab sells boots; buying fills the empty slot.
+  await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('twesk.v1')); s.equipped.boots = null; s.inventory = s.inventory.filter(id => id !== 'windstep'); localStorage.setItem('twesk.v1', JSON.stringify(s)); });
+  await page.goto('/');
+  await page.click('#app .character-actions [data-action="shop"]');
+  await page.click('[data-action="shop-tab"][data-category="boots"]');
+  await page.waitFor(() => document.querySelector('#shop-tab-boots[aria-selected="true"]'));
+  await page.click('[data-action="buy"][data-id="trailboots"]');
+  await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).equipped.boots === 'trailboots');
+});
+
 uiTest('the history calendar shows today’s habit and task', async page => {
   await page.open();
   await page.click('#app [data-action="toggle-task"]');

@@ -1,9 +1,6 @@
-import {avatarGeometry} from './avatar-model.js?v=0.21.3';
+import {avatarGeometry} from './avatar-model.js?v=0.22.0';
 import {createCuboidScene,visibleCuboidFaces} from './cuboid-renderer.js';
 
-const weaponParts=new Set(['sword grip','pommel','crossguard','blade','blade ridge','sword point','sword tip','blade shoulders','blade rune','guard wing']);
-const armorParts=new Set(['leather vest','vest back','shoulder strap','vest clasp','stitched hem','breastplate','chest plate','chest crest','pauldron','pauldron rim','hip plate','cape','cape fold','cape hem','cape crest','shoulder ornament','back plate','back trim','sun crest']);
-const helmetParts=new Set(['helmet','helmet brim','helmet seam','helmet flap','helmet trim','helmet nasal','cheek guard','helmet crest','helmet wing','crown spike','crown gem']);
 const illustrations=new Map();
 function tint(hex,factor){return '#'+hex.slice(1).match(/../g).map(c=>Math.min(255,Math.round(parseInt(c,16)*factor)).toString(16).padStart(2,'0')).join('');}
 function shade2(hex,f){return tint(hex,f);}
@@ -155,10 +152,16 @@ function illustrate(key,item,boxes,{fitBoxes=boxes,label='',viewBox='20 40 200 2
   const illustration=`<svg class="equipment-art voxel-art ${item.type}" viewBox="${viewBox}" aria-hidden="true"${label}><ellipse cx="120" cy="226" rx="50" ry="9" fill="currentColor" opacity=".07"/>${faces.map(f=>`<polygon points="${f.projected.map(p=>p.map(n=>n.toFixed(2)).join(',')).join(' ')}" fill="${tint(f.color,f.light)}"/>`).join('')}</svg>`;
   illustrations.set(key,illustration);return illustration;
 }
+// Gear is cut from the character model by slot; armor is shown on a small linen dress form so it never looks hollow.
+function gearBoxes(item) {
+  const slot=item.type,gear={weapon:null,armor:null,helmet:null,[slot]:item};
+  const boxes=avatarGeometry(gear.weapon,gear.armor,undefined,gear.helmet,{shield:item.type==='shield'?item:null,boots:item.type==='boots'?item:null}).filter(b=>b.slot===slot&&!['circlet','moon crest'].includes(b.part));
+  if(slot==='armor')boxes.unshift({x:-12.5,y:-6.5,z:39,w:25,d:14,h:26,color:'#e7dcc6',part:'dress form'},{x:-4,y:-3,z:65,w:8,d:6,h:4,color:'#d8ccb3',part:'dress form'},{x:-1.5,y:-1.5,z:30,w:3,d:3,h:9,color:'#9c8466',part:'dress form'});
+  return boxes;
+}
 export function itemArt(item) {
   if(illustrations.has(item.id))return illustrations.get(item.id);
-  const parts=item.type==='weapon'?weaponParts:item.type==='helmet'?helmetParts:armorParts;
-  const boxes=item.type==='potion'?potion(item):item.type==='spell'?spell(item):item.type==='pet'?pet(item):item.type==='delight'?delight(item):item.type==='pethat'?hatBoxes(item).map(b=>({...b,x:b.x*2.4,y:b.y*2.4,z:b.z*2.4,w:b.w*2.4,d:b.d*2.4,h:b.h*2.4})):avatarGeometry(item.type==='weapon'?item:null,item.type==='armor'?item:null,undefined,item.type==='helmet'?item:null).filter(b=>parts.has(b.part));
+  const boxes=item.type==='potion'?potion(item):item.type==='spell'?spell(item):item.type==='pet'?pet(item):item.type==='delight'?delight(item):item.type==='pethat'?hatBoxes(item).map(b=>({...b,x:b.x*2.4,y:b.y*2.4,z:b.z*2.4,w:b.w*2.4,d:b.d*2.4,h:b.h*2.4})):gearBoxes(item);
   return illustrate(item.id,item,boxes);
 }
 // A companion wearing a hat: the pet keeps its usual size and the hat sits on its head.

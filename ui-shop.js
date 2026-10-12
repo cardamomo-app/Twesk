@@ -1,13 +1,13 @@
 // Shop and inventory: buying, equipping, potions, spells, and pets.
-import * as E from './engine.js?v=0.21.3';
-import { avatarFaceArt, itemArt, monsterName, petArt } from './art.js?v=0.21.3';
+import * as E from './engine.js?v=0.22.0';
+import { avatarFaceArt, itemArt, monsterName, petArt } from './art.js?v=0.22.0';
 import { APPEARANCE, APPEARANCE_LABELS } from './appearance.js';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.21.3';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.21.3';
-import { burst, countUp, sound } from './ui-effects.js?v=0.21.3';
-import { potionCount } from './ui-character.js?v=0.21.3';
-import { playDelight } from './ui-delights.js?v=0.21.3';
-import { percent, requestOdds } from './ui-odds.js?v=0.21.3';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.22.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.22.0';
+import { burst, countUp, sound } from './ui-effects.js?v=0.22.0';
+import { potionCount } from './ui-character.js?v=0.22.0';
+import { playDelight } from './ui-delights.js?v=0.22.0';
+import { percent, requestOdds } from './ui-odds.js?v=0.22.0';
 // Odds are compared against the next opponent, at full health when currently at 0 HP.
 function comparisonBase() {
   const s = app.state;
@@ -27,6 +27,18 @@ const inUse = item =>
         : item.type === 'pethat'
           ? app.state.petHat === item.id
           : app.state.equipped[item.type] === item.id;
+const pct = n => Math.round(n * 100) + '%';
+const POWER_LABELS = {
+  twin: n => `${pct(n)} second strike`,
+  crit: n => `${pct(n)} critical hits`,
+  venom: n => `venom up to +${n}`,
+  sunder: n => `sunder up to −${n}`,
+  stagger: n => `${pct(n)} stagger`,
+  drain: n => `${pct(n)} drain`,
+  block: n => `${pct(n)} shield block`,
+  thorns: n => `${n} thorns`,
+};
+const powerLabel = power => Object.entries(power).map(([key, n]) => POWER_LABELS[key](n)).join(' · ');
 const STAT_LABELS = [
   ['attack', 'attack', n => n],
   ['armor', 'blocked per hit', n => n],
@@ -41,12 +53,12 @@ function currentFor(item) {
   if (item.type === 'pet') return E.activePetItem(app.state)?.name || 'no companion';
   return (
     E.SHOP.find(x => x.id === app.state.equipped[item.type])?.name ||
-    { weapon: 'unarmed', armor: 'no armor', helmet: 'no helmet' }[item.type]
+    { weapon: 'unarmed', armor: 'no armor', helmet: 'no helmet', shield: 'no shield', boots: 'everyday boots' }[item.type]
   );
 }
 // What changes if this item replaces the current one in its slot: every stat it touches, plus win odds.
 function comparison(item) {
-  if (!['weapon', 'armor', 'helmet', 'spell', 'pet'].includes(item.type) && !item.tonic) return '';
+  if (!['weapon', 'armor', 'helmet', 'shield', 'boots', 'spell', 'pet'].includes(item.type) && !item.tonic) return '';
   const now = E.combatStats(app.state),
     then = E.combatStats(E.withItem(app.state, item)),
     selected = inUse(item);
@@ -56,6 +68,9 @@ function comparison(item) {
       return `<strong class="${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : '−'}${format(Math.abs(delta))} ${unit}</strong>`;
     },
   );
+  // Weapon and shield powers don't show in the stat totals, so name the one this item brings.
+  const power = item.power ? `<strong class="up">${powerLabel(item.power)}</strong>` : '';
+  if (power) changes.push(power);
   const detail = selected
     ? `<strong>${item.tonic ? 'Active for your next fight' : item.type === 'spell' ? 'Prepared' : item.type === 'pet' ? 'Your companion' : 'Equipped'}</strong>`
     : `${changes.join(' · ') || '<strong>No change</strong>'} <small>vs ${esc(currentFor(item))}</small>`;
@@ -88,8 +103,10 @@ function fillComparisons() {
 }
 const shopTabs = [
   ['weapon', 'Weapons', 'sword'],
-  ['armor', 'Armor', 'shield'],
+  ['armor', 'Armor', 'armor'],
+  ['shield', 'Shields', 'shield'],
   ['helmet', 'Helmets', 'helmet'],
+  ['boots', 'Boots', 'boot'],
   ['potion', 'Potions', 'heart'],
   ['spell', 'Spells', 'soul'],
   ['pet', 'Pets', 'pet'],
@@ -126,7 +143,10 @@ function renderShop(inventory) {
       (!inventory || E.itemCount(app.state, i.id) > 0),
   ).sort((a, b) => (a.type === 'pethat') - (b.type === 'pethat') || a.price - b.price);
   const labels = {
-    weapon: 'One weapon at a time. New weapons fill an empty slot automatically.',
+    weapon:
+      'One weapon at a time. Swords hit hardest; daggers and axes trade a little attack for a power. New weapons fill an empty slot automatically.',
+    shield: 'One shield at a time, in your off hand. A raised shield halves a hit after armor; some strike back.',
+    boots: 'One pair at a time. Boots add to your deflect chance, alongside Soul.',
     armor: 'One armor at a time. New armor fills an empty slot automatically.',
     helmet:
       'One helmet at a time. Helmets raise maximum HP; putting one on or taking it off shifts your current HP too.',

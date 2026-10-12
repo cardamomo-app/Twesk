@@ -1,12 +1,12 @@
 // The monster card, victory odds, and animated encounters.
-import * as E from './engine.js?v=0.21.3';
-import { avatarArt, monsterArt, monsterName, itemArt } from './art.js?v=0.21.3';
-import { describeCombatEvent } from './combat-presentation.js?v=0.21.3';
-import { playSfx, stopSfx, unlockSfx } from './sfx.js?v=0.21.3';
-import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.21.3';
-import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.21.3';
-import { announceBadges, commit } from './ui-modal.js?v=0.21.3';
-import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.21.3';
+import * as E from './engine.js?v=0.22.0';
+import { avatarArt, monsterArt, monsterName, itemArt } from './art.js?v=0.22.0';
+import { describeCombatEvent } from './combat-presentation.js?v=0.22.0';
+import { playSfx, stopSfx, unlockSfx } from './sfx.js?v=0.22.0';
+import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.22.0';
+import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.22.0';
+import { announceBadges, commit } from './ui-modal.js?v=0.22.0';
+import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.22.0';
 export function renderMonster() {
   const number = app.state.monster.number,
     won = !!app.state.monster.defeatedOn,
@@ -59,6 +59,8 @@ function renderBattleModal() {
     weapon = E.SHOP.find(i => i.id === loadout.weapon),
     armor = E.SHOP.find(i => i.id === loadout.armor),
     helmet = E.SHOP.find(i => i.id === loadout.helmet),
+    shield = E.SHOP.find(i => i.id === loadout.shield) || null,
+    boots = E.SHOP.find(i => i.id === loadout.boots) || null,
     pet = E.SHOP.find(i => i.id === r.pet),
     tonic = E.SHOP.find(i => i.id === r.tonic);
   const levels = r.levels || Object.fromEntries(E.CATEGORIES.map(c => [c, E.level(app.state, c)]));
@@ -66,6 +68,7 @@ function renderBattleModal() {
       monster: monsterName(r.monster),
       weapon,
       armor,
+      shield,
       spell: E.SHOP.find(i => i.id === r.spell),
       pet,
     },
@@ -78,7 +81,7 @@ function renderBattleModal() {
       : 'ready';
   const effect = side =>
     !finished && step?.target === side
-      ? `<div class="combat-float ${step.tone}">${esc(step.float)}</div>${event.type === 'hit' && event.blocked ? `<div class="combat-block">${icon('shield')}BLOCKED ${event.blocked}</div>` : ''}${event.type === 'deflect' ? `<div class="deflect-ring">${icon('soul')}</div>` : ''}${event.type === 'rally' ? '<div class="healing-ring"></div>' : ''}${['attack', 'hit'].includes(event.type) ? '<svg class="strike-arc" viewBox="0 0 120 120" aria-hidden="true"><path d="M93 11Q21 42 24 105"/><path d="M107 18Q50 42 42 91"/></svg><svg class="hit-sparks" viewBox="0 0 100 100" aria-hidden="true"><path d="m50 14 0 20m0 32v20M14 50h20m32 0h20M24 24l14 14m24 24 14 14M24 76l14-14m24-24 14-14"/></svg>' : ''}`
+      ? `<div class="combat-float ${step.tone}">${esc(step.float)}</div>${event.type === 'hit' && event.blocked ? `<div class="combat-block">${icon('shield')}BLOCKED ${event.blocked}</div>` : ''}${event.type === 'deflect' ? `<div class="deflect-ring">${icon('soul')}</div>` : ''}${event.type === 'stagger' ? `<div class="deflect-ring stagger-ring">${icon(weapon?.kind === 'axe' && weapon.tier === 'special' ? 'sparkle' : 'sword')}</div>` : ''}${event.type === 'rally' ? '<div class="healing-ring"></div>' : ''}${['attack', 'hit'].includes(event.type) ? '<svg class="strike-arc" viewBox="0 0 120 120" aria-hidden="true"><path d="M93 11Q21 42 24 105"/><path d="M107 18Q50 42 42 91"/></svg><svg class="hit-sparks" viewBox="0 0 100 100" aria-hidden="true"><path d="m50 14 0 20m0 32v20M14 50h20m32 0h20M24 24l14 14m24 24 14 14M24 76l14-14m24-24 14-14"/></svg>' : ''}`
       : '';
   const historyEnd = finished ? r.events.length : Math.max(0, index);
   const history = r.events.slice(Math.max(0, historyEnd - 4), historyEnd);
@@ -91,9 +94,11 @@ function renderBattleModal() {
     ...(helmet ? [{ label: `${helmet.name} · +${helmet.bonus} max HP`, tone: 'gear' }] : []),
     { label: `Body ${levels.body} · ${maximum} max HP`, tone: 'body' },
     ...(weapon
-      ? [{ label: `${weapon.name} · +${weapon.bonus} attack`, tone: 'gear' }]
+      ? [{ label: `${weapon.name} · +${weapon.bonus} attack${weapon.power ? ' · ' + weapon.description.split('·')[1].trim() : ''}`, tone: 'gear' }]
       : [{ label: 'Unarmed', tone: 'gear' }]),
     ...(armor ? [{ label: `${armor.name} · −${armor.bonus} damage`, tone: 'gear' }] : []),
+    ...(shield ? [{ label: `${shield.name} · ${shield.bonus}% block`, tone: 'gear' }] : []),
+    ...(boots ? [{ label: `${boots.name} · +${boots.bonus}% deflect`, tone: 'gear' }] : []),
     ...(levels.mind > 1
       ? [{ label: `Mind ${levels.mind} · +${4 * (levels.mind - 1)} attack`, tone: 'mind' }]
       : []),
@@ -114,7 +119,7 @@ function renderBattleModal() {
     `<div class="battle-body">
     <div class="battle-toolbar"><span>${finished ? `${round} rounds` : `${index < 0 ? 'GET READY' : `ROUND ${round} · ${event?.type === 'attack' ? 'YOUR TURN' : event?.type === 'rally' ? 'RECOVERY' : 'MONSTER’S TURN'}`}`}</span><div>${app.modal.replay ? '<span class="replay-label">REPLAY</span>' : ''}<span>${finished ? 'Encounter complete' : `Step ${Math.max(0, index + 1)} / ${r.events.length}`}</span><button class="icon-button" data-action="battle-mute" title="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}" aria-label="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}">${icon(app.state.settings.muted ? 'mute' : 'sound')}</button></div></div>
     <div class="battle-stage ${stageClass}" id="battle-stage">${finished && r.won ? '<div class="victory-banner" aria-hidden="true"><span class="victory-rays"></span><strong>VICTORY</strong></div>' : ''}
-      <div class="battle-fighter player"><div class="fighter-scene"><div class="fighter-motion">${avatarArt(weapon, armor, false, { appearance: r.appearance || app.state.appearance, helmet })}</div>${effect('player')}</div><strong>${esc(r.playerName || app.state.name)}</strong><div class="health-bar" role="progressbar" aria-label="Adventurer health" aria-valuemin="0" aria-valuemax="${maximum}" aria-valuenow="${hp}" id="battle-player-bar"><div style="width:${(hp / maximum) * 100}%"></div></div><small id="battle-player-hp">${hp} / ${maximum} HP</small></div>
+      <div class="battle-fighter player"><div class="fighter-scene"><div class="fighter-motion">${avatarArt(weapon, armor, false, { appearance: r.appearance || app.state.appearance, helmet, shield, boots })}</div>${effect('player')}</div><strong>${esc(r.playerName || app.state.name)}</strong><div class="health-bar" role="progressbar" aria-label="Adventurer health" aria-valuemin="0" aria-valuemax="${maximum}" aria-valuenow="${hp}" id="battle-player-bar"><div style="width:${(hp / maximum) * 100}%"></div></div><small id="battle-player-hp">${hp} / ${maximum} HP</small></div>
       <div class="battle-divider"><span>VS</span><i></i></div>
       <div class="battle-fighter monster"><div class="fighter-scene"><div class="fighter-motion">${monsterArt(r.monster, finished && r.won)}</div>${effect('monster')}</div><strong>${monsterName(r.monster)}</strong><div class="health-bar enemy" role="progressbar" aria-label="Monster health" aria-valuemin="0" aria-valuemax="${enemyMax}" aria-valuenow="${enemy}" id="battle-enemy-bar"><div style="width:${(enemy / enemyMax) * 100}%"></div></div><small id="battle-enemy-hp">${enemy} / ${enemyMax} HP</small></div>
     </div>
@@ -245,7 +250,7 @@ function animateBattle(result, initialHP, replay = false) {
           battleAudio.play('impact', { target: 'player', heavy });
           scheduleBattle(() => battleAudio.play('grunt', { who: 'player' }), 80);
         }
-        if (event.type === 'deflect') battleAudio.play('deflect');
+        if (event.type === 'deflect' || event.type === 'stagger') battleAudio.play('deflect');
         if (event.type === 'rally') battleAudio.play('heal');
       },
       reduced ? 100 : 400,

@@ -80,10 +80,10 @@ test('consumables and pet backup fields reject invalid ownership, quantities and
     const s=funded();change(s);assert.throws(()=>E.validateState(s));
   }
 });
-test('monster equipment drops are gear (weapon, armor, or helmet) and never legendary',()=>{
+test('monster equipment drops are gear (weapon, armor, helmet, shield, or boots) and never legendary',()=>{
   const s=funded(),rolls=[.999,0,.999,0,.999,0,.999,.999,.999];
   const result=E.fight(s,day,()=>rolls.shift()??.999);
-  assert.equal(result.loot.type,'equipment');const drop=E.SHOP.find(i=>i.id===result.loot.id);assert.ok(['weapon','armor','helmet'].includes(drop.type));assert.notEqual(drop.tier,'legendary');
+  assert.equal(result.loot.type,'equipment');const drop=E.SHOP.find(i=>i.id===result.loot.id);assert.ok(['weapon','armor','helmet','shield','boots'].includes(drop.type));assert.notEqual(drop.tier,'legendary');
 });
 test('every catalog item has finite, distinct voxel artwork',()=>{
   const art=E.SHOP.map(item=>itemArt(item));

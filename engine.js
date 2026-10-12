@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.21.3';
-import {validHabitIcon} from './habit-icons.js?v=0.21.3';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.22.0';
+import {validHabitIcon} from './habit-icons.js?v=0.22.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -45,7 +45,7 @@ export function freshState() {
       habit('Check in with someone', 'heart', 20), habit('Do something kind', 'heart', 10),
       habit('Mindless scrolling', 'harm', 3), habit('Fast food', 'harm', 7),
     ],
-    notes: [], noteGold: {}, reviewDates: [], inventory: [], equipped: { weapon: null, armor: null, helmet: null }, potions: 0,
+    notes: [], noteGold: {}, reviewDates: [], inventory: [], equipped: { weapon: null, armor: null, helmet: null, shield: null, boots: null }, potions: 0,
     supplies: {}, preparedSpell: null, tonic: null, activePet: null, wardrobe: [], history: {}, ambience: null, petHat: null,
     progress: createProgress(),
     monster: { number: 1, defeatedOn: null }, battles: [], pendingRecovery: false,
@@ -458,6 +458,21 @@ export const SHOP = [
   { id: 'crown', name: 'Sunforged crown', type: 'helmet', tier: 'legendary', price: 600, bonus: 32, description: '+32 maximum HP · fit for a legend' },
   { id: 'dawn', name: 'Dawnbreaker', type: 'weapon', tier: 'legendary', price: 600, bonus: 8, description: '+8 attack · forged at first light' },
   { id: 'sunplate', name: 'Sunforged plate', type: 'armor', tier: 'legendary', price: 600, bonus: 8, description: 'Reduce each hit by 8 · with a crimson cape' },
+  // Daggers and axes trade a little raw attack for a power (see gearPowers and encounter).
+  { id: 'fang', name: 'Fox-fang dagger', type: 'weapon', kind: 'dagger', tier: 'basic', price: 40, bonus: 0, power: { twin: .12 }, description: 'No attack bonus · 12% chance of a quick second strike for half damage' },
+  { id: 'hatchet', name: 'Woodsman’s hatchet', type: 'weapon', kind: 'axe', tier: 'basic', price: 40, bonus: 0, power: { stagger: .07 }, description: 'No attack bonus · 7% chance to stagger, so the monster loses its next attack' },
+  { id: 'viper', name: 'Viper dagger', type: 'weapon', kind: 'dagger', tier: 'large', price: 130, bonus: 1, power: { venom: 3 }, description: '+1 attack · venom builds: each strike adds +1 damage to the next, up to +3' },
+  { id: 'bearded', name: 'Bearded axe', type: 'weapon', kind: 'axe', tier: 'large', price: 140, bonus: 0, power: { sunder: 4 }, description: 'No attack bonus · each strike dents the monster: −1 to its attacks, up to −4' },
+  { id: 'nightshade', name: 'Nightshade dirk', type: 'weapon', kind: 'dagger', tier: 'special', price: 260, bonus: 2, power: { crit: .2 }, description: '+2 attack · 20% chance of a critical hit that doubles your roll' },
+  { id: 'frostbite', name: 'Frostbite axe', type: 'weapon', kind: 'axe', tier: 'special', price: 270, bonus: 2, power: { stagger: .14 }, description: '+2 attack · 14% chance to freeze the monster for a turn' },
+  { id: 'eclipse', name: 'Eclipse fang', type: 'weapon', kind: 'dagger', tier: 'legendary', price: 600, bonus: 4, power: { twin: .2, drain: .1 }, description: '+4 attack · 20% chance of a second strike · heals you for 10% of damage dealt' },
+  { id: 'buckler', name: 'Oak buckler', type: 'shield', tier: 'basic', price: 40, bonus: 15, power: { block: .15 }, description: '15% chance to raise your shield and halve a hit' },
+  { id: 'kite', name: 'Ironbound kite shield', type: 'shield', tier: 'large', price: 130, bonus: 25, power: { block: .25 }, description: '25% chance to raise your shield and halve a hit' },
+  { id: 'thornwall', name: 'Thornwall shield', type: 'shield', tier: 'special', price: 260, bonus: 25, power: { block: .25, thorns: 6 }, description: '25% chance to halve a hit · blocked attackers take 6 damage' },
+  { id: 'aegis', name: 'Sunward aegis', type: 'shield', tier: 'legendary', price: 600, bonus: 35, power: { block: .35, thorns: 8 }, description: '35% chance to halve a hit · blocked attackers take 8 damage' },
+  { id: 'trailboots', name: 'Trail boots', type: 'boots', tier: 'basic', price: 30, bonus: 3, description: '+3% deflect chance · broken in and comfy' },
+  { id: 'rangerboots', name: 'Ranger boots', type: 'boots', tier: 'large', price: 110, bonus: 6, description: '+6% deflect chance · quiet on every path' },
+  { id: 'windstep', name: 'Windstep boots', type: 'boots', tier: 'special', price: 240, bonus: 9, description: '+9% deflect chance · little wings at the heel' },
   { id: 'treat', name: 'Pet treat', type: 'delight', tier: 'basic', price: 8, bonus: 0, description: 'Your companion hops, spins, and shows a little heart' },
   { id: 'balloons', name: 'Balloon bouquet', type: 'delight', tier: 'basic', price: 15, bonus: 0, description: 'Colorful balloons float up across the screen · click to pop' },
   { id: 'drift', name: 'Seasonal drift', type: 'delight', tier: 'large', price: 20, bonus: 0, description: 'Blossoms, leaves, or snow drift over your dashboard for the rest of the day' },
@@ -473,7 +488,12 @@ export const itemCount = (s,id) => id==='potion' ? s.potions : (s.supplies?.[id]
 export const preparedSpell = s => SHOP.find(i=>i.type==='spell'&&i.id===s.preparedSpell);
 export const activeTonic = s => SHOP.find(i=>i.tonic&&i.id===s.tonic);
 export const activePetItem = s => SHOP.find(i=>i.type==='pet'&&i.id===s.activePet);
-export const GEAR_SLOTS = ['weapon','armor','helmet'];
+export const GEAR_SLOTS = ['weapon','armor','helmet','shield','boots'];
+// Powers from the equipped weapon and shield, e.g. { twin: .25 } or { block: .25, thorns: 6 }. Swords have none.
+export function gearPowers(s) {
+  const item = slot => SHOP.find(i => i.id === s.equipped?.[slot]);
+  return { ...(item('weapon')?.power || {}), ...(item('shield')?.power || {}) };
+}
 // Equipping or removing a helmet shifts current HP with the maximum, like a Body level-up.
 function setGear(s,type,id) {
   const before=maxHP(s); s.equipped[type]=id;
@@ -571,12 +591,14 @@ export function combatStats(s) {
   return {
     hp: s.hp, max: maxHP(s), attack: 4*(level(s,'mind')-1)+(SHOP.find(i => i.id === s.equipped.weapon)?.bonus || 0)+boostTotal(s,'attack'),
     armor: (SHOP.find(i => i.id === s.equipped.armor)?.bonus || 0)+boostTotal(s,'armor'),
-    dodge: Math.min(.75, soulDeflect(level(s,'soul'))+boostTotal(s,'dodge')), rally: 15*(level(s,'heart')-1)+boostTotal(s,'rally'),
+    dodge: Math.min(.75, soulDeflect(level(s,'soul'))+boostTotal(s,'dodge')+(SHOP.find(i => i.id === s.equipped.boots)?.bonus || 0)/100), rally: 15*(level(s,'heart')-1)+boostTotal(s,'rally'),
   };
 }
 export function victoryOdds(s) {
   const p = combatStats(s), m = monsterStats(s.monster.number);
   if (p.hp <= 0) return 0;
+  // Exact odds cover the plain rules; weapon and shield powers are sampled with the same encounter code as a fight.
+  if (Object.keys(gearPowers(s)).length) return sampleOdds(s);
   const cache = new Map();
   function odds(hp, enemy, ready) {
     const key = `${hp},${enemy},${+ready}`;
@@ -601,19 +623,15 @@ export function victoryOdds(s) {
 // Exact odds for early encounters; a fixed-seed sample of the same rules keeps larger ones responsive.
 export function estimateOdds(s) {
   const p=combatStats(s), m=monsterStats(s.monster.number);
-  if(p.max<200 && m.hp<200) return victoryOdds(s);
+  if(p.max<200 && m.hp<200 && !Object.keys(gearPowers(s)).length) return victoryOdds(s);
+  return sampleOdds(s);
+}
+function sampleOdds(s) {
+  const p=combatStats(s), m=monsterStats(s.monster.number), powers=gearPowers(s);
+  if (p.hp<=0) return 0;
   let wins=0, seed=123456789;
   const rng=()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};
-  for(let i=0;i<15000;i++) {
-    let hp=p.hp, enemy=m.hp, ready=true;
-    while(hp>0&&enemy>0) {
-      enemy-=10+2*Math.floor(rng()*13)+p.attack;
-      if(enemy<=0) {wins++;break;}
-      if(rng()<p.dodge) continue;
-      hp-=Math.max(1,m.attack-10+2*Math.floor(rng()*11)-p.armor);
-      if(hp>0&&ready&&p.rally&&hp<=p.max/2) {hp=Math.min(p.max,hp+p.rally);ready=false;}
-    }
-  }
+  for(let i=0;i<15000;i++) if(encounter(p,m,powers,rng).enemy===0) wins++;
   return wins/15000;
 }
 // The combat-relevant state with `item` equipped or prepared, for before/after comparisons.
@@ -626,6 +644,46 @@ export function withItem(s,item) {
   return next;
 }
 export const oddsInput = s => ({hp:s.hp,xp:s.xp,equipped:s.equipped,preparedSpell:s.preparedSpell,tonic:s.tonic??null,activePet:s.activePet??null,monster:{number:s.monster.number}});
+// One encounter under the full rules. Fights record each step in `events`; odds sampling passes none.
+// Randomness is drawn in a fixed order, and only for powers that are equipped, so plain gear keeps
+// the same rolls as before powers existed.
+function encounter(p,m,w,rng,events=null,d={}) {
+  let hp=p.hp, enemy=m.hp, ready=true, round=0, strikes=0, dent=0;
+  const roll=(min,count)=>min+2*Math.floor(rng()*count), log=e=>events?.push(e);
+  // Your strike: a critical doubles the roll; venom adds +1 per earlier strike; drain heals.
+  const strike=(amount,extra)=>{
+    const enemyBefore=enemy,hpBefore=hp; enemy=Math.max(0,enemy-amount);
+    const healed=w.drain?Math.min(p.max-hp,Math.round((enemyBefore-enemy)*w.drain)):0; hp+=healed;
+    if(w.sunder) dent=Math.min(w.sunder,dent+1);
+    log({type:'attack',round,amount,actualDamage:enemyBefore-enemy,...extra,...(healed?{healed}:{}),...(w.sunder?{sunder:dent}:{}),hpBefore,enemyBefore,hp,enemy});
+  };
+  while (hp>0 && enemy>0) {
+    round++;
+    const baseDamage=roll(10,13), crit=!!w.crit&&rng()<w.crit, venomBonus=w.venom?Math.min(strikes,w.venom):0;
+    const first=(crit?2:1)*baseDamage+p.attack+venomBonus; strikes++;
+    strike(first,{baseDamage,weaponBonus:d.weaponBonus,mindBonus:d.mindBonus,spellBonus:d.spellBonus,petBonus:d.petBonus,...(crit?{critBonus:baseDamage}:{}),...(venomBonus?{venomBonus}:{})});
+    if (!enemy) break;
+    if (w.twin && rng()<w.twin) {
+      strike(Math.ceil(first/2),{strike:'twin'});
+      if (!enemy) break;
+    }
+    if (w.stagger && rng()<w.stagger) { log({type:'stagger',round,amount:0,hpBefore:hp,enemyBefore:enemy,hp,enemy}); continue; }
+    if (p.dodge && rng()<p.dodge) { log({type:'deflect',round,amount:0,soulLevel:d.soulLevel,hpBefore:hp,enemyBefore:enemy,hp,enemy}); continue; }
+    const rawDamage=Math.max(1,roll(m.attack-10,11)-dent), armored=Math.max(1,rawDamage-p.armor);
+    const raised=!!w.block&&rng()<w.block, shieldBlock=raised?Math.floor(armored/2):0, injury=armored-shieldBlock;
+    const hpBefore=hp, enemyBefore=enemy; hp=Math.max(0,hp-injury);
+    const thorns=raised&&w.thorns?Math.min(enemy,w.thorns):0; enemy-=thorns;
+    // Attribute blocked damage: spell first, then companion, then armor; the shield's half comes last.
+    const blocked=rawDamage-injury, spellBlock=Math.min(d.spellArmor||0,rawDamage-armored), petBlock=Math.min(d.petArmor||0,rawDamage-armored-spellBlock);
+    log({type:'hit',round,amount:injury,actualDamage:hpBefore-hp,rawDamage,blocked,armorBonus:p.armor-(d.spellArmor||0)-(d.petArmor||0),spellBlock,petBlock,...(raised?{shieldBlock}:{}),...(thorns?{thorns}:{}),...(dent?{sunder:dent}:{}),hpBefore,enemyBefore,hp,enemy});
+    if (!enemy) break;
+    if (hp && ready && p.rally && hp<=p.max/2) {
+      const healed=Math.min(p.max-hp,p.rally), before=hp; hp+=healed; ready=false;
+      log({type:'rally',round,amount:healed,heartLevel:d.heartLevel,hpBefore:before,enemyBefore:enemy,hp,enemy});
+    }
+  }
+  return {hp,enemy};
+}
 export function fight(s,today,rng=Math.random) {
   if (!s.hp) throw new Error('Recover some HP before fighting.');
   if (s.monster.defeatedOn) throw new Error('Your next opponent arrives tomorrow.');
@@ -633,25 +691,9 @@ export function fight(s,today,rng=Math.random) {
   const spell=preparedSpell(s), tonic=activeTonic(s), pet=activePetItem(s), boosts=boostSources(s);
   if(spell) { s.supplies[spell.id]--;s.preparedSpell=null; }
   if(tonic) s.tonic=null;
-  let hp=p.hp, enemy=m.hp, ready=true, round=0;
-  const roll=(min,count)=>min+2*Math.floor(rng()*count);
-  while (hp>0 && enemy>0) {
-    round++;
-    const baseDamage=roll(10,13), weaponBonus=SHOP.find(i=>i.id===s.equipped.weapon)?.bonus||0;
-    const damage=baseDamage+p.attack, enemyBefore=enemy; enemy=Math.max(0,enemy-damage);
-    events.push({type:'attack',round,amount:damage,actualDamage:enemyBefore-enemy,baseDamage,weaponBonus,mindBonus:4*(level(s,'mind')-1),spellBonus:boosts.spell.attack||0,petBonus:boosts.pet.attack||0,hpBefore:hp,enemyBefore,hp,enemy});
-    if (!enemy) break;
-    if (p.dodge && rng()<p.dodge) { events.push({type:'deflect',round,amount:0,soulLevel:level(s,'soul'),hpBefore:hp,enemyBefore:enemy,hp,enemy}); continue; }
-    const rawDamage=roll(m.attack-10,11), injury=Math.max(1,rawDamage-p.armor), hpBefore=hp;
-    hp=Math.max(0,hp-injury);
-    // Attribute blocked damage: spell first, then companion, then armor.
-    const blocked=rawDamage-injury, spellBlock=Math.min(boosts.spell.armor||0,blocked), petBlock=Math.min(boosts.pet.armor||0,blocked-spellBlock);
-    events.push({type:'hit',round,amount:injury,actualDamage:hpBefore-hp,rawDamage,blocked,armorBonus:p.armor-(boosts.spell.armor||0)-(boosts.pet.armor||0),spellBlock,petBlock,hpBefore,enemyBefore:enemy,hp,enemy});
-    if (hp && ready && p.rally && hp<=p.max/2) {
-      const healed=Math.min(p.max-hp,p.rally), hpBefore=hp; hp+=healed; ready=false;
-      events.push({type:'rally',round,amount:healed,heartLevel:level(s,'heart'),hpBefore,enemyBefore:enemy,hp,enemy});
-    }
-  }
+  const weaponBonus=SHOP.find(i=>i.id===s.equipped.weapon)?.bonus||0;
+  const detail={weaponBonus,mindBonus:4*(level(s,'mind')-1),spellBonus:boosts.spell.attack||0,petBonus:boosts.pet.attack||0,spellArmor:boosts.spell.armor||0,petArmor:boosts.pet.armor||0,soulLevel:level(s,'soul'),heartLevel:level(s,'heart')};
+  const {hp,enemy}=encounter(p,m,gearPowers(s),rng,events,detail);
   s.hp=hp; let loot=null;
   if (!enemy) {
     s.monster.defeatedOn=today;
@@ -694,7 +736,7 @@ export function validateState(value) {
   if (!s.monster||!integer(s.monster.number,1,500)||(s.monster.defeatedOn!==null&&!date(s.monster.defeatedOn))) fail();
   if (!integer(s.potions)||typeof s.pendingRecovery!=='boolean'||!s.noteGold||typeof s.noteGold!=='object'||Array.isArray(s.noteGold)) fail();
   if (!Object.entries(s.noteGold).every(([k,v])=>date(k)&&integer(v,0,6))||!s.reviewDates.every(date)) fail();
-  s.supplies ??= {};s.ambience ??= null;s.petHat ??= null;s.preparedSpell ??= null;s.activePet ??= null;s.tonic ??= null;s.wardrobe ??= [];if(s.equipped&&s.equipped.helmet===undefined)s.equipped.helmet=null;
+  s.supplies ??= {};s.ambience ??= null;s.petHat ??= null;s.preparedSpell ??= null;s.activePet ??= null;s.tonic ??= null;s.wardrobe ??= [];if(s.equipped)for(const slot of ['helmet','shield','boots'])s.equipped[slot]??=null;
   if(typeof s.supplies!=='object'||Array.isArray(s.supplies)||!Object.entries(s.supplies).every(([id,n])=>id!=='potion'&&SHOP.some(i=>i.id===id&&isConsumable(i))&&integer(n)))fail();
   if(s.preparedSpell!==null&&(!preparedSpell(s)||!itemCount(s,s.preparedSpell)))fail();
   if(s.petHat!==null&&(!s.inventory.includes(s.petHat)||!SHOP.some(i=>i.id===s.petHat&&i.type==='pethat')))fail();
@@ -726,8 +768,8 @@ export function validateState(value) {
   for(const battle of s.battles) {
     if(!id(battle.id)||!date(battle.day)||!integer(battle.monster,1,500)||typeof battle.won!=='boolean'||!integer(battle.hp)||!array(battle.events,2000)||!battle.events.length) fail();
     for(const event of battle.events) {
-      if(!event||!['attack','hit','deflect','rally'].includes(event.type)||!integer(event.amount)||!integer(event.hp)||!integer(event.enemy)) fail();
-      for(const key of ['round','actualDamage','baseDamage','weaponBonus','mindBonus','spellBonus','spellBlock','hpBefore','enemyBefore','rawDamage','blocked','armorBonus','soulLevel','heartLevel']) if(event[key]!==undefined&&!integer(event[key])) fail();
+      if(!event||!['attack','hit','deflect','rally','stagger'].includes(event.type)||!integer(event.amount)||!integer(event.hp)||!integer(event.enemy)) fail();
+      for(const key of ['round','actualDamage','baseDamage','weaponBonus','mindBonus','spellBonus','spellBlock','critBonus','venomBonus','healed','sunder','shieldBlock','thorns','hpBefore','enemyBefore','rawDamage','blocked','armorBonus','soulLevel','heartLevel']) if(event[key]!==undefined&&!integer(event[key])) fail();
     }
     if(battle.won) {
       if(!battle.loot||!['gold','equipment'].includes(battle.loot.type)) fail();

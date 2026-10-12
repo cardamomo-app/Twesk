@@ -1,10 +1,10 @@
 // The adventurer: dashboard card, rotatable model, appearance studio.
-import * as E from './engine.js?v=0.21.3';
+import * as E from './engine.js?v=0.22.0';
 import { APPEARANCE, APPEARANCE_LABELS, appearanceOption } from './appearance.js';
-import { avatarArt, itemArt, petArt } from './art.js?v=0.21.3';
-import { $, $$, app, coin, esc, icon, modalShell, view } from './ui-core.js?v=0.21.3';
-import { commit, openModal } from './ui-modal.js?v=0.21.3';
-import { burst, sound } from './ui-effects.js?v=0.21.3';
+import { avatarArt, itemArt, petArt } from './art.js?v=0.22.0';
+import { $, $$, app, coin, esc, icon, modalShell, view } from './ui-core.js?v=0.22.0';
+import { commit, openModal } from './ui-modal.js?v=0.22.0';
+import { burst, sound } from './ui-effects.js?v=0.22.0';
 export function petCompanion() {
   const pet = E.SHOP.find(i => i.id === app.state.activePet);
   const hat = E.SHOP.find(i => i.id === app.state.petHat);
@@ -29,22 +29,24 @@ const shownLook = () =>
     ? { ...app.state.appearance, [app.avatarPreview.key]: app.avatarPreview.value }
     : app.state.appearance;
 export function renderCharacter() {
-  const { weapon, armor, helmet } = gear(),
+  const { weapon, armor, helmet, shield, boots } = gear(),
     hpMax = E.maxHP(app.state);
-  return `<section class="panel character-panel"><div class="character-heading"><span class="section-kicker">YOUR ADVENTURER</span><button class="wallet" data-action="shop" id="gold-target" title="Open the shop" aria-label="${app.state.gold} gold · Open shop">${coin(app.state.gold, true)}</button></div><button class="avatar-scene avatar-interactive" data-avatar-view="dashboard" data-action="avatar-open" aria-label="Inspect and personalize your character. Drag to rotate; click to enlarge. Arrow keys rotate." title="Drag to rotate · Click to enlarge">${avatarArt(weapon, armor, false, { angle: app.avatarAngle, appearance: app.state.appearance, helmet })}${petCompanion()}</button><h2 class="character-name">${esc(app.state.name)}</h2><div class="health-label"><span>${icon('heart')}Health</span><strong>${app.state.hp}<span> / ${hpMax} HP</span></strong></div><div class="health-bar"><div style="width:${(app.state.hp / hpMax) * 100}%"></div></div><div class="stat-chips">${E.CATEGORIES.map(c => `<button class="stat-chip ${c}" data-action="stat-info" data-stat="${c}" aria-label="${E.CATEGORY_META[c].label}, level ${E.level(app.state, c)}. Combat benefits" aria-expanded="false">${icon(c)}<strong>${E.level(app.state, c)}</strong></button>`).join('')}</div><div class="character-actions"><button class="button secondary" data-action="shop">${icon('coin')}Shop</button><button class="button secondary" data-action="inventory">${icon('shield')}Inventory</button><button class="potion-button" data-action="potion" title="${potionCount() ? 'Open your potions' : 'Visit the shop for potions'}" aria-label="Open potions · ${potionCount()} owned">${itemArt(E.SHOP[0])}<span>${potionCount()}</span></button></div>${app.state.pendingRecovery && app.state.hp < hpMax ? '<button class="recovery-link" data-action="recover">' + icon('pencil') + 'Write a reflection to recover</button>' : ''}</section>`;
+  return `<section class="panel character-panel"><div class="character-heading"><span class="section-kicker">YOUR ADVENTURER</span><button class="wallet" data-action="shop" id="gold-target" title="Open the shop" aria-label="${app.state.gold} gold · Open shop">${coin(app.state.gold, true)}</button></div><button class="avatar-scene avatar-interactive" data-avatar-view="dashboard" data-action="avatar-open" aria-label="Inspect and personalize your character. Drag to rotate; click to enlarge. Arrow keys rotate." title="Drag to rotate · Click to enlarge">${avatarArt(weapon, armor, false, { angle: app.avatarAngle, appearance: app.state.appearance, helmet, shield, boots })}${petCompanion()}</button><h2 class="character-name">${esc(app.state.name)}</h2><div class="health-label"><span>${icon('heart')}Health</span><strong>${app.state.hp}<span> / ${hpMax} HP</span></strong></div><div class="health-bar"><div style="width:${(app.state.hp / hpMax) * 100}%"></div></div><div class="stat-chips">${E.CATEGORIES.map(c => `<button class="stat-chip ${c}" data-action="stat-info" data-stat="${c}" aria-label="${E.CATEGORY_META[c].label}, level ${E.level(app.state, c)}. Combat benefits" aria-expanded="false">${icon(c)}<strong>${E.level(app.state, c)}</strong></button>`).join('')}</div><div class="character-actions"><button class="button secondary" data-action="shop">${icon('coin')}Shop</button><button class="button secondary" data-action="inventory">${icon('shield')}Inventory</button><button class="potion-button" data-action="potion" title="${potionCount() ? 'Open your potions' : 'Visit the shop for potions'}" aria-label="Open potions · ${potionCount()} owned">${itemArt(E.SHOP[0])}<span>${potionCount()}</span></button></div>${app.state.pendingRecovery && app.state.hp < hpMax ? '<button class="recovery-link" data-action="recover">' + icon('pencil') + 'Write a reflection to recover</button>' : ''}</section>`;
 }
 // Update only the model during a drag, preserving focus and pointer capture.
 let avatarDrag = null,
   avatarFrame = 0,
   suppressAvatarClick = null;
 function refreshAvatarViews() {
-  const { weapon, armor, helmet } = gear();
+  const { weapon, armor, helmet, shield, boots } = gear();
   for (const view of $$('[data-avatar-view]')) {
     const studio = view.dataset.avatarView === 'studio';
     const art = avatarArt(weapon, armor, studio, {
       angle: app.avatarAngle,
       appearance: studio ? shownLook() : app.state.appearance,
       helmet,
+      shield,
+      boots,
     });
     const old = view.querySelector('svg.avatar-art');
     if (old) old.outerHTML = art;
@@ -126,18 +128,20 @@ function previewBar() {
   return `<div class="style-preview-bar" role="status"><span>Trying on <strong>${esc(option.name)}</strong> · ${APPEARANCE_LABELS[preview.key].toLowerCase()}</span><div><button class="button primary" data-action="buy-preview" ${app.state.gold < option.price ? 'disabled' : ''}>Buy &amp; wear ${coin(option.price, true)}</button><button class="text-button" data-action="cancel-preview">Cancel</button></div></div>`;
 }
 function renderAvatarModal() {
-  const { weapon, armor, helmet } = gear(),
+  const { weapon, armor, helmet, shield, boots } = gear(),
     pet = E.activePetItem(app.state),
     look = shownLook();
   const wearing = [
-    [weapon, 'sword', 'Unarmed', 'No weapon equipped', i => `+${i.bonus} attack`],
-    [armor, 'shield', 'No armor', 'Clothing only', i => `${i.bonus} damage blocked`],
+    [weapon, 'sword', 'Unarmed', 'No weapon equipped', i => (i.power ? i.description : `+${i.bonus} attack`)],
+    [armor, 'armor', 'No armor', 'Clothing only', i => `${i.bonus} damage blocked`],
     [helmet, 'helmet', 'No helmet', 'Bare-headed', i => `+${i.bonus} max HP`],
+    [shield, 'shield', 'No shield', 'A free left hand', i => i.description],
+    [boots, 'boot', 'Everyday boots', 'No bonus', i => `+${i.bonus}% deflect`],
     [pet, 'pet', 'No companion', 'Pets lend a small bonus', i => i.description.split('·')[1]?.trim() || ''],
   ];
   return modalShell(
     esc(app.state.name),
-    `<div class="character-studio"><div class="character-preview"><div class="avatar-turntable avatar-interactive" data-avatar-view="studio" tabindex="0" role="group" aria-label="Character model. Drag or use arrow keys to rotate."><div class="avatar-model-scale" style="--avatar-zoom:${app.avatarZoom}">${avatarArt(weapon, armor, true, { angle: app.avatarAngle, appearance: look, helmet })}</div>${petCompanion()}</div><div class="avatar-view-controls"><button class="icon-button" data-action="avatar-turn" data-direction="-1" aria-label="Rotate left">↶</button><button class="text-button" data-action="avatar-reset">Reset view</button><button class="icon-button" data-action="avatar-turn" data-direction="1" aria-label="Rotate right">↷</button><span></span><button class="icon-button" data-action="avatar-zoom" data-direction="-1" aria-label="Zoom out" ${app.avatarZoom <= 0.8 ? 'disabled' : ''}>−</button><output aria-label="Character zoom">${Math.round(app.avatarZoom * 100)}%</output><button class="icon-button" data-action="avatar-zoom" data-direction="1" aria-label="Zoom in" ${app.avatarZoom >= 1.4 ? 'disabled' : ''}>+</button></div>${previewBar()}</div><div class="appearance-panel"><h3>Appearance</h3>${Object.entries(
+    `<div class="character-studio"><div class="character-preview"><div class="avatar-turntable avatar-interactive" data-avatar-view="studio" tabindex="0" role="group" aria-label="Character model. Drag or use arrow keys to rotate."><div class="avatar-model-scale" style="--avatar-zoom:${app.avatarZoom}">${avatarArt(weapon, armor, true, { angle: app.avatarAngle, appearance: look, helmet, shield, boots })}</div>${petCompanion()}</div><div class="avatar-view-controls"><button class="icon-button" data-action="avatar-turn" data-direction="-1" aria-label="Rotate left">↶</button><button class="text-button" data-action="avatar-reset">Reset view</button><button class="icon-button" data-action="avatar-turn" data-direction="1" aria-label="Rotate right">↷</button><span></span><button class="icon-button" data-action="avatar-zoom" data-direction="-1" aria-label="Zoom out" ${app.avatarZoom <= 0.8 ? 'disabled' : ''}>−</button><output aria-label="Character zoom">${Math.round(app.avatarZoom * 100)}%</output><button class="icon-button" data-action="avatar-zoom" data-direction="1" aria-label="Zoom in" ${app.avatarZoom >= 1.4 ? 'disabled' : ''}>+</button></div>${previewBar()}</div><div class="appearance-panel"><h3>Appearance</h3>${Object.entries(
       APPEARANCE,
     )
       .map(

@@ -1,7 +1,7 @@
 // Shared interface foundation: the app store, saving, small HTML helpers, and toasts.
-import * as E from './engine.js?v=0.21.3';
-import { goldArt } from './art.js?v=0.21.3';
-import { HABIT_ICONS } from './habit-icons.js?v=0.21.3';
+import * as E from './engine.js?v=0.22.0';
+import { goldArt } from './art.js?v=0.22.0';
+import { HABIT_ICONS } from './habit-icons.js?v=0.22.0';
 export const $ = s => document.querySelector(s);
 export const $$ = s => [...document.querySelectorAll(s)];
 export const esc = v =>
@@ -122,6 +122,8 @@ const icons = {
   calendar:
     '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4m6-4v4M8 14h2m4 0h2m-8 3h2"/>',
   helmet: '<path d="M4 15a8 8 0 0 1 16 0v2H4ZM12 7V4M4 17h16l-1 3H5Z"/>',
+  armor: '<path d="M8 4 4 7v5l2 1v7h12v-7l2-1V7l-4-3c-1 2-2.4 3-4 3s-3-1-4-3Z"/>',
+  boot: '<path d="M7 3h6v9l5 2.5a2 2 0 0 1 1 1.8V20H7ZM7 16h12"/>',
   sparkle: '<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2ZM19 3v4M17 5h4"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   compass: '<circle cx="12" cy="12" r="9"/><path d="m16 8-3 5-5 3 3-5Z"/>',

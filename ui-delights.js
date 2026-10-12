@@ -1,9 +1,9 @@
 // Delights: single-use moments of fun bought in the shop. They play over the app without blocking it
 // (only balloons can be clicked, to pop them) and Escape ends one early. Sounds follow Mute; with
 // Reduce motion, each becomes a gentle glow instead of moving particles.
-import { $, app, today } from './ui-core.js?v=0.21.2';
-import { burst, motionOK, sound } from './ui-effects.js?v=0.21.2';
-import { stopSfx } from './sfx.js?v=0.21.2';
+import { $, app, today } from './ui-core.js?v=0.21.3';
+import { burst, motionOK, sound } from './ui-effects.js?v=0.21.3';
+import { stopSfx } from './sfx.js?v=0.21.3';
 
 const COLORS = ['#e86f7f', '#6fa8e8', '#f2c14e', '#7fc9a0', '#b48be8', '#f29b6b'];
 const rand = (a, b) => a + Math.random() * (b - a);

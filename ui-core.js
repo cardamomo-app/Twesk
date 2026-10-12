@@ -1,7 +1,7 @@
 // Shared interface foundation: the app store, saving, small HTML helpers, and toasts.
-import * as E from './engine.js?v=0.21.2';
-import { goldArt } from './art.js?v=0.21.2';
-import { HABIT_ICONS } from './habit-icons.js?v=0.21.2';
+import * as E from './engine.js?v=0.21.3';
+import { goldArt } from './art.js?v=0.21.3';
+import { HABIT_ICONS } from './habit-icons.js?v=0.21.3';
 export const $ = s => document.querySelector(s);
 export const $$ = s => [...document.querySelectorAll(s)];
 export const esc = v =>
@@ -84,6 +84,7 @@ export function persist() {
 const icons = {
   cloud: '<path d="M7 18a5 5 0 1 1 1-10 6 6 0 0 1 11 3 4 4 0 0 1-1 7ZM9 13l3-3 3 3m-3-3v9"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
+  bolt: '<path d="M13.5 3 5 13.5h6.5L10.5 21 19 10.5h-6.5Z"/>',
   expand: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
   collapse: '<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>',
   close: '<path d="m6 6 12 12M18 6 6 18"/>',

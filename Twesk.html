@@ -820,6 +820,10 @@ button.hashtag:hover{text-decoration:underline}
 .task-dragging .habit-icon[data-habit-drag]{cursor:grabbing}
 /* Full screen is a desktop and tablet affair; phones have no room for it in the top bar */
 @media(max-width:560px){.fullscreen-button{display:none}}
+/* Quick capture: a bolt and its shortcut, no label */
+.capture-button{gap:7px;padding:6px 7px 6px 9px}
+.capture-button kbd{margin-left:0}
+.capture-button:hover .icon{color:var(--accent)}
 
   </style>
   <script>
@@ -918,7 +922,7 @@ function render() {
   ).length;
   $('#app').innerHTML = `
     <header class="topbar"><div class="topbar-brand"><a class="wordmark" href="" aria-label="Twesk home"><span class="logo-cube"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="m3 8 13-6 13 6v16l-13 6-13-6Z" fill="#7461d4"/><path d="m3 8 13 6 13-6-13-6Z" fill="#b9a8f2"/><path d="M16 14v16L3 24V8Z" fill="#937be2"/></svg></span>twesk</a><time class="topbar-date" datetime="${day}">${esc(dateLabel())}</time></div>
-    <div class="topbar-actions"><button class="capture-button" data-action="capture">${icon('plus')}Quick capture<kbd>⌘ K</kbd></button><span class="toolbar-divider"></span><button class="collection-button" data-action="history" title="Progress history" aria-label="Open progress history">${icon('calendar')}</button><button class="collection-button" data-action="achievements" title="Achievements and monster collection" aria-label="Open achievements">${icon('medal')}</button>${iconButton('theme', app.state.settings.theme === 'dark' ? 'sun' : 'moon', 'Switch to ' + (app.state.settings.theme === 'dark' ? 'light' : 'dark') + ' mode')}${iconButton('mute', app.state.settings.muted ? 'mute' : 'sound', app.state.settings.muted ? 'Unmute sounds' : 'Mute sounds')}${fullscreen.fullscreenButton()}${iconButton('settings', 'settings', 'Settings and backup')}<button class="profile-dot" data-action="settings" aria-label="Your profile">${avatarFaceArt(app.state.appearance)}</button></div></header>
+    <div class="topbar-actions"><button class="capture-button" data-action="capture" aria-label="Quick capture" title="Quick capture (⌘K)" aria-keyshortcuts="Meta+K">${icon('bolt')}<kbd>⌘ K</kbd></button><span class="toolbar-divider"></span><button class="collection-button" data-action="history" title="Progress history" aria-label="Open progress history">${icon('calendar')}</button><button class="collection-button" data-action="achievements" title="Achievements and monster collection" aria-label="Open achievements">${icon('medal')}</button>${iconButton('theme', app.state.settings.theme === 'dark' ? 'sun' : 'moon', 'Switch to ' + (app.state.settings.theme === 'dark' ? 'light' : 'dark') + ' mode')}${iconButton('mute', app.state.settings.muted ? 'mute' : 'sound', app.state.settings.muted ? 'Unmute sounds' : 'Mute sounds')}${fullscreen.fullscreenButton()}${iconButton('settings', 'settings', 'Settings and backup')}<button class="profile-dot" data-action="settings" aria-label="Your profile">${avatarFaceArt(app.state.appearance)}</button></div></header>
     <main>
     ${app.saveError ? '<div class="save-warning">' + esc(app.startupWarning || 'Browser saving is unavailable. Export a backup in Settings to keep your progress.') + '</div>' : E.backupDue(app.state, day) ? settings.backupReminder() : ''}
     <div class="dashboard">
@@ -2658,6 +2662,7 @@ function persist() {
 const icons = {
   cloud: '<path d="M7 18a5 5 0 1 1 1-10 6 6 0 0 1 11 3 4 4 0 0 1-1 7ZM9 13l3-3 3 3m-3-3v9"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
+  bolt: '<path d="M13.5 3 5 13.5h6.5L10.5 21 19 10.5h-6.5Z"/>',
   expand: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
   collapse: '<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>',
   close: '<path d="m6 6 12 12M18 6 6 18"/>',

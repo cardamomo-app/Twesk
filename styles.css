@@ -810,3 +810,7 @@ button.hashtag:hover{text-decoration:underline}
 .task-dragging .habit-icon[data-habit-drag]{cursor:grabbing}
 /* Full screen is a desktop and tablet affair; phones have no room for it in the top bar */
 @media(max-width:560px){.fullscreen-button{display:none}}
+/* Quick capture: a bolt and its shortcut, no label */
+.capture-button{gap:7px;padding:6px 7px 6px 9px}
+.capture-button kbd{margin-left:0}
+.capture-button:hover .icon{color:var(--accent)}

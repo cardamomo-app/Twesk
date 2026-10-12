@@ -817,3 +817,9 @@ button.hashtag:hover{text-decoration:underline}
 /* Group headings in the Armor tab (body armor, shields, helmets, boots) */
 .shop-group{grid-column:1/-1;margin:10px 0 -2px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--secondary)}
 .shop-group:first-child{margin-top:0}
+/* Pet treat: a tossed biscuit, nibbled in three bites before the happy hop */
+.treat-biscuit{position:fixed;width:30px;height:20px;transform:translate(-50%,-50%);pointer-events:none;filter:drop-shadow(0 3px 4px #0002)}
+.treat-biscuit>svg{width:100%;height:100%;transition:transform .12s ease-out}
+.treat-biscuit.bitten>svg{transform:scale(var(--bite,1))}
+.pet-companion.treat-munch{animation:treat-munch .24s ease-in-out 3;transform-origin:50% 100%}
+@keyframes treat-munch{0%,100%{transform:none}50%{transform:scale(1.06,.92) translateY(2px)}}

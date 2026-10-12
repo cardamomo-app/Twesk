@@ -1,9 +1,9 @@
 // Delights: single-use moments of fun bought in the shop. They play over the app without blocking it
 // (only balloons can be clicked, to pop them) and Escape ends one early. Sounds follow Mute; with
 // Reduce motion, each becomes a gentle glow instead of moving particles.
-import { $, app, today } from './ui-core.js?v=0.22.4';
-import { burst, motionOK, sound } from './ui-effects.js?v=0.22.4';
-import { stopSfx } from './sfx.js?v=0.22.4';
+import { $, app, today } from './ui-core.js?v=0.22.5';
+import { burst, motionOK, sound } from './ui-effects.js?v=0.22.5';
+import { stopSfx } from './sfx.js?v=0.22.5';
 
 const COLORS = ['#e86f7f', '#6fa8e8', '#f2c14e', '#7fc9a0', '#b48be8', '#f29b6b'];
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -15,7 +15,7 @@ export function stopDelight() {
   current.layer.remove();
   stopSfx('delight');
   document.body.classList.remove('disco-dancing');
-  document.querySelectorAll('.treat-hop').forEach(el => el.classList.remove('treat-hop'));
+  document.querySelectorAll('.treat-hop,.treat-munch').forEach(el => el.classList.remove('treat-hop', 'treat-munch'));
   current = null;
 }
 export const delightPlaying = () => !!current;
@@ -43,19 +43,54 @@ function balloons(layer, after) {
   }
   after(12000);
 }
+// A bone-shaped biscuit, matching the shop's treat.
+const BISCUIT = `<svg viewBox="0 0 40 26" aria-hidden="true"><g fill="#c79a63"><circle cx="8" cy="9" r="6"/><circle cx="8" cy="19" r="6"/><circle cx="32" cy="9" r="6"/><circle cx="32" cy="19" r="6"/><rect x="8" y="8" width="24" height="12"/></g><g fill="#e8c896"><circle cx="8" cy="8" r="5"/><circle cx="8" cy="18" r="5"/><circle cx="32" cy="8" r="5"/><circle cx="32" cy="18" r="5"/><rect x="8" y="7" width="24" height="11"/></g><rect x="13" y="10" width="14" height="2" rx="1" fill="#f6e3bf"/></svg>`;
+// The adventurer tosses a biscuit in an arc to the companion, who nibbles it down in three bites,
+// then hops with a little heart.
 function treat(layer, after) {
-  const pet = $('#app .pet-companion');
-  sound('treat', { channel: 'delight' });
-  if (pet) {
+  const pet = $('#app .pet-companion'), hero = $('#app .avatar-scene .avatar-art');
+  if (!pet) {
+    sound('treat', { channel: 'delight' });
+    return after(1800);
+  }
+  const p = pet.getBoundingClientRect(), mouth = { x: p.left + p.width * 0.55, y: p.top + p.height * 0.52 };
+  const h = hero?.getBoundingClientRect();
+  const from = h ? { x: h.left + h.width * 0.68, y: h.top + h.height * 0.55 } : { x: mouth.x - 60, y: mouth.y - 40 };
+  const biscuit = document.createElement('span');
+  biscuit.className = 'treat-biscuit';
+  biscuit.innerHTML = BISCUIT;
+  Object.assign(biscuit.style, { left: from.x + 'px', top: from.y + 'px' });
+  layer.append(biscuit);
+  // A parabola: up, over, and down onto the companion, with a little spin.
+  const dx = mouth.x - from.x, dy = mouth.y - from.y, lift = 46 + Math.abs(dx) * 0.25;
+  const frames = Array.from({ length: 13 }, (_, i) => {
+    const t = i / 12;
+    return { transform: `translate(calc(-50% + ${dx * t}px), calc(-50% + ${dy * t - lift * 4 * t * (1 - t)}px)) rotate(${t * 300}deg)` };
+  });
+  biscuit.animate(frames, { duration: 760, easing: 'linear', fill: 'forwards' });
+  sound('pop', { channel: 'delight' });
+  const later = (fn, ms) => current?.timers.push(setTimeout(fn, ms));
+  // Three bites: the biscuit shrinks each time and crumbs fly.
+  later(() => pet.classList.add('treat-munch'), 760);
+  [780, 1020, 1260].forEach((ms, bite) =>
+    later(() => {
+      biscuit.style.setProperty('--bite', String(1 - (bite + 1) / 3));
+      biscuit.classList.add('bitten');
+      burst({ left: mouth.x - 4, top: mouth.y - 4, width: 8, height: 8 }, { palette: 'gold', count: 6, distance: 22, size: 3 });
+    }, ms),
+  );
+  later(() => {
+    biscuit.remove();
+    pet.classList.remove('treat-munch');
     pet.classList.add('treat-hop');
-    const r = pet.getBoundingClientRect(),
-      heart = document.createElement('span');
+    sound('treat', { channel: 'delight' });
+    const heart = document.createElement('span');
     heart.className = 'treat-heart';
-    Object.assign(heart.style, { left: r.left + r.width / 2 + 'px', top: r.top + 'px' });
+    Object.assign(heart.style, { left: p.left + p.width / 2 + 'px', top: p.top + 'px' });
     heart.textContent = '♥';
     layer.append(heart);
-  }
-  after(1800);
+  }, 1500);
+  after(3300);
 }
 function fireworks(layer, after) {
   layer.classList.add('night');

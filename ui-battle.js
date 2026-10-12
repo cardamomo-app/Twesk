@@ -1,12 +1,12 @@
 // The monster card, victory odds, and animated encounters.
-import * as E from './engine.js?v=0.22.4';
-import { avatarArt, monsterArt, monsterName, itemArt } from './art.js?v=0.22.4';
-import { describeCombatEvent } from './combat-presentation.js?v=0.22.4';
-import { playSfx, stopSfx, unlockSfx } from './sfx.js?v=0.22.4';
-import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.22.4';
-import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.22.4';
-import { announceBadges, commit } from './ui-modal.js?v=0.22.4';
-import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.22.4';
+import * as E from './engine.js?v=0.22.5';
+import { avatarArt, monsterArt, monsterName, itemArt } from './art.js?v=0.22.5';
+import { describeCombatEvent } from './combat-presentation.js?v=0.22.5';
+import { playSfx, stopSfx, unlockSfx } from './sfx.js?v=0.22.5';
+import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.22.5';
+import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.22.5';
+import { announceBadges, commit } from './ui-modal.js?v=0.22.5';
+import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.22.5';
 export function renderMonster() {
   const number = app.state.monster.number,
     won = !!app.state.monster.defeatedOn,

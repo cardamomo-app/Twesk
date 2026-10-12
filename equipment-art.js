@@ -1,5 +1,5 @@
-import {avatarGeometry} from './avatar-model.js?v=0.22.5';
-import {createCuboidScene,visibleCuboidFaces} from './cuboid-renderer.js';
+import {avatarGeometry} from './avatar-model.js?v=0.22.6';
+import {createCuboidScene,projectPoint,visibleCuboidFaces} from './cuboid-renderer.js';
 
 const illustrations=new Map();
 function tint(hex,factor){return '#'+hex.slice(1).match(/../g).map(c=>Math.min(255,Math.round(parseInt(c,16)*factor)).toString(16).padStart(2,'0')).join('');}
@@ -134,10 +134,8 @@ function hatBoxes(hat) {
 }
 // Where a hat sits on each pet's head (between ears, tufts, or horns), and how large it is.
 const HAT_SPOTS={owl:{x:0,y:-1,z:60,scale:1},fox:{x:0,y:12,z:52,scale:.85},cat:{x:0,y:12,z:52,scale:.85},tortoise:{x:0,y:22,z:20,scale:.55},drake:{x:0,y:17,z:46,scale:.65}};
-function illustrate(key,item,boxes,{fitBoxes=boxes,label='',viewBox='20 40 200 200'}={}){
-  if(illustrations.has(key))return illustrations.get(key);
-  // Showcase the geometry recentered on a small display stand. Size comes from fitBoxes, so a hat
-  // added to a pet does not shrink the pet.
+// Recenters geometry on the display stand. Size comes from fitBoxes, so a hat added to a pet does not shrink the pet.
+function stage(item,fitBoxes){
   const minX=Math.min(...fitBoxes.map(b=>b.x)),maxX=Math.max(...fitBoxes.map(b=>b.x+b.w));
   const floor=Math.min(...fitBoxes.map(b=>b.z)),ceiling=Math.max(...fitBoxes.map(b=>b.z+b.h));
   const scale=Math.min(78/(ceiling-floor),68/(maxX-minX));
@@ -145,10 +143,17 @@ function illustrate(key,item,boxes,{fitBoxes=boxes,label='',viewBox='20 40 200 2
   const anchors=['fox','drake','tortoise'].includes(item.id)?fitBoxes.filter(b=>b.part==='pet paws'):fitBoxes;
   const centerX=(Math.min(...anchors.map(b=>b.x))+Math.max(...anchors.map(b=>b.x+b.w)))/2;
   const centerY=(Math.min(...anchors.map(b=>b.y))+Math.max(...anchors.map(b=>b.y+b.d)))/2;
-  boxes=boxes.map(b=>({...b,x:(b.x-centerX)*scale,y:(b.y-centerY)*scale,z:(b.z-floor)*scale+8,w:b.w*scale,d:b.d*scale,h:b.h*scale}));
+  return {scale,place:(x,y,z)=>[(x-centerX)*scale,(y-centerY)*scale,(z-floor)*scale+8]};
+}
+const STAGE_ANGLE=-.55;
+function illustrate(key,item,boxes,{fitBoxes=boxes,label='',viewBox='20 40 200 200'}={}){
+  if(illustrations.has(key))return illustrations.get(key);
+  // Showcase the geometry on a small display stand.
+  const {scale,place}=stage(item,fitBoxes);
+  boxes=boxes.map(b=>{const [x,y,z]=place(b.x,b.y,b.z);return {...b,x,y,z,w:b.w*scale,d:b.d*scale,h:b.h*scale};});
   const accent=item.type==='potion'?'#b6a4c5':item.type==='delight'?'#f2b8c6':item.tier==='legendary'?'#e2b84f':item.tier==='special'?'#b5a7d7':item.tier==='large'?'#93aaa0':'#b8a789';
   boxes.unshift({x:-25,y:-19,z:0,w:50,d:38,h:4,color:'#b8b6ad',part:'display stand'},{x:-26,y:-20,z:4,w:52,d:40,h:3,color:'#ddd9cc',part:'stand rim'},{x:-23,y:-17,z:7,w:46,d:34,h:1,color:accent,part:'stand inset'});
-  const faces=visibleCuboidFaces(createCuboidScene(boxes),-.55);
+  const faces=visibleCuboidFaces(createCuboidScene(boxes),STAGE_ANGLE);
   const illustration=`<svg class="equipment-art voxel-art ${item.type}" viewBox="${viewBox}" aria-hidden="true"${label}><ellipse cx="120" cy="226" rx="50" ry="9" fill="currentColor" opacity=".07"/>${faces.map(f=>`<polygon points="${f.projected.map(p=>p.map(n=>n.toFixed(2)).join(',')).join(' ')}" fill="${tint(f.color,f.light)}"/>`).join('')}</svg>`;
   illustrations.set(key,illustration);return illustration;
 }
@@ -163,6 +168,13 @@ export function itemArt(item) {
   if(illustrations.has(item.id))return illustrations.get(item.id);
   const boxes=item.type==='potion'?potion(item):item.type==='spell'?spell(item):item.type==='pet'?pet(item):item.type==='delight'?delight(item):item.type==='pethat'?hatBoxes(item).map(b=>({...b,x:b.x*2.4,y:b.y*2.4,z:b.z*2.4,w:b.w*2.4,d:b.d*2.4,h:b.h*2.4})):gearBoxes(item);
   return illustrate(item.id,item,boxes);
+}
+// Where each companion's mouth is (snout, beak, or jaw) in its model, for feeding it a treat.
+const MOUTHS={fox:[0,32,35],cat:[0,32,35],owl:[0,18,41],tortoise:[0,29,16],drake:[0,28,36]};
+// The mouth in the companion's artwork coordinates (its SVG viewBox), so a treat can land right on it.
+export function petMouth(companion){
+  const body=pet(companion),[x,y,z]=MOUTHS[companion.id]||[0,0,Math.max(...body.map(b=>b.z+b.h))*.6];
+  return projectPoint(stage(companion,body).place(x,y,z),STAGE_ANGLE);
 }
 // A companion wearing a hat: the pet keeps its usual size and the hat sits on its head.
 export function petArt(companion,hat=null) {

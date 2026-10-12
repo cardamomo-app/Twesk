@@ -823,3 +823,4 @@ button.hashtag:hover{text-decoration:underline}
 .treat-biscuit.bitten>svg{transform:scale(var(--bite,1))}
 .pet-companion.treat-munch{animation:treat-munch .24s ease-in-out 3;transform-origin:50% 100%}
 @keyframes treat-munch{0%,100%{transform:none}50%{transform:scale(1.06,.92) translateY(2px)}}
+.modal.redrawn{animation:none}

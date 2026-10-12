@@ -1,10 +1,10 @@
 // The adventurer: dashboard card, rotatable model, appearance studio.
-import * as E from './engine.js?v=0.22.5';
+import * as E from './engine.js?v=0.22.6';
 import { APPEARANCE, APPEARANCE_LABELS, appearanceOption } from './appearance.js';
-import { avatarArt, itemArt, petArt } from './art.js?v=0.22.5';
-import { $, $$, app, coin, esc, icon, modalShell, view } from './ui-core.js?v=0.22.5';
-import { commit, openModal } from './ui-modal.js?v=0.22.5';
-import { burst, sound } from './ui-effects.js?v=0.22.5';
+import { avatarArt, itemArt, petArt } from './art.js?v=0.22.6';
+import { $, $$, app, coin, esc, icon, modalShell, view } from './ui-core.js?v=0.22.6';
+import { commit, openModal } from './ui-modal.js?v=0.22.6';
+import { burst, sound } from './ui-effects.js?v=0.22.6';
 export function petCompanion() {
   const pet = E.SHOP.find(i => i.id === app.state.activePet);
   const hat = E.SHOP.find(i => i.id === app.state.petHat);
@@ -65,7 +65,7 @@ document.addEventListener('pointermove', event => {
   if (Math.abs(dx) > 5) avatarDrag.moved = true;
   if (!avatarDrag.moved) return;
   avatarDrag.view.classList.add('dragging');
-  app.avatarAngle = avatarDrag.angle + dx * 0.012;
+  app.avatarAngle = avatarDrag.angle - dx * 0.012;
   if (!avatarFrame)
     avatarFrame = requestAnimationFrame(() => {
       avatarFrame = 0;

@@ -1,9 +1,11 @@
 // Delights: single-use moments of fun bought in the shop. They play over the app without blocking it
 // (only balloons can be clicked, to pop them) and Escape ends one early. Sounds follow Mute; with
 // Reduce motion, each becomes a gentle glow instead of moving particles.
-import { $, app, today } from './ui-core.js?v=0.22.5';
-import { burst, motionOK, sound } from './ui-effects.js?v=0.22.5';
-import { stopSfx } from './sfx.js?v=0.22.5';
+import * as E from './engine.js?v=0.22.6';
+import { petMouth } from './art.js?v=0.22.6';
+import { $, app, today } from './ui-core.js?v=0.22.6';
+import { burst, motionOK, sound } from './ui-effects.js?v=0.22.6';
+import { stopSfx } from './sfx.js?v=0.22.6';
 
 const COLORS = ['#e86f7f', '#6fa8e8', '#f2c14e', '#7fc9a0', '#b48be8', '#f29b6b'];
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -53,7 +55,10 @@ function treat(layer, after) {
     sound('treat', { channel: 'delight' });
     return after(1800);
   }
-  const p = pet.getBoundingClientRect(), mouth = { x: p.left + p.width * 0.55, y: p.top + p.height * 0.52 };
+  // Aim at this companion's own mouth (snout, beak, or jaw), mapped from its artwork to the screen.
+  const p = pet.getBoundingClientRect(), art = pet.querySelector('svg'), matrix = art?.getScreenCTM();
+  const [mx, my] = petMouth(E.SHOP.find(i => i.id === app.state.activePet));
+  const mouth = matrix ? new DOMPoint(mx, my).matrixTransform(matrix) : { x: p.left + p.width * 0.55, y: p.top + p.height * 0.52 };
   const h = hero?.getBoundingClientRect();
   const from = h ? { x: h.left + h.width * 0.68, y: h.top + h.height * 0.55 } : { x: mouth.x - 60, y: mouth.y - 40 };
   const biscuit = document.createElement('span');

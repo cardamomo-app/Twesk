@@ -675,6 +675,29 @@ uiTest('shields and boots are sold with armor, and powered fights replay with th
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).equipped.boots === 'trailboots');
 });
 
+uiTest('buying keeps the shop where it was, and dragging right turns the character the other way', async page => {
+  const s = E.freshState();
+  s.gold = 3000;
+  await page.open({ save: s });
+  // Dragging to the right lowers the model's angle (it used to raise it).
+  const angle = () => page.evaluate(() => Number(document.querySelector('#app .avatar-art').dataset.angle));
+  const before = await angle();
+  await dragTo(page, '#app .avatar-scene', '#app .character-panel .wallet');
+  assert.ok((await angle()) < before, 'dragging right turns the model the other way');
+  // Buy the last item in a long tab: the dialog stays scrolled to it.
+  await page.goto('/');
+  await page.click('#app .character-actions [data-action="shop"]');
+  await page.click('[data-action="shop-tab"][data-category="armor"]');
+  await page.waitFor(() => document.querySelector('#shop-tab-armor[aria-selected="true"]'));
+  await page.evaluate(() => document.querySelector('[data-action="buy"][data-id="windstep"]').scrollIntoView({ block: 'center' }));
+  const top = await page.evaluate(() => document.querySelector('#overlay .modal').scrollTop);
+  assert.ok(top > 300, 'scrolled well down');
+  await page.click('[data-action="buy"][data-id="windstep"]');
+  await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).equipped.boots === 'windstep');
+  await page.waitFor(() => document.querySelector('[data-action="buy"][data-id="windstep"]')?.disabled);
+  assert.equal(await page.evaluate(() => document.querySelector('#overlay .modal').scrollTop), top, 'the shop stays on the item just bought');
+});
+
 uiTest('the history calendar shows today’s habit and task', async page => {
   await page.open();
   await page.click('#app [data-action="toggle-task"]');

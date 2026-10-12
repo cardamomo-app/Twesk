@@ -1,9 +1,9 @@
 // The Vault: notes, journal entries, quick capture, and recovery reflections.
-import * as E from './engine.js?v=0.22.6';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.22.6';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.22.6';
-import { isJournalExport, notesToText } from './notes-export.js?v=0.22.6';
-import { sound } from './ui-effects.js?v=0.22.6';
+import * as E from './engine.js?v=0.22.7';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.22.7';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.22.7';
+import { isJournalExport, notesToText } from './notes-export.js?v=0.22.7';
+import { sound } from './ui-effects.js?v=0.22.7';
 const noteDate = n =>
   new Intl.DateTimeFormat('en', {
     month: 'short',
@@ -80,8 +80,11 @@ const refreshDownload = () => {
 };
 function renderNotes() {
   const notes = visibleNotes();
+  // An empty tab stays quiet; only a search or hashtag with no matches says so.
   if (!notes.length)
-    return `<div class="empty-state"><span class="empty-symbol">${icon('vault')}</span><h3>${app.vaultSearch || app.vaultTag ? 'Nothing found just yet' : app.vaultFilter === 'inbox' ? 'Room for a new thought' : 'A little space for your ideas'}</h3><p>${app.vaultSearch || app.vaultTag ? 'Try another word, hashtag, or tab.' : 'Capture something now. You can make sense of it later.'}</p><button class="button secondary" data-action="capture">${icon('plus')}Quick capture</button></div>`;
+    return app.vaultSearch || app.vaultTag
+      ? `<div class="empty-state"><span class="empty-symbol">${icon('vault')}</span><h3>Nothing found just yet</h3><p>Try another word, hashtag, or tab.</p></div>`
+      : '';
   const selectable = canSelect();
   return notes
     .map(

@@ -1,11 +1,11 @@
 // The Vault: notes, journal entries, quick capture, and recovery reflections.
-import * as E from './engine.js?v=0.23.0';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.23.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.23.0';
-import { isJournalExport, notesToText } from './notes-export.js?v=0.23.0';
-import { rewardEffect, sound } from './ui-effects.js?v=0.23.0';
-import { vaultArt } from './vault-art.js?v=0.23.0';
-import { VAULT_SECTIONS, inVaultSection, needsReview, vaultTone } from './vault-model.js?v=0.23.0';
+import * as E from './engine.js?v=0.23.1';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.23.1';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.23.1';
+import { isJournalExport, notesToText } from './notes-export.js?v=0.23.1';
+import { rewardEffect, sound } from './ui-effects.js?v=0.23.1';
+import { vaultArt } from './vault-art.js?v=0.23.1';
+import { VAULT_SECTIONS, inVaultSection, needsReview, vaultTone } from './vault-model.js?v=0.23.1';
 const noteDate = n =>
   new Intl.DateTimeFormat('en', {
     month: 'short',
@@ -136,13 +136,18 @@ function performReview(id, status, sourceRect) {
   const reward = commit(() => E.reviewNote(app.state, id, status, today()));
   celebrateReview(reward, sourceRect);
 }
+function captureGold(text) {
+  const reward = E.captureReward(app.state, { id: app.modal.id, text }, today());
+  const capped = (app.state.noteGold[today()] || 0) >= 6;
+  return `<span class="capture-reward-label">${capped ? 'Daily limit reached' : 'On save'}</span>${coin('+' + reward, true)}`;
+}
 export const modals = {
   capture() {
     const note = app.state.notes.find(n => n.id === app.modal.id),
       recovery = app.modal.recovery;
     return modalShell(
       `<span class="capture-title">${vaultArt(recovery || note?.kind === 'journal' || app.modal.kind === 'journal' ? 'journal' : 'note')}<span>${recovery ? 'A moment to reflect' : note?.kind === 'journal' ? 'Your journal entry' : note ? 'Your captured thought' : 'Catch a thought'}</span></span>`,
-      `<form id="capture-form" class="form-body">${!note && !recovery ? `<div class="segmented capture-kind"><button type="button" data-action="capture-kind" data-kind="note" class="${app.modal.kind === 'note' ? 'selected' : ''}">${vaultArt('note')}Note</button><button type="button" data-action="capture-kind" data-kind="journal" class="${app.modal.kind === 'journal' ? 'selected' : ''}">${vaultArt('journal')}Journal</button><button type="button" data-action="capture-kind" data-kind="task" class="${app.modal.kind === 'task' ? 'selected' : ''}">${icon('check')}Task</button></div>` : ''}${recovery ? `<p class="reflection-prompt">What needs more care right now? What’s one thing you could do next?</p><div class="recovery-preview"><span>${icon('heart')}<strong id="preview-hp">${app.state.hp}</strong> / ${E.maxHP(app.state)} HP</span><span id="preview-heal">+0 HP</span></div><div class="health-bar"><div id="preview-bar" style="width:${(app.state.hp / E.maxHP(app.state)) * 100}%"></div></div>` : ''}<label class="sr-only" for="capture-text">${recovery ? 'Reflection' : note?.kind === 'journal' || app.modal.kind === 'journal' ? 'Your journal entry' : 'Your note or task'}</label><textarea id="capture-text" name="text" data-tag-suggest aria-autocomplete="list" required maxlength="50000" rows="${recovery ? 8 : 7}" placeholder="${recovery ? 'Take a breath, and write whatever comes to mind…' : 'Drop an idea, a reminder, a little something…\nAdd #tags to find it later.'}" autofocus>${esc(note?.text || '')}</textarea><div class="capture-meta"><span id="word-count">${E.words(note?.text || '')} words</span><span>${recovery ? '2 words ≈ 1 HP · Heart improves healing' : 'Captures earn 1–3 gold · up to 6 per day'}</span></div><div class="form-actions">${note ? `<button type="button" class="button subtle danger" data-action="delete-note" data-id="${note.id}">Archive</button>` : '<span></span>'}<button class="button primary" type="submit">${recovery ? 'Save & recover' : note ? note.kind === 'journal' ? 'Save journal' : 'Save note' : app.modal.kind === 'task' ? 'Send to task inbox' : app.modal.kind === 'journal' ? 'Save journal' : 'Save to Vault'}${icon('arrow')}</button></div></form>`,
+      `<form id="capture-form" class="form-body">${!note && !recovery ? `<div class="segmented capture-kind"><button type="button" data-action="capture-kind" data-kind="note" class="${app.modal.kind === 'note' ? 'selected' : ''}">${vaultArt('note')}Note</button><button type="button" data-action="capture-kind" data-kind="journal" class="${app.modal.kind === 'journal' ? 'selected' : ''}">${vaultArt('journal')}Journal</button><button type="button" data-action="capture-kind" data-kind="task" class="${app.modal.kind === 'task' ? 'selected' : ''}">${icon('check')}Task</button></div>` : ''}${recovery ? `<p class="reflection-prompt">What needs more care right now? What’s one thing you could do next?</p><div class="recovery-preview"><span>${icon('heart')}<strong id="preview-hp">${app.state.hp}</strong> / ${E.maxHP(app.state)} HP</span><span id="preview-heal">+0 HP</span></div><div class="health-bar"><div id="preview-bar" style="width:${(app.state.hp / E.maxHP(app.state)) * 100}%"></div></div>` : ''}<label class="sr-only" for="capture-text">${recovery ? 'Reflection' : note?.kind === 'journal' || app.modal.kind === 'journal' ? 'Your journal entry' : 'Your note or task'}</label><textarea id="capture-text" name="text" data-tag-suggest aria-autocomplete="list" required maxlength="50000" rows="${recovery ? 8 : 7}" placeholder="${recovery ? 'Take a breath, and write whatever comes to mind…' : 'Drop an idea, a reminder, a little something…\nAdd #tags to find it later.'}" autofocus>${esc(note?.text || '')}</textarea><div class="capture-meta"><span id="word-count">${E.words(note?.text || '')} words</span><span id="capture-gold" class="capture-reward" aria-live="polite" aria-atomic="true" title="1 gold per capture, 2 at 50 words, 3 at 150 words. Up to 6 gold per day; edits earn only the difference.">${captureGold(note?.text || '')}</span></div>${recovery ? '<p class="capture-healing-hint">2 words ≈ 1 HP · Heart improves healing</p>' : ''}<div class="form-actions">${note ? `<button type="button" class="button subtle danger" data-action="delete-note" data-id="${note.id}">Archive</button>` : '<span></span>'}<button class="button primary" type="submit">${recovery ? 'Save & recover' : note ? note.kind === 'journal' ? 'Save journal' : 'Save note' : app.modal.kind === 'task' ? 'Send to task inbox' : app.modal.kind === 'journal' ? 'Save journal' : 'Save to Vault'}${icon('arrow')}</button></div></form>`,
       `vault-capture ${recovery ? 'reflection-modal' : ''} ${recovery || note?.kind === 'journal' || app.modal.kind === 'journal' ? 'capture-journal' : 'capture-note'}`,
       recovery ? 'Saved to your Journal. A little writing, a little healing.' : '',
     );
@@ -151,7 +156,7 @@ export const modals = {
     const inboxCount = app.state.notes.filter(needsReview).length;
     return modalShell(
       vaultTitle('The Vault'),
-      `<div class="vault-toolbar"><label class="search-box">${icon('search')}<input id="vault-search" data-tag-suggest aria-autocomplete="list" autocomplete="off" aria-label="Search notes and hashtags" placeholder="Search thoughts or #tags" value="${esc(app.vaultSearch)}"></label>${inboxCount ? `<button class="button secondary" data-action="review-notes">${vaultArt('review')}Review <span>${inboxCount}</span></button>` : ''}<button class="button secondary" data-action="capture">${icon('plus')}Capture</button></div><div class="vault-tab-row"><div class="vault-tabs segmented">${VAULT_SECTIONS.map(section => `<button data-action="vault-filter" data-filter="${section.id}" data-vault-tone="${section.id}" class="${app.vaultFilter === section.id ? 'selected' : ''}" aria-pressed="${app.vaultFilter === section.id}" title="${section.title}">${vaultArt(section.art)}<span>${section.label}</span><small>${app.state.notes.filter(n => inVaultSection(n, section.id)).length}</small></button>`).join('')}</div><span id="vault-download" aria-live="polite">${downloadButton()}</span></div><div id="vault-tags">${renderTagChips()}</div><div id="vault-results" class="vault-results">${renderNotes()}</div><footer class="vault-footer">${reviewBonus()}</footer>`,
+      `<div class="vault-toolbar"><label class="search-box">${icon('search')}<input id="vault-search" data-tag-suggest aria-autocomplete="list" autocomplete="off" aria-label="Search notes and hashtags" placeholder="Search thoughts or #tags" value="${esc(app.vaultSearch)}"></label>${inboxCount ? `<button class="button secondary" data-action="review-notes">${vaultArt('review')}Review <span>${inboxCount}</span></button>` : ''}<button class="button secondary" data-action="capture">${icon('bolt')}Capture</button></div><div class="vault-tab-row"><div class="vault-tabs segmented">${VAULT_SECTIONS.map(section => `<button data-action="vault-filter" data-filter="${section.id}" data-vault-tone="${section.id}" class="${app.vaultFilter === section.id ? 'selected' : ''}" aria-pressed="${app.vaultFilter === section.id}" title="${section.title}">${vaultArt(section.art)}<span>${section.label}</span><small>${app.state.notes.filter(n => inVaultSection(n, section.id)).length}</small></button>`).join('')}</div><span id="vault-download" aria-live="polite">${downloadButton()}</span></div><div id="vault-tags">${renderTagChips()}</div><div id="vault-results" class="vault-results">${renderNotes()}</div><footer class="vault-footer">${reviewBonus()}</footer>`,
       `vault-modal vault-shelf-${app.vaultFilter}`,
       '',
     );
@@ -194,7 +199,7 @@ export const actions = {
     app.modal.kind = b.dataset.kind;
     view.renderModal();
     $('#capture-text').value = text;
-    $('#word-count').textContent = E.words(text) + ' words';
+    onInput({ target: $('#capture-text') });
     $('#capture-text').focus();
   },
   vault(b, { a, id, sourceRect }) {
@@ -322,6 +327,7 @@ export const forms = {
     const text = data.get('text').trim();
     if (!text) return;
     const previous = app.modal;
+    const sourceRect = $('#capture-gold').getBoundingClientRect();
     const r = commit(() => {
       const result = E.saveNote(
         app.state,
@@ -339,7 +345,7 @@ export const forms = {
     if (r) {
       if (r.note.kind === 'journal') app.vaultFilter = 'journal';
       closeModal();
-      sound('note');
+      if (r.reward) rewardEffect(sourceRect, r.reward); else sound('note');
       toast(
         previous.recovery
           ? `Reflection saved. +${r.healed} HP${r.reward ? ` · +${r.reward} gold` : ''}.`
@@ -358,6 +364,7 @@ export function onInput(event) {
   if (event.target.id === 'capture-text') {
     const count = E.words(event.target.value);
     $('#word-count').textContent = count + ' words';
+    $('#capture-gold').innerHTML = captureGold(event.target.value);
     if (app.modal.recovery) {
       const healed = Math.min(
         E.maxHP(app.state) - app.state.hp,

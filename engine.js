@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.23.0';
-import {validHabitIcon} from './habit-icons.js?v=0.23.0';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.23.1';
+import {validHabitIcon} from './habit-icons.js?v=0.23.1';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -294,6 +294,11 @@ export function reopenTasks(s, today) {
   }
   return reopened;
 }
+export function captureReward(s, { id, text }, today) {
+  const paid = s.notes.find(n => n.id === id)?.paid || 0;
+  const remaining = Math.max(0, 6 - (s.noteGold[today] || 0));
+  return Math.max(0, Math.min(remaining, noteEntitlement(text) - paid));
+}
 export function saveNote(s, { id, text, kind = 'note', recovery = false }, today) {
   if (!text.trim()) throw new Error('Write something first.');
   const progress=ensureProgress(s);
@@ -303,8 +308,7 @@ export function saveNote(s, { id, text, kind = 'note', recovery = false }, today
     progress.notes++;if(note.kind==='journal')progress.journals++;
   }
   note.text = text.trim();
-  const remaining = Math.max(0, 6 - (s.noteGold[today] || 0));
-  const reward = Math.max(0, Math.min(remaining, noteEntitlement(text) - note.paid));
+  const reward = captureReward(s, { id: note.id, text }, today);
   note.paid += reward; s.gold += reward; s.noteGold[today] = (s.noteGold[today] || 0) + reward;
   let healed = 0;
   if (recovery && !note.healed) {

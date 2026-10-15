@@ -4,6 +4,25 @@ import * as E from '../engine.js';
 import { inVaultSection, needsReview, vaultTone } from '../vault-model.js';
 import { vaultArt } from '../vault-art.js';
 const day = '2026-10-15';
+test('capture previews match payouts at word thresholds, on edits, and at the daily limit', () => {
+  const s = E.freshState(), text = n => Array(n).fill('thought').join(' ');
+  const preview = (text, id) => E.captureReward(s, { text, id }, day);
+  const unchanged = structuredClone(s);
+  for (const [count, reward] of [[0, 0], [1, 1], [49, 1], [50, 2], [149, 2], [150, 3]])
+    assert.equal(preview(text(count)), reward);
+  assert.deepEqual(s, unchanged);
+  const { note, reward } = E.saveNote(s, { text: text(1) }, day);
+  assert.equal(reward, 1); assert.equal(preview(note.text, note.id), 0);
+  assert.equal(preview(text(150), note.id), 2);
+  assert.equal(E.saveNote(s, { id: note.id, text: text(150) }, day).reward, 2);
+  assert.equal(preview(text(1), note.id), 0);
+  E.saveNote(s, { text: text(50) }, day);
+  assert.equal(preview(text(150)), 1);
+  assert.equal(E.saveNote(s, { text: text(150) }, day).reward, 1);
+  assert.equal(preview(text(150)), 0);
+  assert.equal(E.captureReward(s, { text: text(150) }, '2026-10-16'), 3);
+  assert.equal(E.captureReward(s, { id: note.id, text: text(150) }, '2026-10-16'), 0);
+});
 test('notes enter review, while journals and healing reflections go straight to Journal', () => {
   const s = E.freshState(); s.hp = 30;
   const note = E.saveNote(s, { text: 'A new idea' }, day).note;

@@ -1,7 +1,7 @@
 // Shared interface foundation: the app store, saving, small HTML helpers, and toasts.
-import * as E from './engine.js?v=0.23.0';
-import { goldArt } from './art.js?v=0.23.0';
-import { HABIT_ICONS } from './habit-icons.js?v=0.23.0';
+import * as E from './engine.js?v=0.23.1';
+import { goldArt } from './art.js?v=0.23.1';
+import { HABIT_ICONS } from './habit-icons.js?v=0.23.1';
 export const $ = s => document.querySelector(s);
 export const $$ = s => [...document.querySelectorAll(s)];
 export const esc = v =>
@@ -98,7 +98,7 @@ const icons = {
   sound: '<path d="m10 5-5 4H2v6h3l5 4ZM15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
   mute: '<path d="m10 5-5 4H2v6h3l5 4ZM16 9l6 6m0-6-6 6"/>',
   settings:
-    '<path d="m9 3-1 3-3 1v4l-2 1 2 2v3l3 1 1 3h5l1-3 3-1v-3l3-2-3-1V7l-3-1-1-3Z"/><circle cx="11.5" cy="12" r="3"/>',
+    '<path d="M 10.08 4.85L10.26 2.15L13.74 2.15L13.92 4.85L15.70 5.59L17.74 3.81L20.19 6.26L18.41 8.30L19.15 10.08L21.85 10.26L21.85 13.74L19.15 13.92L18.41 15.70L20.19 17.74L17.74 20.19L15.70 18.41L13.92 19.15L13.74 21.85L10.26 21.85L10.08 19.15L8.30 18.41L6.26 20.19L3.81 17.74L5.59 15.70L4.85 13.92L2.15 13.74L2.15 10.26L4.85 10.08L5.59 8.30L3.81 6.26L6.26 3.81L8.30 5.59Z"/><circle cx="12" cy="12" r="3"/>',
   body: '<path d="M4 8v8m3-10v12m10-12v12m3-10v8M7 12h10"/>',
   mind: '<path d="M4 5h6l2 2 2-2h6v14h-6l-2 2-2-2H4ZM12 7v14"/>',
   soul: '<path d="M12 3c1 5 4 8 9 9-5 1-8 4-9 9-1-5-4-8-9-9 5-1 8-4 9-9Z"/>',

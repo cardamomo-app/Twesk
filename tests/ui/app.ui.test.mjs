@@ -698,6 +698,52 @@ uiTest('buying keeps the shop where it was, and dragging right turns the charact
   assert.equal(await page.evaluate(() => document.querySelector('#overlay .modal').scrollTop), top, 'the shop stays on the item just bought');
 });
 
+uiTest('the dial winds back toward 0 as a session runs, and starting one sets off with a sound', async page => {
+  // Record every audio context the page makes, to watch the sound engine recover.
+  await page.cmd('Page.addScriptToEvaluateOnNewDocument', {
+    source: `{const A=window.AudioContext;window.__audio=[];window.AudioContext=class extends A{constructor(...a){super(...a);window.__audio.push(this);}};}`,
+  });
+  const s = E.freshState();
+  E.setCurrentQuest(s, s.tasks[0].id);
+  await page.open({ save: s });
+  const knob = () => page.evaluate(() => Number(document.querySelector('[data-dial-hand]').getAttribute('transform').match(/rotate\(([-\d.]+)/)[1]));
+  assert.equal(await knob(), -135 + (25 / 60) * 270, 'ready: the knob shows the chosen 25 minutes');
+  await page.click('[data-action="quest-play"]');
+  await page.waitFor(() => window.__audio.length === 1 && window.__audio[0].state === 'running', { message: 'set-off sound played' });
+  // Halfway through: the knob has wound back to 12.5 minutes.
+  await page.evaluate(id => localStorage.setItem('twesk.quest-timer.v1', JSON.stringify({ taskId: id, minutes: 25, remainingMs: 25 * 60000, endAt: Date.now() + 12.5 * 60000, status: 'running', credited: 0 })), s.tasks[0].id);
+  await page.goto('/');
+  await page.waitFor(() => document.querySelector('.quest-card.is-walking'));
+  await new Promise(r => setTimeout(r, 700));
+  assert.ok(Math.abs((await knob()) - (-135 + (12.5 / 60) * 270)) < 1, 'running: the knob shows the time remaining');
+});
+
+uiTest('sounds come back after the audio is paused, interrupted by another tab, or the output device changes', async page => {
+  await page.cmd('Page.addScriptToEvaluateOnNewDocument', {
+    source: `{const A=window.AudioContext;window.__audio=[];window.AudioContext=class extends A{constructor(...a){super(...a);window.__audio.push(this);}};}`,
+  });
+  const s = E.freshState();
+  E.setCurrentQuest(s, s.tasks[0].id);
+  await page.open({ save: s });
+  await page.click('[data-action="quest-play"]');
+  await page.waitFor(() => window.__audio[0]?.state === 'running');
+  // The system pauses audio (as after sleep); the next click brings it back.
+  await page.evaluate(() => window.__audio[0].suspend());
+  await page.waitFor(() => window.__audio[0].state === 'suspended');
+  await page.click('[data-action="quest-play"]');
+  await page.waitFor(() => window.__audio[0].state === 'running', { message: 'resumed on the next click' });
+  // A new output device: the next click builds a fresh audio engine.
+  await page.evaluate(() => navigator.mediaDevices.dispatchEvent(new Event('devicechange')));
+  await page.click('[data-action="quest-play"]');
+  await page.waitFor(() => window.__audio.length === 2 && window.__audio[1].state === 'running' && window.__audio[0].state === 'closed', { message: 'rebuilt for the new output' });
+  // Another tab holds the audio and a resume is refused: the following click builds a fresh engine.
+  await page.evaluate(async () => { const a = window.__audio[1]; await a.suspend(); a.resume = () => Promise.reject(new Error('interrupted')); });
+  await page.click('[data-action="quest-play"]');
+  await new Promise(r => setTimeout(r, 800));
+  await page.click('[data-action="quest-play"]');
+  await page.waitFor(() => window.__audio.length === 3 && window.__audio[2].state === 'running', { message: 'rebuilt after a refused resume' });
+});
+
 uiTest('the history calendar shows today’s habit and task', async page => {
   await page.open();
   await page.click('#app [data-action="toggle-task"]');

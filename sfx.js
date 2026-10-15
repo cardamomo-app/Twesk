@@ -2,7 +2,7 @@
 // One shared context runs through a compressor with a light reverb send.
 // Repeated sounds draw from random variants, and quick successive rewards climb
 // a pentatonic scale so a run of completed tasks sounds increasingly triumphant.
-let ctx, master, reverbIn, noiseBuf;
+let ctx, master, reverbIn, noiseBuf, clock = null, stale = false;
 let isMuted = () => false;
 let channel = 'ui';
 const channels = new Map();
@@ -19,8 +19,9 @@ export function configureSfx({ muted }) {
   isMuted = muted;
 }
 function setup() {
-  if (ctx) return;
+  if (ctx && ctx.state !== 'closed') return;
   ctx = new (window.AudioContext || window.webkitAudioContext)();
+  clock = null;
   const compressor = ctx.createDynamicsCompressor();
   compressor.threshold.value = -16;
   compressor.knee.value = 12;
@@ -397,6 +398,13 @@ const SOUNDS = {
   },
 
   // Combat
+  // Setting off on an adventure: two soft footsteps, then a bright rising call.
+  setOff(t) {
+    noise({ t, dur: 0.05, vol: 0.05, type: 'lowpass', f: 900, verb: 0.05, pan: -0.15 });
+    noise({ t: t + 0.16, dur: 0.05, vol: 0.05, type: 'lowpass', f: 800, verb: 0.05, pan: 0.15 });
+    [392, 523.25, 659.3].forEach((f, i) => bell(f, t + 0.32 + i * 0.11, 0.05, 1.1, 0.45, (i - 1) * 0.2));
+    tone({ t: t + 0.32, f: 196, dur: 0.9, vol: 0.035, attack: 0.08, type: 'triangle', verb: 0.4 });
+  },
   start(t) {
     timpani(110, t, 0.22);
     brass(196, t + 0.05, 0.38, 0.05);
@@ -523,23 +531,65 @@ const SOUNDS = {
   },
 };
 
+// Browsers pause audio when the page hides, the Mac sleeps, or another tab starts playing; WebKit can leave it "interrupted", or
+// running but silent after the output device changes. Any state other than running is resumed, and a
+// context that is gone, stuck, or tied to an old output is rebuilt on the next tap or key press.
+function rebuild() {
+  try { ctx?.close(); } catch {}
+  ctx = null;
+  channels.clear();
+  setup();
+}
 export function unlockSfx() {
   try {
+    if (stale) { stale = false; rebuild(); }
     setup();
-    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    if (ctx.state !== 'running') ctx.resume().catch(() => {});
   } catch {}
+}
+// A running clock that has stopped moving means the audio output was lost.
+function frozen() {
+  if (!ctx || ctx.state !== 'running') return false;
+  const now = { audio: ctx.currentTime, wall: performance.now() }, last = clock;
+  clock = now;
+  return !!last && now.wall - last.wall > 1000 && now.audio - last.audio < 0.05;
+}
+// Media in another Safari tab (a YouTube video, say) can interrupt this page's audio. If a resume on a tap
+// doesn't take, the next tap builds a fresh context, which plays alongside the other tab.
+function wake() {
+  if (!ctx) return;
+  if (ctx.state === 'closed' || frozen()) stale = true;
+  if (!stale && ctx.state === 'running') return;
+  unlockSfx();
+  const woken = ctx;
+  setTimeout(() => { if (woken === ctx && ctx.state !== 'running') stale = true; }, 600);
+}
+if (typeof document !== 'undefined') {
+  for (const type of ['pointerdown', 'keydown', 'touchend']) document.addEventListener(type, wake, { capture: true, passive: true });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) clock = null; else wake(); });
+  window.addEventListener('pageshow', wake);
+  window.addEventListener('focus', wake);
+  navigator.mediaDevices?.addEventListener?.('devicechange', () => { stale = !!ctx; });
 }
 // Play a named sound. Options: delay (seconds), channel (for stopping a group), plus sound-specific settings.
 export function playSfx(name, options = {}) {
   if (isMuted() || !SOUNDS[name]) return;
   try {
     unlockSfx();
-    channel = options.channel || 'ui';
-    SOUNDS[name](ctx.currentTime + 0.01 + (options.delay || 0), options);
-  } catch {
-  } finally {
-    channel = 'ui';
-  }
+    const play = () => {
+      try {
+        channel = options.channel || 'ui';
+        SOUNDS[name](ctx.currentTime + 0.01 + (options.delay || 0), options);
+      } catch {
+      } finally {
+        channel = 'ui';
+      }
+    };
+    if (ctx.state === 'running') return play();
+    // A waking context starts a moment later; play then, unless it takes too long to still fit the moment.
+    const asked = performance.now(), waking = ctx;
+    waking.resume().then(() => { if (waking === ctx && ctx.state === 'running' && performance.now() - asked < 800) play(); }).catch(() => {});
+  } catch {}
 }
 export function stopSfx(name = 'ui') {
   for (const source of channels.get(name) || []) {

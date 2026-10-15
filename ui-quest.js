@@ -1,12 +1,12 @@
 // One task, a little trail, and a device-local focus timer.
-import * as E from './engine.js?v=0.22.7';
-import * as T from './quest-timer.js?v=0.22.7';
-import { avatarJourneyArt } from './avatar-model.js?v=0.22.7';
-import { resolvedHabitIcon } from './habit-icons.js?v=0.22.7';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.22.7';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.22.7';
-import { rewardEffect, sound } from './ui-effects.js?v=0.22.7';
-import { unlockSfx } from './sfx.js?v=0.22.7';
+import * as E from './engine.js?v=0.22.9';
+import * as T from './quest-timer.js?v=0.22.9';
+import { avatarJourneyArt } from './avatar-model.js?v=0.22.9';
+import { resolvedHabitIcon } from './habit-icons.js?v=0.22.9';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.22.9';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.22.9';
+import { rewardEffect, sound } from './ui-effects.js?v=0.22.9';
+import { unlockSfx } from './sfx.js?v=0.22.9';
 
 const TIMER_KEY = 'twesk.quest-timer.v1';
 let timer = T.freshTimer(), dialDrag = null, owed = 0;
@@ -65,10 +65,15 @@ function refreshMeter() {
 const canReset = () => timer.status !== 'ready' || timer.remainingMs !== timer.minutes * 60000;
 const timeText = ms => `${Math.floor(Math.ceil(ms / 1000) / 60).toString().padStart(2, '0')}:${(Math.ceil(ms / 1000) % 60).toString().padStart(2, '0')}`;
 const statusText = () => ({ ready: '', running: 'On the trail', paused: 'Resting a moment', finished: 'Time to take a breath' }[timer.status]);
+// The dial runs from 0 to 60 minutes. Before a session it shows the chosen duration; once started, the
+// knob and arc wind back toward 0 with the time remaining.
+const dialMinutes = () => (timer.status === 'ready' ? timer.minutes : T.remaining(timer) / 60000);
+const dialAngle = minutes => -135 + (minutes / 60) * 270;
+const dialArc = minutes => `${(minutes / 60) * 75} 100`;
 function clockFace(task) {
-  const minutes = timer.minutes, angle = -135 + (minutes - 5) / 55 * 270;
+  const minutes = timer.minutes, angle = dialAngle(dialMinutes());
   return `<div class="quest-dial ${timer.status === 'running' ? 'is-locked' : ''}" role="slider" tabindex="${task ? '0' : '-1'}" aria-label="Focus duration" aria-valuemin="5" aria-valuemax="60" aria-valuenow="${minutes}" aria-valuetext="${minutes} minutes" aria-disabled="${!task || timer.status === 'running'}" title="Drag around the dial · 5 to 60 minutes · Arrow keys adjust">
-    <svg viewBox="0 0 72 72" aria-hidden="true"><circle class="dial-track" cx="36" cy="36" r="30" pathLength="100"/><circle class="dial-fill" cx="36" cy="36" r="30" pathLength="100" stroke-dasharray="${(minutes - 5) / 55 * 75} 100"/><g transform="rotate(${angle} 36 36)" data-dial-hand><circle class="dial-knob" cx="36" cy="6" r="3.5"/></g></svg><span><strong data-clock>${timeText(T.remaining(timer))}</strong><small>MINUTES</small></span></div>`;
+    <svg viewBox="0 0 72 72" aria-hidden="true"><circle class="dial-track" cx="36" cy="36" r="30" pathLength="100"/><circle class="dial-fill" cx="36" cy="36" r="30" pathLength="100" stroke-dasharray="${dialArc(dialMinutes())}"/><g transform="rotate(${angle} 36 36)" data-dial-hand><circle class="dial-knob" cx="36" cy="6" r="3.5"/></g></svg><span><strong data-clock>${timeText(T.remaining(timer))}</strong><small>MINUTES</small></span></div>`;
 }
 function playButton(task) {
   const running = timer.status === 'running';
@@ -115,6 +120,8 @@ export const actions = {
   },
   'quest-play'() {
     reconcile(); unlockSfx();
+    // A fresh session (not a resume) sets off with its own little call.
+    if (timer.status === 'ready' || timer.status === 'finished') sound('setOff');
     timer = timer.status === 'running' ? T.pauseTimer(timer) : T.startTimer(timer);
     saveClock();
     creditFocus();
@@ -146,6 +153,7 @@ function tick() {
   }
   if (calm()) creditFocus();
   refreshMeter();
+  refreshDial();
   const clock = $('[data-clock]');
   if (clock) clock.textContent = timeText(T.remaining(timer));
   const status = $('[data-clock-status]');
@@ -160,6 +168,11 @@ function tick() {
     $('.quest-dial')?.setAttribute('aria-disabled', 'false'); $('.quest-dial')?.classList.remove('is-locked');
   }
 }
+function refreshDial() {
+  const minutes = dialMinutes();
+  $('[data-dial-hand]')?.setAttribute('transform', `rotate(${dialAngle(minutes)} 36 36)`);
+  $('.dial-fill')?.setAttribute('stroke-dasharray', dialArc(minutes));
+}
 function setMinutes(minutes) {
   const next = T.durationTimer(timer, minutes);
   if (next !== timer) owed += T.minutesDue(timer); // a new duration starts a fresh session; keep what was earned
@@ -167,8 +180,7 @@ function setMinutes(minutes) {
   const dial = $('.quest-dial');
   if (!dial) return;
   dial.setAttribute('aria-valuenow', timer.minutes); dial.setAttribute('aria-valuetext', `${timer.minutes} minutes`);
-  $('[data-dial-hand]').setAttribute('transform', `rotate(${-135 + (timer.minutes - 5) / 55 * 270} 36 36)`);
-  $('.dial-fill').setAttribute('stroke-dasharray', `${(timer.minutes - 5) / 55 * 75} 100`);
+  refreshDial();
   $('[data-clock]').textContent = timeText(timer.remainingMs);
   $('[data-clock-status]').textContent = statusText();
   $('[data-session-progress]').style.width = '0%';
@@ -182,7 +194,7 @@ export function installQuest() {
     // Stay at the endpoint while crossing the dial’s lower gap.
     if (Math.abs(angle) > 135) angle = (dialDrag.lastAngle ?? angle) < 0 ? -135 : 135;
     dialDrag.lastAngle = angle;
-    setMinutes(5 + (Math.max(-135, Math.min(135, angle)) + 135) / 270 * 55);
+    setMinutes((Math.max(-135, Math.min(135, angle)) + 135) / 270 * 60);
   };
   $('#app').addEventListener('pointerdown', event => {
     const el = event.target.closest('.quest-dial');

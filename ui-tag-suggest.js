@@ -1,8 +1,8 @@
 // Hashtag autocomplete for task titles, captured notes, and Vault search.
 // Typing "#" plus a letter or two suggests hashtags already used in tasks and notes, most used first.
 // ↑/↓ choose, Enter or Tab accept, Escape closes the list (without closing the dialog); clicks work too.
-import * as E from './engine.js?v=0.22.7';
-import { app, esc } from './ui-core.js?v=0.22.7';
+import * as E from './engine.js?v=0.22.9';
+import { app, esc } from './ui-core.js?v=0.22.9';
 
 const FIELDS = '[data-tag-suggest]';
 let field = null,

@@ -1,6 +1,6 @@
 // Floating explanations for the character's stat chips.
-import * as E from './engine.js?v=0.22.7';
-import { app, icon } from './ui-core.js?v=0.22.7';
+import * as E from './engine.js?v=0.22.9';
+import { app, icon } from './ui-core.js?v=0.22.9';
 const statTooltip = document.createElement('div');
 statTooltip.id = 'stat-tooltip';
 statTooltip.className = 'stat-tooltip';

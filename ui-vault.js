@@ -1,9 +1,11 @@
 // The Vault: notes, journal entries, quick capture, and recovery reflections.
-import * as E from './engine.js?v=0.22.10';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.22.10';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.22.10';
-import { isJournalExport, notesToText } from './notes-export.js?v=0.22.10';
-import { sound } from './ui-effects.js?v=0.22.10';
+import * as E from './engine.js?v=0.23.0';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.23.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.23.0';
+import { isJournalExport, notesToText } from './notes-export.js?v=0.23.0';
+import { rewardEffect, sound } from './ui-effects.js?v=0.23.0';
+import { vaultArt } from './vault-art.js?v=0.23.0';
+import { VAULT_SECTIONS, inVaultSection, needsReview, vaultTone } from './vault-model.js?v=0.23.0';
 const noteDate = n =>
   new Intl.DateTimeFormat('en', {
     month: 'short',
@@ -17,12 +19,7 @@ const noteText = text =>
     (_, space, tag) =>
       `${space}<button class="hashtag" data-action="vault-tag" data-tag="${tag.toLowerCase()}" title="Show notes tagged ${tag}">${tag}</button>`,
   );
-const inTab = n =>
-  app.vaultFilter === 'archived'
-    ? n.status === 'archived'
-    : n.status !== 'archived' &&
-      (app.vaultFilter === 'all' ||
-        (app.vaultFilter === 'journal' ? n.kind === 'journal' : n.status === app.vaultFilter));
+const inTab = n => inVaultSection(n, app.vaultFilter);
 const searchable = n => `${n.text} ${n.kind === 'journal' ? '#reflection' : ''}`.toLowerCase();
 function renderTagChips() {
   const counts = new Map();
@@ -78,6 +75,23 @@ const refreshDownload = () => {
   const slot = $('#vault-download');
   if (slot) slot.innerHTML = downloadButton();
 };
+const shelfArt = n => n.kind === 'journal' ? 'journal' : needsReview(n) ? 'review' : n.status === 'archived' ? 'archive' : 'note';
+function noteHeading(n) {
+  const label = n.kind === 'journal' ? 'Journal' : needsReview(n) ? 'To review' : 'Note';
+  return `<div class="note-top"><span class="note-emblem">${vaultArt(shelfArt(n))}</span><span class="note-identity"><strong>${label}</strong><small>${esc(noteDate(n))}${n.pinned ? ` · ${icon('pin')} Pinned` : ''}${n.taskTitle ? ' · Was a task' : ''}${n.healed ? ` · ${icon('heart')} Reflection` : ''}</small></span><span class="note-capture-gold" title="${n.paid} gold earned for this capture">${coin(n.paid, true)}</span></div>`;
+}
+function vaultTitle(label, art = 'vault') {
+  return `<span class="vault-title"><span class="vault-title-art">${vaultArt(art)}</span><span>${label}</span><span class="vault-wallet" data-vault-wallet title="Your gold">${coin(app.state.gold, true)}</span></span>`;
+}
+function reviewBonus() {
+  const earned = app.state.reviewDates.includes(today());
+  return `<span class="vault-review-bonus ${earned ? 'earned' : ''}">${earned ? icon('check') : ''}<span>${earned ? 'Today’s review bonus earned' : 'First review today'}</span>${coin(4, true)}</span>`;
+}
+function celebrateReview(reward, sourceRect) {
+  if (!reward) return;
+  rewardEffect(sourceRect || $('[data-vault-wallet]'), reward, 'gold', { wallet: $('[data-vault-wallet]') });
+  toast(`Review complete. +${reward} gold.`);
+}
 function renderNotes() {
   const notes = visibleNotes();
   // An empty tab stays quiet; only a search or hashtag with no matches says so.
@@ -89,7 +103,7 @@ function renderNotes() {
   return notes
     .map(
       n =>
-        `<article class="note-card ${n.pinned ? 'pinned' : ''} ${selectable ? 'selectable' : ''} ${app.vaultSelected.has(n.id) ? 'selected' : ''}" ${selectable ? `data-action="toggle-note-select" data-id="${n.id}" tabindex="0" aria-label="${n.kind === 'journal' ? 'Journal entry' : 'Note'} from ${esc(noteDate(n))}${app.vaultSelected.has(n.id) ? ', selected' : ''}. Press Space to select it for download."` : ''}><div class="note-top"><span>${n.pinned ? icon('pin') + ' PINNED · ' : ''}${n.taskTitle ? icon('undo') + ' WAS A TASK · ' : ''}${n.kind === 'journal' ? icon('pencil') + ' REFLECTION' : 'NOTE'} · ${esc(noteDate(n))}</span>${coin(n.paid)}</div><p class="note-text">${noteText(n.text)}</p><div class="note-actions"><button class="text-button" data-action="edit-note" data-id="${n.id}">${icon('pencil')}Edit</button>${n.status !== 'archived' ? `<button class="text-button" data-action="pin-note" data-id="${n.id}" aria-pressed="${!!n.pinned}">${icon('pin')}${n.pinned ? 'Unpin' : 'Pin'}</button>` : ''}${n.taskId ? '<span class="converted">' + icon('check') + 'Sent to tasks</span>' : `<button class="text-button" data-action="convert-note" data-id="${n.id}">${icon('arrow')}${n.taskTitle ? 'Back to tasks' : 'Make a task'}</button>`}${n.status === 'inbox' ? `<button class="text-button" data-action="keep-note" data-id="${n.id}">Keep note</button>` : ''}<button class="text-button archive" data-action="${n.status === 'archived' ? 'restore-note' : 'archive-note'}" data-id="${n.id}">${n.status === 'archived' ? 'Restore' : 'Archive'}</button></div></article>`,
+        `<article data-vault-tone="${vaultTone(n)}" data-note-kind="${n.kind}" class="note-card ${n.pinned ? 'pinned' : ''} ${selectable ? 'selectable' : ''} ${app.vaultSelected.has(n.id) ? 'selected' : ''}" ${selectable ? `data-action="toggle-note-select" data-id="${n.id}" tabindex="0" aria-label="${n.kind === 'journal' ? 'Journal entry' : 'Note'} from ${esc(noteDate(n))}${app.vaultSelected.has(n.id) ? ', selected' : ''}. Press Space to select it for download."` : ''}>${noteHeading(n)}<p class="note-text">${noteText(n.text)}</p><div class="note-actions"><button class="text-button" data-action="edit-note" data-id="${n.id}">${icon('pencil')}Edit</button>${n.status !== 'archived' ? `<button class="text-button" data-action="pin-note" data-id="${n.id}" aria-pressed="${!!n.pinned}">${icon('pin')}${n.pinned ? 'Unpin' : 'Pin'}</button>` : ''}${n.taskId ? '<span class="converted">' + icon('check') + 'Sent to tasks</span>' : `<button class="text-button" data-action="convert-note" data-id="${n.id}">${icon('arrow')}${n.taskTitle ? 'Back to tasks' : 'Make a task'}</button>`}${needsReview(n) ? `<button class="text-button" data-action="keep-note" data-id="${n.id}">${icon('check')}Keep</button>` : ''}<button class="text-button archive" data-action="${n.status === 'archived' ? 'restore-note' : 'archive-note'}" data-id="${n.id}">${n.status === 'archived' ? 'Restore' : 'Archive'}</button></div></article>`,
     )
     .join('');
 }
@@ -104,58 +118,42 @@ const refreshVault = () => {
 // Inbox notes for one-by-one review, oldest first, minus any skipped this session.
 const reviewQueue = () =>
   app.state.notes
-    .filter(n => n.status === 'inbox' && !app.modal.skipped.includes(n.id))
+    .filter(n => needsReview(n) && !app.modal.skipped.includes(n.id))
     .sort((a, b) => a.created.localeCompare(b.created));
-function convert(id) {
-  const wasInbox = app.state.notes.find(n => n.id === id)?.status === 'inbox';
+function convert(id, sourceRect) {
+  const wasInbox = needsReview(app.state.notes.find(n => n.id === id) || {});
   const r = commit(() => {
-    const t = E.convertNote(app.state, id);
-    if (wasInbox) E.rewardReview(app.state, today());
-    return t;
+    const task = E.convertNote(app.state, id);
+    const reward = wasInbox ? E.rewardReview(app.state, today()) : 0;
+    return { task, reward };
   });
   if (r) {
-    toast('Sent to your task inbox' + (wasInbox ? ' · review saved.' : '.'));
-    sound('note');
+    toast('Sent to your task inbox.');
+    if (r.reward) celebrateReview(r.reward, sourceRect); else sound('note');
   }
 }
-function performReview(id, status) {
+function performReview(id, status, sourceRect) {
   const reward = commit(() => E.reviewNote(app.state, id, status, today()));
-  if (reward) {
-    sound('reward');
-    toast('A little clarity. +4 gold for your review.');
-  }
+  celebrateReview(reward, sourceRect);
 }
 export const modals = {
   capture() {
     const note = app.state.notes.find(n => n.id === app.modal.id),
       recovery = app.modal.recovery;
     return modalShell(
-      recovery ? 'A moment to reflect' : note ? 'Your captured thought' : 'Catch a thought',
-      `<form id="capture-form" class="form-body">${!note && !recovery ? `<div class="segmented capture-kind"><button type="button" data-action="capture-kind" data-kind="note" class="${app.modal.kind === 'note' ? 'selected' : ''}">${icon('pencil')}Note</button><button type="button" data-action="capture-kind" data-kind="journal" class="${app.modal.kind === 'journal' ? 'selected' : ''}">${icon('mind')}Journal</button><button type="button" data-action="capture-kind" data-kind="task" class="${app.modal.kind === 'task' ? 'selected' : ''}">${icon('check')}Task</button></div>` : ''}${recovery ? `<p class="reflection-prompt">What needs more care right now? What’s one thing you could do next?</p><div class="recovery-preview"><span>${icon('heart')}<strong id="preview-hp">${app.state.hp}</strong> / ${E.maxHP(app.state)} HP</span><span id="preview-heal">+0 HP</span></div><div class="health-bar"><div id="preview-bar" style="width:${(app.state.hp / E.maxHP(app.state)) * 100}%"></div></div>` : ''}<label class="sr-only" for="capture-text">${recovery ? 'Reflection' : 'Your note or task'}</label><textarea id="capture-text" name="text" data-tag-suggest aria-autocomplete="list" required maxlength="50000" rows="${recovery ? 8 : 7}" placeholder="${recovery ? 'Take a breath, and write whatever comes to mind…' : 'Drop an idea, a reminder, a little something…\nAdd #tags to find it later.'}" autofocus>${esc(note?.text || '')}</textarea><div class="capture-meta"><span id="word-count">${E.words(note?.text || '')} words</span><span>${recovery ? '2 words ≈ 1 HP · Heart improves healing' : 'Notes earn 1–3 gold · up to 6 per day'}</span></div><div class="form-actions">${note ? `<button type="button" class="button subtle danger" data-action="delete-note" data-id="${note.id}">Archive</button>` : '<span></span>'}<button class="button primary" type="submit">${recovery ? 'Save & recover' : note ? 'Save note' : app.modal.kind === 'task' ? 'Send to task inbox' : app.modal.kind === 'journal' ? 'Save journal' : 'Save to Vault'}${icon('arrow')}</button></div></form>`,
-      recovery ? 'reflection-modal' : '',
-      recovery ? 'A little writing, a little healing. Saved privately in your Vault.' : '',
+      `<span class="capture-title">${vaultArt(recovery || note?.kind === 'journal' || app.modal.kind === 'journal' ? 'journal' : 'note')}<span>${recovery ? 'A moment to reflect' : note?.kind === 'journal' ? 'Your journal entry' : note ? 'Your captured thought' : 'Catch a thought'}</span></span>`,
+      `<form id="capture-form" class="form-body">${!note && !recovery ? `<div class="segmented capture-kind"><button type="button" data-action="capture-kind" data-kind="note" class="${app.modal.kind === 'note' ? 'selected' : ''}">${vaultArt('note')}Note</button><button type="button" data-action="capture-kind" data-kind="journal" class="${app.modal.kind === 'journal' ? 'selected' : ''}">${vaultArt('journal')}Journal</button><button type="button" data-action="capture-kind" data-kind="task" class="${app.modal.kind === 'task' ? 'selected' : ''}">${icon('check')}Task</button></div>` : ''}${recovery ? `<p class="reflection-prompt">What needs more care right now? What’s one thing you could do next?</p><div class="recovery-preview"><span>${icon('heart')}<strong id="preview-hp">${app.state.hp}</strong> / ${E.maxHP(app.state)} HP</span><span id="preview-heal">+0 HP</span></div><div class="health-bar"><div id="preview-bar" style="width:${(app.state.hp / E.maxHP(app.state)) * 100}%"></div></div>` : ''}<label class="sr-only" for="capture-text">${recovery ? 'Reflection' : note?.kind === 'journal' || app.modal.kind === 'journal' ? 'Your journal entry' : 'Your note or task'}</label><textarea id="capture-text" name="text" data-tag-suggest aria-autocomplete="list" required maxlength="50000" rows="${recovery ? 8 : 7}" placeholder="${recovery ? 'Take a breath, and write whatever comes to mind…' : 'Drop an idea, a reminder, a little something…\nAdd #tags to find it later.'}" autofocus>${esc(note?.text || '')}</textarea><div class="capture-meta"><span id="word-count">${E.words(note?.text || '')} words</span><span>${recovery ? '2 words ≈ 1 HP · Heart improves healing' : 'Captures earn 1–3 gold · up to 6 per day'}</span></div><div class="form-actions">${note ? `<button type="button" class="button subtle danger" data-action="delete-note" data-id="${note.id}">Archive</button>` : '<span></span>'}<button class="button primary" type="submit">${recovery ? 'Save & recover' : note ? note.kind === 'journal' ? 'Save journal' : 'Save note' : app.modal.kind === 'task' ? 'Send to task inbox' : app.modal.kind === 'journal' ? 'Save journal' : 'Save to Vault'}${icon('arrow')}</button></div></form>`,
+      `vault-capture ${recovery ? 'reflection-modal' : ''} ${recovery || note?.kind === 'journal' || app.modal.kind === 'journal' ? 'capture-journal' : 'capture-note'}`,
+      recovery ? 'Saved to your Journal. A little writing, a little healing.' : '',
     );
   },
   vault() {
-    const inboxCount = app.state.notes.filter(n => n.status === 'inbox').length;
+    const inboxCount = app.state.notes.filter(needsReview).length;
     return modalShell(
-      'The Vault',
-      `<div class="vault-toolbar"><label class="search-box">${icon('search')}<input id="vault-search" data-tag-suggest aria-autocomplete="list" autocomplete="off" aria-label="Search notes and hashtags" placeholder="Search thoughts or #tags" value="${esc(app.vaultSearch)}"></label>${inboxCount ? `<button class="button secondary" data-action="review-notes">${icon('check')}Review ${inboxCount} one by one</button>` : ''}<button class="button secondary" data-action="capture">${icon('plus')}Capture</button></div><div class="vault-tab-row"><div class="vault-tabs segmented">${[
-        ['inbox', 'Needs review'],
-        ['kept', 'Notes'],
-        ['journal', 'Journal'],
-        ['all', 'All'],
-        ['archived', 'Archive'],
-      ]
-        .map(
-          ([k, l]) =>
-            `<button data-action="vault-filter" data-filter="${k}" class="${app.vaultFilter === k ? 'selected' : ''}">${l}${k === 'inbox' ? ` <span>${inboxCount}</span>` : ''}</button>`,
-        )
-        .join(
-          '',
-        )}</div><span id="vault-download" aria-live="polite">${downloadButton()}</span></div><div id="vault-tags">${renderTagChips()}</div><div id="vault-results" class="vault-results">${renderNotes()}</div><footer class="vault-footer"><span>${app.state.reviewDates.includes(today()) ? 'Review reward earned today · +4 gold' : 'Keep, convert, or archive an inbox note to earn +4 gold.'}</span></footer>`,
-      'vault-modal',
-      'Thoughts first. Plans when you’re ready.',
+      vaultTitle('The Vault'),
+      `<div class="vault-toolbar"><label class="search-box">${icon('search')}<input id="vault-search" data-tag-suggest aria-autocomplete="list" autocomplete="off" aria-label="Search notes and hashtags" placeholder="Search thoughts or #tags" value="${esc(app.vaultSearch)}"></label>${inboxCount ? `<button class="button secondary" data-action="review-notes">${vaultArt('review')}Review <span>${inboxCount}</span></button>` : ''}<button class="button secondary" data-action="capture">${icon('plus')}Capture</button></div><div class="vault-tab-row"><div class="vault-tabs segmented">${VAULT_SECTIONS.map(section => `<button data-action="vault-filter" data-filter="${section.id}" data-vault-tone="${section.id}" class="${app.vaultFilter === section.id ? 'selected' : ''}" aria-pressed="${app.vaultFilter === section.id}" title="${section.title}">${vaultArt(section.art)}<span>${section.label}</span><small>${app.state.notes.filter(n => inVaultSection(n, section.id)).length}</small></button>`).join('')}</div><span id="vault-download" aria-live="polite">${downloadButton()}</span></div><div id="vault-tags">${renderTagChips()}</div><div id="vault-results" class="vault-results">${renderNotes()}</div><footer class="vault-footer">${reviewBonus()}</footer>`,
+      `vault-modal vault-shelf-${app.vaultFilter}`,
+      '',
     );
   },
   review() {
@@ -163,13 +161,13 @@ export const modals = {
       note = queue[0],
       sorted = app.modal.sorted;
     const body = note
-      ? `<div class="review-progress"><span>${queue.length} to sort${app.modal.skipped.length ? ` · ${app.modal.skipped.length} skipped` : ''}</span><span>${sorted} sorted</span></div><article class="review-card"><div class="note-top"><span>${note.taskTitle ? 'WAS A TASK' : note.kind === 'journal' ? 'REFLECTION' : 'NOTE'} · ${esc(noteDate(note))}</span>${coin(note.paid)}</div><p class="review-text">${esc(note.text).replace(/(^|\s)(#[\p{L}\p{N}_-]+)/gu, '$1<span class="hashtag">$2</span>')}</p></article><div class="review-actions"><button class="button secondary" data-action="review-keep" data-id="${note.id}">${icon('check')}Keep<kbd>K</kbd></button><button class="button secondary" data-action="review-task" data-id="${note.id}">${icon('arrow')}${note.taskTitle ? 'Back to tasks' : 'Make a task'}<kbd>T</kbd></button><button class="button secondary" data-action="review-archive" data-id="${note.id}">${icon('vault')}Archive<kbd>A</kbd></button><button class="text-button" data-action="review-skip" data-id="${note.id}">Skip for now<kbd>S</kbd></button></div><p class="form-help review-help">${app.state.reviewDates.includes(today()) ? 'Review reward earned today · +4 gold.' : 'Your first review today earns +4 gold.'} Tasks keep the note’s hashtags.</p>`
+      ? `<div class="review-progress"><span>${queue.length} to sort${app.modal.skipped.length ? ` · ${app.modal.skipped.length} skipped` : ''}</span><span>${sorted} sorted</span></div><article class="review-card" data-vault-tone="${vaultTone(note)}">${noteHeading(note)}<p class="review-text">${esc(note.text).replace(/(^|\s)(#[\p{L}\p{N}_-]+)/gu, '$1<span class="hashtag">$2</span>')}</p></article><div class="review-actions"><button class="button secondary" data-action="review-keep" data-id="${note.id}">${icon('check')}Keep<kbd>K</kbd></button><button class="button secondary" data-action="review-task" data-id="${note.id}">${icon('arrow')}${note.taskTitle ? 'Back to tasks' : 'Make a task'}<kbd>T</kbd></button><button class="button secondary" data-action="review-archive" data-id="${note.id}">${icon('vault')}Archive<kbd>A</kbd></button><button class="text-button" data-action="review-skip" data-id="${note.id}">Skip for now<kbd>S</kbd></button></div><div class="review-help">${reviewBonus()}</div>`
       : `<div class="empty-state review-done"><span class="empty-symbol">${icon('check')}</span><h3>${sorted ? 'All sorted' : 'Nothing waiting'}</h3><p>${sorted ? `You sorted ${sorted} ${sorted === 1 ? 'note' : 'notes'}.` : 'Your inbox is clear.'}${app.modal.skipped.length ? ` ${app.modal.skipped.length} skipped ${app.modal.skipped.length === 1 ? 'note is' : 'notes are'} still in Needs review.` : ''}</p><button class="button primary" data-action="vault">Back to the Vault</button></div>`;
     return modalShell(
-      'Review captures',
+      vaultTitle('Review captures', 'review'),
       body,
       'review-modal',
-      'One at a time: keep it, make it a task, or let it go.',
+      '',
     );
   },
 };
@@ -189,7 +187,7 @@ function toggleSelected(card) {
 }
 export const actions = {
   capture(b, { a, id, sourceRect }) {
-    openModal({ type: 'capture', kind: 'note' });
+    openModal({ type: 'capture', kind: app.modal?.type === 'vault' && app.vaultFilter === 'journal' ? 'journal' : 'note' });
   },
   'capture-kind'(b, { a, id, sourceRect }) {
     const text = $('#capture-text').value;
@@ -263,8 +261,8 @@ export const actions = {
   'edit-note'(b, { a, id, sourceRect }) {
     openModal({ type: 'capture', id });
   },
-  'convert-note'(b, { id }) {
-    convert(id);
+  'convert-note'(b, { id, sourceRect }) {
+    convert(id, sourceRect);
   },
   'pin-note'(b, { id }) {
     const pinned = commit(() => E.togglePin(app.state, id));
@@ -280,43 +278,40 @@ export const actions = {
   'review-notes'() {
     openModal({ type: 'review', skipped: [], sorted: 0 });
   },
-  'review-keep'(b, { id }) {
+  'review-keep'(b, { id, sourceRect }) {
     app.modal.sorted++;
-    performReview(id, 'kept');
+    performReview(id, 'kept', sourceRect);
   },
-  'review-task'(b, { id }) {
+  'review-task'(b, { id, sourceRect }) {
     app.modal.sorted++;
-    convert(id);
+    convert(id, sourceRect);
   },
-  'review-archive'(b, { id }) {
+  'review-archive'(b, { id, sourceRect }) {
     app.modal.sorted++;
-    performReview(id, 'archived');
+    performReview(id, 'archived', sourceRect);
   },
   'review-skip'(b, { id }) {
     app.modal.skipped.push(id);
     view.renderModal();
   },
   'keep-note'(b, { a, id, sourceRect }) {
-    performReview(id, 'kept');
+    performReview(id, 'kept', sourceRect);
   },
   'archive-note'(b, { a, id, sourceRect }) {
-    performReview(id, 'archived');
+    performReview(id, 'archived', sourceRect);
   },
   'restore-note'(b, { a, id, sourceRect }) {
     commit(() => {
       const n = app.state.notes.find(n => n.id === id);
       if (n) n.status = 'kept';
     });
-    toast('Note restored.');
+    toast('Entry restored.');
   },
-  'delete-note'(b, { a, id, sourceRect }) {
-    const n = app.state.notes.find(n => n.id === id);
-    commit(() => {
-      if (n.status === 'inbox') E.reviewNote(app.state, id, 'archived', today());
-      else n.status = 'archived';
-    });
+  'delete-note'(b, { id, sourceRect }) {
+    const reward = commit(() => E.reviewNote(app.state, id, 'archived', today()));
     openModal({ type: 'vault' });
-    toast('Note archived.');
+    celebrateReview(reward, sourceRect);
+    if (!reward) toast('Entry archived.');
   },
   recover(b, { a, id, sourceRect }) {
     openModal({ type: 'capture', recovery: true });
@@ -342,6 +337,7 @@ export const forms = {
       return result;
     });
     if (r) {
+      if (r.note.kind === 'journal') app.vaultFilter = 'journal';
       closeModal();
       sound('note');
       toast(
@@ -349,7 +345,7 @@ export const forms = {
           ? `Reflection saved. +${r.healed} HP${r.reward ? ` · +${r.reward} gold` : ''}.`
           : previous.kind === 'task'
             ? `Sent to task inbox${r.reward ? ` · +${r.reward} gold` : ''}.`
-            : `${previous.kind === 'journal' ? 'Journal' : 'Thought'} saved${r.reward ? ` · +${r.reward} gold` : ''}.`,
+            : `${r.note.kind === 'journal' ? 'Journal' : 'Thought'} saved${r.reward ? ` · +${r.reward} gold` : ''}.`,
       );
     }
   },

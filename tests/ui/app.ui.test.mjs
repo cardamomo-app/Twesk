@@ -343,6 +343,41 @@ uiTest('a task can move back to the Vault and return with its settings, with Und
   assert.equal(s.tasks[0].tier, 'quick');
 });
 
+uiTest('Vault shelves separate notes and journals, and reflections open straight in Journal', async page => {
+  const s = E.freshState(); s.hp = 20; s.pendingRecovery = true;
+  E.saveNote(s, { text: 'Capture to review #ideas' }, today(s));
+  const kept = E.saveNote(s, { text: 'Keep this thought #ideas' }, today(s)).note; kept.status = 'kept';
+  E.saveNote(s, { text: 'A journal memory', kind: 'journal' }, today(s));
+  await page.open({ save: s });
+  await page.click('[data-action="vault"]');
+  assert.equal(await page.count('.note-card'), 1);
+  assert.ok(await page.exists('.note-card[data-vault-tone="inbox"] .vault-object'));
+  await page.click('[data-filter="kept"]'); assert.equal(await page.count('.note-card'), 1);
+  assert.equal(await page.text('.note-text'), 'Keep this thought #ideas');
+  await page.click('[data-filter="journal"]'); assert.equal(await page.count('.note-card'), 1);
+  assert.equal(await page.text('.note-text'), 'A journal memory');
+  await page.press('Escape'); await page.click('[data-action="recover"]');
+  await page.type('Time to rest and breathe before the next small adventure.');
+  await page.click('#capture-form [type="submit"]');
+  const entry = (await page.save()).notes[0]; assert.equal(entry.kind, 'journal'); assert.equal(entry.status, 'kept');
+  await page.click('[data-action="vault"]');
+  assert.ok(await page.exists('[data-filter="journal"].selected'));
+  assert.equal(await page.count('.note-card[data-note-kind="journal"]'), 2);
+  assert.equal(await page.count('.note-card[data-note-kind="note"]'), 0);
+});
+
+uiTest('review gold flies to the visible Vault wallet and pays only once per day', async page => {
+  const s = E.freshState();
+  E.saveNote(s, { text: 'Keep this idea' }, today(s)); E.saveNote(s, { text: 'Another idea' }, today(s));
+  const before = s.gold; await page.open({ save: s });
+  await page.click('[data-action="vault"]'); await page.click('[data-action="review-notes"]');
+  await page.click('[data-action="review-keep"]');
+  assert.equal((await page.save()).gold, before + 4); assert.ok(await page.count('.flying-coin'));
+  await page.waitFor(n => document.querySelector('[data-vault-wallet] .gold-value>span')?.textContent === String(n), { args: [before + 4] });
+  await page.click('[data-action="review-archive"]');
+  assert.equal((await page.save()).gold, before + 4); assert.equal((await page.save()).reviewDates.length, 1);
+}, { reducedMotion: false });
+
 uiTest('reviewed notes can be selected and downloaded together as one text file', async page => {
   const s = E.freshState();
   for (const [text, created] of [['Plan the garden #home', '2026-10-01T09:00:00Z'], ['Book club ideas\n\nRead slower books', '2026-10-03T09:00:00Z'], ['Unrelated', '2026-10-05T09:00:00Z']]) {

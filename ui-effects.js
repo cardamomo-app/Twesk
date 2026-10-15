@@ -1,9 +1,9 @@
 // Celebration: reward sounds, flying coins, particle bursts, confetti, count-ups, and level banners.
 // Sounds respect Mute; motion respects Reduce motion and the system preference.
-import { goldArt } from './art.js?v=0.22.10';
-import * as E from './engine.js?v=0.22.10';
-import { configureSfx, playSfx } from './sfx.js?v=0.22.10';
-import { $, app, icon } from './ui-core.js?v=0.22.10';
+import { goldArt } from './art.js?v=0.23.0';
+import * as E from './engine.js?v=0.23.0';
+import { configureSfx, playSfx } from './sfx.js?v=0.23.0';
+import { $, app, icon } from './ui-core.js?v=0.23.0';
 
 configureSfx({ muted: () => app.state.settings.muted });
 export const sound = (name = 'reward', options) => playSfx(name, options);
@@ -81,9 +81,8 @@ export function countUp(el, from, to, { delay = 0, duration = 600 } = {}) {
   };
   requestAnimationFrame(step);
 }
-const walletNumber = () => $('#gold-target .gold-value > span');
 // Floating amount, coins flying to the purse, a coin cascade on arrival, and a purse count-up.
-export function rewardEffect(target, amount, kind = 'gold') {
+export function rewardEffect(target, amount, kind = 'gold', { wallet = null } = {}) {
   if (!target) return;
   const rect = target.getBoundingClientRect ? target.getBoundingClientRect() : target,
     el = document.createElement('span');
@@ -94,7 +93,7 @@ export function rewardEffect(target, amount, kind = 'gold') {
   $('#effects').append(el);
   setTimeout(() => el.remove(), 1100);
   if (kind !== 'gold') return;
-  const dest = $('#gold-target')?.getBoundingClientRect();
+  const destination = wallet || $('#gold-target'), dest = destination?.getBoundingClientRect();
   if (!motionOK() || !dest?.width) {
     sound('coins', { amount });
     return;
@@ -115,13 +114,12 @@ export function rewardEffect(target, amount, kind = 'gold') {
   }
   sound('coins', { amount, delay: 0.72 });
   setTimeout(() => {
-    const wallet = $('#gold-target');
-    wallet?.classList.remove('wallet-bump');
-    void wallet?.offsetWidth;
-    wallet?.classList.add('wallet-bump');
-    burst(wallet, { palette: 'gold', count: 10, distance: 45, size: 5 });
+    destination?.classList.remove('wallet-bump');
+    void destination?.offsetWidth;
+    destination?.classList.add('wallet-bump');
+    burst(destination, { palette: 'gold', count: 10, distance: 45, size: 5 });
   }, 760);
-  countUp(walletNumber(), app.state.gold - amount, app.state.gold, { delay: 760, duration: 520 });
+  countUp(destination?.querySelector('.gold-value > span'), app.state.gold - amount, app.state.gold, { delay: 760, duration: 520 });
 }
 // A short banner and fanfare for a stat level-up. Does not block interaction.
 export function celebrateLevel(category) {

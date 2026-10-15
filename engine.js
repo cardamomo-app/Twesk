@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.22.10';
-import {validHabitIcon} from './habit-icons.js?v=0.22.10';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.23.0';
+import {validHabitIcon} from './habit-icons.js?v=0.23.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -299,7 +299,7 @@ export function saveNote(s, { id, text, kind = 'note', recovery = false }, today
   const progress=ensureProgress(s);
   let note = s.notes.find(n => n.id === id);
   if (!note) {
-    note = { id: uid(), text: '', created: new Date().toISOString(), paid: 0, status: 'inbox', kind:recovery?'journal':kind, healed: false };s.notes.unshift(note);
+    note = { id: uid(), text: '', created: new Date().toISOString(), paid: 0, status: recovery || kind === 'journal' ? 'kept' : 'inbox', kind:recovery?'journal':kind, healed: false };s.notes.unshift(note);
     progress.notes++;if(note.kind==='journal')progress.journals++;
   }
   note.text = text.trim();
@@ -310,7 +310,7 @@ export function saveNote(s, { id, text, kind = 'note', recovery = false }, today
   if (recovery && !note.healed) {
     if(note.kind!=='journal')progress.journals++;
     healed = Math.min(maxHP(s)-s.hp, Math.floor(words(text)/2*healingMultiplier(s)));
-    s.hp += healed; note.healed = true; note.kind = 'journal'; note.monster = s.monster.number;
+    s.hp += healed; note.healed = true; note.kind = 'journal'; note.status = 'kept'; note.monster = s.monster.number;
     s.pendingRecovery = s.hp < maxHP(s);
   }
   return { note, reward, healed };
@@ -349,7 +349,7 @@ export function returnTaskToVault(s, id) {
   const source = s.notes.find(n => n.id === task.source && n.taskId === task.id);
   const undo = { task: structuredClone(task), index, noteId: null, created: !source, previous: source ? { status: source.status } : null };
   let note = source;
-  if (note) { delete note.taskId; note.status = 'inbox'; }
+  if (note) { delete note.taskId; note.status = note.kind === 'journal' ? 'kept' : 'inbox'; }
   else {
     note = { id: uid(), text: task.title, created: new Date().toISOString(), paid: noteEntitlement(task.title), status: 'inbox', kind: 'note', healed: false };
     s.notes.unshift(note);
@@ -363,7 +363,7 @@ export function returnTaskToVault(s, id) {
 }
 export function undoReturnTaskToVault(s, undo) {
   const note = s.notes.find(n => n.id === undo.noteId);
-  if (!note || note.status !== 'inbox' || note.taskId) throw new Error('That note has changed since; convert it from the Vault instead.');
+  if (!note || note.status !== (note.kind === 'journal' ? 'kept' : 'inbox') || note.taskId) throw new Error('That note has changed since; convert it from the Vault instead.');
   if (s.tasks.some(t => t.id === undo.task.id)) throw new Error('This task is already back.');
   if (undo.created) s.notes = s.notes.filter(n => n !== note);
   else { note.status = undo.previous.status; note.taskId = undo.task.id; delete note.taskTitle; delete note.taskTier; delete note.taskRepeat; delete note.taskSteps; }
@@ -423,7 +423,7 @@ export function undoMergeNotes(s, undo) {
 export function reviewNote(s, id, status, today) {
   const note = s.notes.find(n => n.id === id);
   if (!note) throw new Error('Note not found.');
-  const pending = note.status === 'inbox';
+  const pending = note.status === 'inbox' && note.kind !== 'journal';
   note.status = status;
   return pending ? rewardReview(s,today) : 0;
 }
@@ -763,6 +763,7 @@ export function validateState(value) {
     if(!h.logs.every(l=>date(l.day)&&integer(l.xp,0,45))||new Set(h.logs.map(l=>l.day)).size!==h.logs.length||!h.harmLogs.every(l=>id(l.id)&&date(l.day)&&integer(l.damage,0,12))) fail();
   }
   for(const n of s.notes) if(!id(n.id)||!text(n.text)||(!text(n.created,100)||Number.isNaN(Date.parse(n.created)))||!integer(n.paid,0,3)||!['inbox','kept','archived'].includes(n.status)||!['note','journal'].includes(n.kind)||typeof n.healed!=='boolean'||(n.pinned!==undefined&&n.pinned!==true)) fail();
+  for(const n of s.notes) if(n.kind==='journal'&&n.status==='inbox') n.status='kept';
   for(const n of s.notes) if((n.taskTitle!==undefined&&!text(n.taskTitle,500))||(n.taskTier!==undefined&&!Object.hasOwn(TASK_GOLD,n.taskTier))||(n.taskRepeat!==undefined&&!Object.hasOwn(REPEATS,n.taskRepeat))) fail();
   for(const n of s.notes)if(n.taskSteps!==undefined&&!validSteps(n.taskSteps))fail();
   for(const battle of s.battles) {

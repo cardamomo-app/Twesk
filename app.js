@@ -1,25 +1,26 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.22.10';
-import { avatarFaceArt } from './art.js?v=0.22.10';
-import { awardAchievements } from './achievements.js?v=0.22.10';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.22.10';
-import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.22.10';
-import { closeModal, openModal } from './ui-modal.js?v=0.22.10';
-import * as tasks from './ui-tasks.js?v=0.22.10';
-import * as quest from './ui-quest.js?v=0.22.10';
-import * as habits from './ui-habits.js?v=0.22.10';
-import * as vault from './ui-vault.js?v=0.22.10';
-import * as character from './ui-character.js?v=0.22.10';
-import * as shop from './ui-shop.js?v=0.22.10';
-import * as battle from './ui-battle.js?v=0.22.10';
-import * as collection from './ui-collection.js?v=0.22.10';
-import * as settings from './ui-settings.js?v=0.22.10';
-import * as sync from './ui-sync.js?v=0.22.10';
-import * as history from './ui-history.js?v=0.22.10';
-import { installDelights, renderAmbience } from './ui-delights.js?v=0.22.10';
-import { installTagSuggest } from './ui-tag-suggest.js?v=0.22.10';
-import { installTaskOrder } from './ui-task-order.js?v=0.22.10';
-import * as fullscreen from './ui-fullscreen.js?v=0.22.10';
+import * as E from './engine.js?v=0.23.0';
+import { avatarFaceArt } from './art.js?v=0.23.0';
+import { awardAchievements } from './achievements.js?v=0.23.0';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.23.0';
+import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.23.0';
+import { closeModal, openModal } from './ui-modal.js?v=0.23.0';
+import * as tasks from './ui-tasks.js?v=0.23.0';
+import * as quest from './ui-quest.js?v=0.23.0';
+import * as habits from './ui-habits.js?v=0.23.0';
+import * as vault from './ui-vault.js?v=0.23.0';
+import { vaultArt } from './vault-art.js?v=0.23.0';
+import * as character from './ui-character.js?v=0.23.0';
+import * as shop from './ui-shop.js?v=0.23.0';
+import * as battle from './ui-battle.js?v=0.23.0';
+import * as collection from './ui-collection.js?v=0.23.0';
+import * as settings from './ui-settings.js?v=0.23.0';
+import * as sync from './ui-sync.js?v=0.23.0';
+import * as history from './ui-history.js?v=0.23.0';
+import { installDelights, renderAmbience } from './ui-delights.js?v=0.23.0';
+import { installTagSuggest } from './ui-tag-suggest.js?v=0.23.0';
+import { installTaskOrder } from './ui-task-order.js?v=0.23.0';
+import * as fullscreen from './ui-fullscreen.js?v=0.23.0';
 
 const features = [tasks, quest, habits, vault, character, shop, battle, collection, settings, history, sync, fullscreen];
 const modals = Object.assign({}, ...features.map(f => f.modals));
@@ -78,7 +79,7 @@ function render() {
       <div class="task-tabs" role="group" aria-label="Task view"><button data-action="task-view" data-view="active" class="${app.taskView === 'active' ? 'selected' : ''}">To do</button><button data-action="task-view" data-view="done" class="${app.taskView === 'done' ? 'selected' : ''}">Completed <span>${completed}</span></button></div>${tasks.renderProjects()}
       <div class="tasks-scroll">${tasks.renderTasks()}</div>
       ${quest.renderQuest()}
-      <button class="vault-card" data-action="vault"><span class="vault-symbol">${icon('vault')}</span><span><strong>The Vault</strong><small>${app.state.notes.filter(n => n.status === 'inbox').length ? app.state.notes.filter(n => n.status === 'inbox').length + (app.state.notes.filter(n => n.status === 'inbox').length === 1 ? ' idea waiting to be sorted' : ' ideas waiting to be sorted') : 'A home for thoughts, before they become plans'}</small></span>${icon('arrow')}</button>
+      <button class="vault-card" data-action="vault"><span class="vault-symbol">${vaultArt('vault')}</span><span><strong>The Vault</strong><small>${app.state.notes.filter(n => n.status === 'inbox').length ? app.state.notes.filter(n => n.status === 'inbox').length + (app.state.notes.filter(n => n.status === 'inbox').length === 1 ? ' idea waiting to be sorted' : ' ideas waiting to be sorted') : 'A home for thoughts, before they become plans'}</small></span>${icon('arrow')}</button>
       </section>
       <section class="panel habits-panel" aria-labelledby="habits-heading"><div class="panel-heading"><div><span class="section-kicker">GROW AT YOUR OWN PACE</span><h2 id="habits-heading">Habits</h2></div>${iconButton('new-habit', 'plus', 'Add a habit')}</div><div class="habits-scroll">${[...E.CATEGORIES, 'harm'].map(habits.renderCategory).join('')}</div></section>
       <aside class="character-column" aria-label="Your character and adventure">${character.renderCharacter()}${battle.renderMonster()}</aside>

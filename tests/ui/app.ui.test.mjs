@@ -744,6 +744,46 @@ uiTest('sounds come back after the audio is paused, interrupted by another tab, 
   await page.waitFor(() => window.__audio.length === 3 && window.__audio[2].state === 'running', { message: 'rebuilt after a refused resume' });
 });
 
+uiTest('an HP minute chime recovers refused Safari audio without another interaction', async page => {
+  await page.cmd('Page.addScriptToEvaluateOnNewDocument', {
+    source: `{const A=window.AudioContext;window.__audio=[];window.__voices=0;window.AudioContext=class extends A{constructor(...a){super(...a);window.__audio.push(this);}createOscillator(){const o=super.createOscillator(),start=o.start.bind(o);o.start=(...a)=>{window.__voices++;return start(...a)};return o;}};}`,
+  });
+  const s = E.freshState(); s.hp = 80; E.setCurrentQuest(s, s.tasks[0].id);
+  await page.open({ save: s }); await page.click('[data-action="quest-play"]');
+  await page.waitFor(() => window.__audio[0]?.state === 'running');
+  const before = await page.evaluate(() => window.__voices);
+  await page.evaluate(async id => {
+    const a = window.__audio[0]; await a.suspend(); a.resume = () => Promise.reject(new Error('interrupted'));
+    const clock = JSON.parse(localStorage.getItem('twesk.quest-timer.v1'));
+    clock.endAt = Date.now() + 24 * 60000; clock.credited = 0;
+    const value = JSON.stringify(clock); localStorage.setItem('twesk.quest-timer.v1', value);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'twesk.quest-timer.v1', newValue: value }));
+  }, s.tasks[0].id);
+  // No click or key press: the scheduled minute itself must recover and produce sound.
+  await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).hp === 81);
+  await page.waitFor(n => window.__audio.length === 2 && window.__audio[1].state === 'running' && window.__voices > n, { args: [before], message: 'minute chime played after automatic audio recovery' });
+});
+
+uiTest('adjusting the duration winds the timer, but a running countdown does not', async page => {
+  await page.cmd('Page.addScriptToEvaluateOnNewDocument', {
+    source: `{const A=window.AudioContext;window.__voices=0;window.AudioContext=class extends A{createOscillator(){const o=super.createOscillator(),start=o.start.bind(o);o.start=(...a)=>{window.__voices++;return start(...a)};return o;}};}`,
+  });
+  const s = E.freshState(); E.setCurrentQuest(s, s.tasks[0].id); await page.open({ save: s });
+  await page.evaluate(() => document.querySelector('.quest-dial').focus());
+  await page.press('ArrowRight');
+  await page.waitFor(() => window.__voices > 0, { message: 'dial notch produced a sound' });
+  assert.equal(await page.evaluate(() => document.querySelector('.quest-dial').getAttribute('aria-valuenow')), '30');
+  await page.click('[data-action="quest-play"]');
+  const voices = await page.evaluate(() => window.__voices);
+  await new Promise(r => setTimeout(r, 1100));
+  assert.equal(await page.evaluate(() => window.__voices), voices, 'countdown is quiet between HP chimes');
+  await page.click('[data-action="quest-play"]');
+  await page.click('[data-action="mute"]');
+  await page.evaluate(() => document.querySelector('.quest-dial').focus());
+  await page.press('ArrowLeft');
+  assert.equal(await page.evaluate(() => window.__voices), voices, 'muting also silences winding');
+});
+
 uiTest('the history calendar shows today’s habit and task', async page => {
   await page.open();
   await page.click('#app [data-action="toggle-task"]');

@@ -3288,7 +3288,9 @@ Object.assign(exports,{sound,motionOK,burst,confetti,countUp,rewardEffect,celebr
 // One shared context runs through a compressor with a light reverb send.
 // Repeated sounds draw from random variants, and quick successive rewards climb
 // a pentatonic scale so a run of completed tasks sounds increasingly triumphant.
-let ctx, master, reverbIn, noiseBuf, clock = null, stale = false;
+let ctx, master, reverbIn, noiseBuf, clock = null, stale = false, recovering = null;
+const cancelled = new Map();
+let lastWind = -Infinity;
 let isMuted = () => false;
 let channel = 'ui';
 const channels = new Map();
@@ -3306,7 +3308,12 @@ function configureSfx({ muted }) {
 }
 function setup() {
   if (ctx && ctx.state !== 'closed') return;
+  // Short game effects should mix with music/video instead of claiming exclusive playback.
+  // AudioSession is optional; older Safari and other browsers keep their usual Web Audio behavior.
+  try { if (navigator.audioSession && navigator.audioSession.type !== 'ambient') navigator.audioSession.type = 'ambient'; } catch {}
   ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const created = ctx;
+  ctx.addEventListener?.('statechange', () => { if (ctx === created && ctx.state === 'running') clock = null; });
   clock = null;
   const compressor = ctx.createDynamicsCompressor();
   compressor.threshold.value = -16;
@@ -3510,6 +3517,12 @@ function comboStep() {
 }
 
 const SOUNDS = {
+  // A dry little ratchet and spring, only when the duration crosses a dial notch.
+  wind(t, { direction = 1 } = {}) {
+    noise({ t, dur: .028, vol: .075, type: 'bandpass', f: direction > 0 ? 2300 : 1700, q: 1.1, verb: 0 });
+    tone({ t, f: direction > 0 ? 620 : 480, f2: 220, dur: .045, vol: .035, type: 'triangle', verb: 0 });
+    noise({ t: t + .025, dur: .018, vol: .035, type: 'highpass', f: 3500, verb: 0 });
+  },
   // A small campsite wind chime: an invitation to rest, rather than a victory fanfare.
   trailBell(t) {
     [880, 1174.66, 1318.51, 987.77].forEach((f, i) => bell(f, t + i * .23, .065, 1.5, .55, (i - 1.5) * .18));
@@ -3828,7 +3841,7 @@ function rebuild() {
 }
 function unlockSfx() {
   try {
-    if (stale) { stale = false; rebuild(); }
+    if (stale || ctx?.state === 'closed' || frozen()) { stale = false; rebuild(); }
     setup();
     if (ctx.state !== 'running') ctx.resume().catch(() => {});
   } catch {}
@@ -3840,8 +3853,8 @@ function frozen() {
   clock = now;
   return !!last && now.wall - last.wall > 1000 && now.audio - last.audio < 0.05;
 }
-// Media in another Safari tab (a YouTube video, say) can interrupt this page's audio. If a resume on a tap
-// doesn't take, the next tap builds a fresh context, which plays alongside the other tab.
+// Gestures and returning to the app give interrupted audio an early chance to wake.
+// Scheduled sounds also recover on their own, without relying on the next gesture.
 function wake() {
   if (!ctx) return;
   if (ctx.state === 'closed' || frozen()) stale = true;
@@ -3857,27 +3870,55 @@ if (typeof document !== 'undefined') {
   window.addEventListener('focus', wake);
   navigator.mediaDevices?.addEventListener?.('devicechange', () => { stale = !!ctx; });
 }
-// Play a named sound. Options: delay (seconds), channel (for stopping a group), plus sound-specific settings.
+// A timer chime has no fresh click to wake Safari. Resume, then replace a refused or stuck
+// context once, within a short deadline. Share recovery across simultaneous sounds; never loop.
+async function resumeWithin(context, milliseconds) {
+  let timeout;
+  try {
+    await Promise.race([
+      context.resume().catch(() => {}),
+      new Promise(resolve => { timeout = setTimeout(resolve, milliseconds); }),
+    ]);
+  } catch {} finally { clearTimeout(timeout); }
+  return context === ctx && context.state === 'running';
+}
+function recoverAudio() {
+  if (recovering) return recovering;
+  recovering = (async () => {
+    const interrupted = ctx;
+    if (await resumeWithin(interrupted, 180)) return interrupted;
+    // A gesture or an output-device change may already have replaced it while we waited.
+    if (ctx !== interrupted) return ctx?.state === 'running' ? ctx : null;
+    stale = false; rebuild();
+    const replacement = ctx;
+    return await resumeWithin(replacement, 400) ? replacement : null;
+  })().catch(() => null).finally(() => { recovering = null; });
+  return recovering;
+}
+// Play a named sound. Recovery drops outdated feedback instead of accumulating a delayed queue.
 function playSfx(name, options = {}) {
   if (isMuted() || !SOUNDS[name]) return;
+  const asked = performance.now(), group = options.channel || 'ui', generation = cancelled.get(group) || 0;
+  if (name === 'wind') {
+    if (asked - lastWind < 35) return;
+    lastWind = asked;
+  }
   try {
     unlockSfx();
-    const play = () => {
+    const play = context => {
+      if (!context || context !== ctx || context.state !== 'running' || isMuted() ||
+          (cancelled.get(group) || 0) !== generation || performance.now() - asked >= (name === 'wind' ? 150 : 800)) return;
       try {
-        channel = options.channel || 'ui';
-        SOUNDS[name](ctx.currentTime + 0.01 + (options.delay || 0), options);
-      } catch {
-      } finally {
-        channel = 'ui';
-      }
+        channel = group;
+        SOUNDS[name](context.currentTime + 0.01 + (options.delay || 0), options);
+      } catch {} finally { channel = 'ui'; }
     };
-    if (ctx.state === 'running') return play();
-    // A waking context starts a moment later; play then, unless it takes too long to still fit the moment.
-    const asked = performance.now(), waking = ctx;
-    waking.resume().then(() => { if (waking === ctx && ctx.state === 'running' && performance.now() - asked < 800) play(); }).catch(() => {});
+    if (ctx.state === 'running') play(ctx);
+    else recoverAudio().then(play);
   } catch {}
 }
 function stopSfx(name = 'ui') {
+  cancelled.set(name, (cancelled.get(name) || 0) + 1);
   for (const source of channels.get(name) || []) {
     try {
       source.stop();
@@ -4275,9 +4316,11 @@ function refreshDial() {
   $('.dial-fill')?.setAttribute('stroke-dasharray', dialArc(minutes));
 }
 function setMinutes(minutes) {
+  const previousMinutes = timer.minutes;
   const next = T.durationTimer(timer, minutes);
   if (next !== timer) owed += T.minutesDue(timer); // a new duration starts a fresh session; keep what was earned
   timer = next; saveClock();
+  if (timer.minutes !== previousMinutes) sound('wind', { direction: Math.sign(timer.minutes - previousMinutes), channel: 'dial' });
   const dial = $('.quest-dial');
   if (!dial) return;
   dial.setAttribute('aria-valuenow', timer.minutes); dial.setAttribute('aria-valuetext', `${timer.minutes} minutes`);

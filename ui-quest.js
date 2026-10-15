@@ -1,12 +1,12 @@
 // One task, a little trail, and a device-local focus timer.
-import * as E from './engine.js?v=0.22.9';
-import * as T from './quest-timer.js?v=0.22.9';
-import { avatarJourneyArt } from './avatar-model.js?v=0.22.9';
-import { resolvedHabitIcon } from './habit-icons.js?v=0.22.9';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.22.9';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.22.9';
-import { rewardEffect, sound } from './ui-effects.js?v=0.22.9';
-import { unlockSfx } from './sfx.js?v=0.22.9';
+import * as E from './engine.js?v=0.22.10';
+import * as T from './quest-timer.js?v=0.22.10';
+import { avatarJourneyArt } from './avatar-model.js?v=0.22.10';
+import { resolvedHabitIcon } from './habit-icons.js?v=0.22.10';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.22.10';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.22.10';
+import { rewardEffect, sound } from './ui-effects.js?v=0.22.10';
+import { unlockSfx } from './sfx.js?v=0.22.10';
 
 const TIMER_KEY = 'twesk.quest-timer.v1';
 let timer = T.freshTimer(), dialDrag = null, owed = 0;
@@ -174,9 +174,11 @@ function refreshDial() {
   $('.dial-fill')?.setAttribute('stroke-dasharray', dialArc(minutes));
 }
 function setMinutes(minutes) {
+  const previousMinutes = timer.minutes;
   const next = T.durationTimer(timer, minutes);
   if (next !== timer) owed += T.minutesDue(timer); // a new duration starts a fresh session; keep what was earned
   timer = next; saveClock();
+  if (timer.minutes !== previousMinutes) sound('wind', { direction: Math.sign(timer.minutes - previousMinutes), channel: 'dial' });
   const dial = $('.quest-dial');
   if (!dial) return;
   dial.setAttribute('aria-valuenow', timer.minutes); dial.setAttribute('aria-valuetext', `${timer.minutes} minutes`);

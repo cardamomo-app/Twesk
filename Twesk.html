@@ -815,7 +815,12 @@ button.hashtag:hover{text-decoration:underline}
 .quest-habit-check:hover .quest-habit-glyph,.quest-habit-check:focus-visible .quest-habit-glyph{opacity:0}
 .quest-habit .quest-title:hover{color:var(--cat)}
 .quest-habit .xp-badge{margin-left:auto}
-/* Task grips keep their space but show only on hover or keyboard focus (always faintly on touch screens) */
+/* Checkboxes align with the tabs; handles sit in the panel’s left gutter without shifting row content. */
+.tasks-scroll{--task-gutter:20px;margin-left:calc(-1 * var(--task-gutter));padding-left:var(--task-gutter)}
+.task-item .task-grip{position:absolute;left:calc(-1 * var(--task-gutter));top:12px}
+.task-item .task-grip:focus-visible{outline-offset:-2px}
+@media(min-width:561px) and (max-width:1100px){.tasks-scroll{--task-gutter:16px}}
+/* Handles appear on hover or keyboard focus, and stay faintly visible on touch screens. */
 .task-grip{opacity:0;transition:opacity .15s,color .15s,background .15s}
 .task-item:hover .task-grip,.quest-task:hover>.quest-grip,.task-grip:focus-visible{opacity:.55}
 .task-grip:hover,.task-grip:focus-visible{opacity:1}

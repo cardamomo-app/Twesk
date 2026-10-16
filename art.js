@@ -1,6 +1,6 @@
-export {avatarArt,avatarFaceArt} from './avatar-model.js?v=0.26.0';
-export {itemArt,petArt,petMouth} from './equipment-art.js?v=0.26.0';
-export {monsterArt,monsterName,monsterInfo,MONSTERS} from './monster-art.js?v=0.26.0';
+export {avatarArt,avatarFaceArt} from './avatar-model.js?v=0.27.0';
+export {itemArt,petArt,petMouth} from './equipment-art.js?v=0.27.0';
+export {monsterArt,monsterName,monsterInfo,MONSTERS} from './monster-art.js?v=0.27.0';
 // Beveled, square coins: shallow voxel discs with lit tops and shaded edges.
 export function goldArt(amount=4,single=false) {
   const coin=(x,y)=>`<g transform="translate(${x} ${y})"><path d="M-10-2-5-5H5l5 3v4L5 5H-5l-5-3Z" fill="#a76c21"/><path d="M0 0 10-2v4L5 5H0Z" fill="#bc822c"/><path d="M-10-2-5-6H5l5 4L5 2H-5Z" fill="#f5cf65"/><path d="m-6-2 3-2h6l3 2-3 2h-6Z" fill="#e6b644"/><path d="m-5-5 2-1h6" fill="none" stroke="#fff0b0" stroke-width="1.5"/><path d="M0-3v3" stroke="#ffe394" stroke-width="1.5"/></g>`;

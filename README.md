@@ -1,4 +1,4 @@
-# Twesk
+# <img src="icons/favicon.svg" width="32" height="36" alt=""> Twesk
 
 A local-first, single-page dashboard for tasks, habits, captured thoughts, and a small voxel adventure.
 
@@ -27,6 +27,10 @@ For a self-contained copy, open **Twesk.html** directly in a regular browser. It
 Regenerate `sw.js` and `Twesk.html` after source changes with `npm run build`. The dependency-free packager supports this app's current named imports/exports and fails on unsupported syntax. The bundled app, worker, reset, and restore were checked via HTTP with a separate preview save; direct `file:` navigation is blocked by the in-app test browser and must be checked in a regular browser.
 
 **Settings → Reset progress** restores the full initial state after confirmation. The current save is kept under `twesk.v1.previous`; **Restore previous progress** swaps it back after confirmation. Both operations save a higher revision for other open tabs and stop if saving fails. Export is also available before resetting. This keeps one previous adventure, rather than an unlimited history; clearing browser storage also removes that recovery copy.
+
+## Brand artwork
+
+The header, install icons, Safari touch icon, and favicons share the approved faceted flame in `brand-art.js`. Run `npm run build:icons` after changing its geometry, then `npm run build:pages` to update the offline and standalone copies. Icon generation uses Chromium when available, or isolated native WebKit on macOS with Swift installed. It writes separate rounded and full-bleed maskable icons, a 180-pixel Apple touch icon, SVG and PNG favicons, a multi-size ICO, and a monochrome pinned-tab mark. Icon URLs use a branding revision so browsers request the new artwork; the installed app’s start URL and storage stay stable.
 
 ## Install as an app
 

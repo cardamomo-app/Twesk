@@ -12,8 +12,10 @@ const fileOf = url => url.replace(/^\.?\//, '').split('?')[0];
 
 export function precacheList() {
   const html = read('index.html').toString();
-  const urls = new Set(['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png']);
-  for (const [, url] of html.matchAll(/(?:href|src)="(\.\/[^"]+\.(?:css|js)(?:\?[^"]*)?)"/g)) urls.add(url);
+  const urls = new Set(['./', './index.html', './manifest.json']);
+  for (const [, url] of html.matchAll(/(?:href|src)="(\.\/[^"]+\.(?:css|js|json|svg|png|ico)(?:\?[^"]*)?)"/g)) urls.add(url);
+  const manifest = JSON.parse(read('manifest.json'));
+  for (const entry of manifest.icons) urls.add('./' + entry.src.replace(/^\.\//, ''));
   // Follow static imports (and the combat worker) from the entry module.
   const queue = [...urls].filter(url => /\.js(\?|$)/.test(url));
   while (queue.length) {

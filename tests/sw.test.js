@@ -18,7 +18,7 @@ test('the offline cache covers every module the app loads, and every listed file
 test('the manifest describes an installable standalone app',()=>{
   const manifest=JSON.parse(readFileSync(resolve(ROOT,'manifest.json'),'utf8'));
   assert.equal(manifest.display,'standalone');assert.equal(manifest.start_url,'./');
-  for(const icon of manifest.icons)assert.ok(existsSync(resolve(ROOT,icon.src)),icon.src);
+  for(const icon of manifest.icons)assert.ok(existsSync(resolve(ROOT,icon.src.split('?')[0])),icon.src);
   assert.ok(manifest.icons.some(i=>i.sizes==='512x512'));
 });
 

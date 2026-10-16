@@ -944,6 +944,11 @@ uiTest(
   'the phone layout has no sideways scrolling, even in the shop',
   async page => {
     await page.open();
+    assert.ok(await page.exists('.wordmark .flame-logo'));
+    assert.ok(await page.evaluate(() => {
+      const rectangles = ['.wordmark', '.topbar-date', '.topbar-actions'].map(selector => document.querySelector(selector).getBoundingClientRect());
+      return rectangles.every((a,i) => rectangles.slice(i+1).every(b => !(a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top)));
+    }), 'the new mark, date, and controls stay separate');
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     await page.click('#app .character-actions [data-action="shop"]');
     await page.waitFor(() => document.querySelector('.shop-modal'));

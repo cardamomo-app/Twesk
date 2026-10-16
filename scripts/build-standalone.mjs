@@ -57,8 +57,16 @@ if(!applied.has('worker')||!applied.has('home'))throw new Error('Standalone sour
 const template=await readFile(resolve(root,'index.html'),'utf8');
 const vendor=await readFile(resolve(root,'vendor/supabase.js'),'utf8');
 const css=await readFile(resolve(root,'styles.css'),'utf8');
+// Inline every favicon as well: the HTML copy must not depend on sibling icon files.
+const iconData = new Map();
+for (const [, href] of template.matchAll(/<link rel="(?:icon|shortcut icon|mask-icon)"[^>]*href="(\.\/[^"]+)"/g)) {
+  const file = href.slice(2).split('?')[0];
+  const type = file.endsWith('.svg') ? 'image/svg+xml' : file.endsWith('.ico') ? 'image/x-icon' : 'image/png';
+  iconData.set(href, `data:${type};base64,${(await readFile(resolve(root, file))).toString('base64')}`);
+}
 // The single file has no service worker or install manifest; it runs from wherever it is opened.
 const output=template.replace(/  <link rel="(?:manifest|apple-touch-icon)"[^>]*>\n/g,'').replace(/  <meta name="(?:apple-mobile-web-app-capable|mobile-web-app-capable|apple-mobile-web-app-title)"[^>]*>\n/g,'')
+  .replace(/(<link rel="(?:icon|shortcut icon|mask-icon)"[^>]*href=")([^"]+)(")/g, (_, before, href, after) => before + iconData.get(href) + after)
   .replace(/  <link rel="stylesheet"[^>]+>/,()=>`  <style>\n${css}\n  </style>`)
   .replace(/  <script src="\.\/vendor\/supabase\.js[^"]*"><\/script>/,()=>`  <script>\n${vendor.replace(/<\/script/gi,'<\\/script')}\n  </script>`)
   .replace(/  <script type="module"[^>]+><\/script>/,'')

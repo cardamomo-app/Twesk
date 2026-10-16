@@ -1,14 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f6f3ff"/>
-      <stop offset="1" stop-color="#e6defb"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <g transform="translate(96 88) scale(10)">
-    <path d="m3 8 13-6 13 6v16l-13 6-13-6Z" fill="#7461d4"/>
-    <path d="m3 8 13 6 13-6-13-6Z" fill="#b9a8f2"/>
-    <path d="M16 14v16L3 24V8Z" fill="#937be2"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#fffdfa"/><g transform="translate(63.17117 41.96000) scale(3.85658)"><polygon points="35,88 50,82 65,88 50,95" fill="#a28d94" stroke="#a28d94" stroke-width=".3" stroke-linejoin="round"/><polygon points="35,88 50,95 50,107 39,101" fill="#78616d" stroke="#78616d" stroke-width=".3" stroke-linejoin="round"/><polygon points="50,95 65,88 61,101 50,107" fill="#554353" stroke="#554353" stroke-width=".3" stroke-linejoin="round"/><polygon points="50,6 13,48 50,58" fill="#ee5947" stroke="#ee5947" stroke-width=".3" stroke-linejoin="round"/><polygon points="50,6 50,58 87,48" fill="#d74437" stroke="#d74437" stroke-width=".3" stroke-linejoin="round"/><polygon points="13,48 50,58 50,90" fill="#d94335" stroke="#d94335" stroke-width=".3" stroke-linejoin="round"/><polygon points="50,58 87,48 50,90" fill="#ac2f2c" stroke="#ac2f2c" stroke-width=".3" stroke-linejoin="round"/><polygon points="51,37 67,55 50,75 34,56" fill="#ef7c42" stroke="#ef7c42" stroke-width=".3" stroke-linejoin="round"/><polygon points="51,37 50,75 67,55" fill="#e76836" stroke="#e76836" stroke-width=".3" stroke-linejoin="round"/><polygon points="29,52.3 37,44.3 46,54.3 65,34.3 73,41.3 46,70.3" fill="#dd9f34" stroke="#dd9f34" stroke-width=".3" stroke-linejoin="round"/><polygon points="29,51 37,43 46,53 65,33 73,40 46,69" fill="#ffe28a" stroke="#ffe28a" stroke-width=".3" stroke-linejoin="round"/></g></svg>

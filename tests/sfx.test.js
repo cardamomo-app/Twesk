@@ -7,10 +7,10 @@ import { createContext, runInContext } from 'node:vm';
 const source = readFileSync(new URL('../sfx.js', import.meta.url), 'utf8').replace(/\bexport /g, '') + '\nthis.sfx = { configureSfx, playSfx, stopSfx, SOUND_NAMES };';
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 function audioHarness({ session = { type: 'auto' }, initial = 'running', rebuildState = 'running', time = performance } = {}) {
-  const contexts = [], starts = [], listeners = {};
+  const contexts = [], starts = [], stops = [], listeners = {};
   const param = () => ({ value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} });
   const node = () => ({ connect() {}, disconnect() {}, gain: param(), frequency: param(), Q: param(), pan: param(), detune: param(),
-    start(t) { starts.push({ context: contexts.at(-1), time: t }); }, stop() {} });
+    start(t) { starts.push({ context: contexts.at(-1), time: t }); }, stop(t) { stops.push(t); } });
   class AudioContext {
     constructor() { this.state = contexts.length ? rebuildState : initial; this.currentTime = 1; this.sampleRate = 100; contexts.push(this); }
     createDynamicsCompressor() { return { ...node(), threshold: param(), knee: param(), ratio: param(), attack: param(), release: param() }; }
@@ -29,8 +29,23 @@ function audioHarness({ session = { type: 'auto' }, initial = 'running', rebuild
   const sandbox = createContext({ window: { AudioContext, addEventListener() {} }, navigator: { audioSession: session },
     document, performance: time, setTimeout, clearTimeout, Float32Array });
   runInContext(source, sandbox);
-  return { ...sandbox.sfx, contexts, starts, listeners };
+  return { ...sandbox.sfx, contexts, starts, stops, listeners };
 }
+test('all combat spell casts and impacts sound, respect mute, and stop with battle playback', () => {
+  const h = audioHarness();
+  for (const [spell, mode] of [['ember','attack'],['storm','attack'],['starfall','attack'],['starfall','guard'],['ward','guard']])
+    for (const name of ['spellCast','spellImpact']) {
+      const before = h.starts.length;
+      h.playSfx(name, { spell, mode, channel: 'battle' });
+      assert.ok(h.starts.length > before, `${spell} ${mode} ${name}`);
+    }
+  const stopped = h.stops.length;
+  h.stopSfx('battle');assert.ok(h.stops.length > stopped);
+  h.configureSfx({ muted: () => true });const before = h.starts.length;
+  h.playSfx('spellCast', { spell:'ember', channel:'battle' });
+  h.playSfx('spellImpact', { spell:'ward', mode:'guard', channel:'battle' });
+  assert.equal(h.starts.length,before);
+});
 test('game sounds request mixable audio, with no dependency on AudioSession support', () => {
   const session = { type: 'auto' }, h = audioHarness({ session });
   h.playSfx('focusHeal');

@@ -53,7 +53,7 @@
 .battle-modal .battle-fighter>strong{font-size:13px;font-weight:700;position:relative;z-index:2}.battle-modal .battle-fighter .health-bar{max-width:190px;height:7px;margin-top:11px;transition:none}.battle-modal .battle-fighter .health-bar>div{transition:width .4s ease-out}.battle-modal .battle-fighter>small{font-size:10px;margin-top:7px;font-variant-numeric:tabular-nums}
 .battle-divider{color:var(--muted);font-size:10px;font-weight:700;align-self:center;display:flex;align-items:center;justify-content:center;position:relative;z-index:0}.battle-divider i{position:absolute;width:150px;border-top:1px dashed var(--line);top:24px}
 .battle-step{background:var(--surface);border:1px solid var(--line);border-radius:11px;min-height:102px;padding:15px 18px;text-align:center;margin-top:2px}
-.battle-step>strong{font-family:var(--heading);font-size:18px;letter-spacing:-.4px;display:block}.battle-step p{font-size:11px;color:var(--secondary);margin-top:5px;line-height:1.7}.battle-step.hit>strong,.battle-step.lost>strong{color:var(--danger)}.battle-step.deflect>strong{color:var(--soul)}.battle-step.rally>strong{color:var(--heart)}.battle-step.won>strong{color:var(--green)}
+.battle-step-content>strong{font-family:var(--heading);font-size:18px;letter-spacing:-.4px;display:block}.battle-step p{font-size:11px;color:var(--secondary);margin-top:5px;line-height:1.7}.battle-step.hit .battle-step-content>strong,.battle-step.lost .battle-step-content>strong{color:var(--danger)}.battle-step.deflect .battle-step-content>strong{color:var(--soul)}.battle-step.rally .battle-step-content>strong{color:var(--heart)}.battle-step.won .battle-step-content>strong{color:var(--green)}
 .combat-badges{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:10px}.combat-badges:empty{display:none}.combat-badge{font-size:10px;border-radius:5px;padding:4px 7px;color:var(--cat,var(--accent));background:var(--cat-bg,var(--accent-soft))}.combat-badge.gear{color:var(--gold);background:var(--gold-bg)}
 .combat-loadout{display:flex;justify-content:center;gap:5px;flex-wrap:wrap;padding:13px 0 7px}.combat-loadout span{font-size:9px;color:var(--cat,var(--secondary));padding:3px 6px;border:1px solid var(--line);border-radius:5px}.combat-loadout .gear{color:var(--secondary)}
 .combat-history{text-align:left;border-top:1px solid var(--line);margin:9px 0 14px}.combat-history summary{cursor:pointer;color:var(--muted);font-size:10px;padding:10px 0;list-style-position:inside}.combat-history summary>span{float:right;font-size:9px}.combat-history ol{margin:0;padding:0 10px 2px;list-style:none;max-height:135px;overflow:auto;scrollbar-width:thin}.combat-history li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:6px 0;font-size:10px;border-bottom:1px solid var(--line);color:var(--secondary)}.combat-history li:last-child{border-bottom:0}.combat-history li strong{font-weight:600;color:var(--danger)}.combat-history li.deflect strong{color:var(--soul)}.combat-history li.rally strong{color:var(--heart)}.combat-history li small{grid-column:1/-1;color:var(--muted);font-size:9px}
@@ -76,7 +76,7 @@
 @keyframes healing-glow{35%{filter:drop-shadow(0 0 15px var(--heart));transform:translateY(-5px)}}
 @keyframes monster-fall{30%{transform:translateY(-5px) rotate(-4deg)}100%{transform:translateY(9px) rotate(10deg) scale(.9)}}
 @keyframes adventurer-fall{30%{transform:translateY(-5px) rotate(4deg)}100%{transform:translateY(9px) rotate(-12deg) scale(.9)}}
-@media(max-width:560px){.battle-modal .battle-body{padding:12px 16px 20px}.battle-modal .battle-stage{--lunge:40px;grid-template-columns:1fr 18px 1fr;gap:4px;margin-bottom:15px;padding-bottom:15px}.fighter-scene{height:170px}.battle-modal .battle-fighter .avatar-art{height:170px;width:155px}.battle-modal .battle-fighter .monster-art{height:165px;width:165px}.battle-modal .battle-fighter>strong{font-size:11px}.battle-modal .battle-fighter .health-bar{max-width:120px}.battle-toolbar{font-size:8px;letter-spacing:.2px}.battle-toolbar>div{gap:5px}.battle-step{padding:12px;min-height:96px}.battle-step>strong{font-size:16px}.battle-step p{font-size:10px}.combat-badge{font-size:9px}.combat-loadout span{font-size:8px}.combat-float{font-size:20px;top:24px}.combat-float.deflect{font-size:12px;top:32px}.combat-block{font-size:8px;top:6px;padding:4px 6px}.strike-arc{width:100px;height:100px;top:40px}.hit-sparks{top:57px;width:70px;height:70px}.deflect-ring,.healing-ring{width:70px;height:70px;top:55px}.battle-modal .modal-header h2{font-size:18px}}
+@media(max-width:560px){.battle-modal .battle-body{padding:12px 16px 20px}.battle-modal .battle-stage{--lunge:40px;grid-template-columns:1fr 18px 1fr;gap:4px;margin-bottom:15px;padding-bottom:15px}.fighter-scene{height:170px}.battle-modal .battle-fighter .avatar-art{height:170px;width:155px}.battle-modal .battle-fighter .monster-art{height:165px;width:165px}.battle-modal .battle-fighter>strong{font-size:11px}.battle-modal .battle-fighter .health-bar{max-width:120px}.battle-toolbar{font-size:8px;letter-spacing:.2px}.battle-toolbar>div{gap:5px}.battle-step{padding:12px;min-height:96px}.battle-step-content>strong{font-size:16px}.battle-step p{font-size:10px}.combat-badge{font-size:9px}.combat-loadout span{font-size:8px}.combat-float{font-size:20px;top:24px}.combat-float.deflect{font-size:12px;top:32px}.combat-block{font-size:8px;top:6px;padding:4px 6px}.strike-arc{width:100px;height:100px;top:40px}.hit-sparks{top:57px;width:70px;height:70px}.deflect-ring,.healing-ring{width:70px;height:70px;top:55px}.battle-modal .modal-header h2{font-size:18px}}
 @media(prefers-reduced-motion:reduce){.impacted .combat-float,.impacted .combat-block{opacity:1;transform:translate(-50%,0)}.impacted .deflect-ring,.impacted .healing-ring{opacity:.65}.strike-arc,.hit-sparks{display:none}}
 :root[data-motion=reduced] .impacted .combat-float,:root[data-motion=reduced] .impacted .combat-block{opacity:1;transform:translate(-50%,0)}:root[data-motion=reduced] .impacted .deflect-ring,:root[data-motion=reduced] .impacted .healing-ring{opacity:.65}:root[data-motion=reduced] .strike-arc,:root[data-motion=reduced] .hit-sparks{display:none}
 
@@ -879,6 +879,31 @@ button.hashtag:hover{text-decoration:underline}
 .capture-reward .gold-value{font-size:14px;gap:5px;font-variant-numeric:tabular-nums}
 .capture-reward .gold-pile{width:35px;height:29px}
 .capture-healing-hint{font-size:10px;color:var(--muted);margin-top:8px}
+
+/* Stable turn panel: all upcoming frames share one invisible sizing grid. */
+.battle-step{display:grid}
+.battle-step-current,.battle-step-reserve{grid-area:1/1;min-width:0}
+.battle-step-reserve{display:grid;visibility:hidden;pointer-events:none;user-select:none}
+.battle-step-reserve>.battle-step-content{grid-area:1/1;min-width:0}
+/* Spell layers live over the arena so casting never changes the layout. */
+.combat-spell{--spell:#efac56;position:absolute;inset:0 0 75px;pointer-events:none;z-index:4;color:var(--spell)}
+.spell-storm{--spell:#7ccde6}.spell-ward{--spell:#a5bb94}.spell-starfall{--spell:#c2a4ee}
+.spell-charge{position:absolute;left:23%;top:58%;width:68px;height:68px;border:2px solid var(--spell);box-shadow:0 0 20px color-mix(in srgb,var(--spell) 40%,transparent),inset 0 0 14px color-mix(in srgb,var(--spell) 20%,transparent);transform:translate(-50%,-50%) rotate(45deg);animation:spell-charge .4s ease-out both}
+.spell-projectile{position:absolute;left:23%;top:53%;width:62px;height:62px;overflow:visible;filter:drop-shadow(0 0 8px var(--spell));animation:spell-flight .4s ease-in both}
+.spell-storm .spell-projectile{width:83px;height:83px}.spell-starfall.spell-attack .spell-projectile{animation-name:starfall-dive}
+.spell-ward-shield{position:absolute;left:23%;top:54%;width:128px;height:140px;overflow:visible;filter:drop-shadow(0 0 9px var(--spell));transform:translate(-50%,-50%);animation:ward-rise .4s ease-out both}
+.spell-impact{position:absolute;left:77%;top:54%;width:130px;height:130px;overflow:visible;opacity:0;transform:translate(-50%,-50%);filter:drop-shadow(0 0 7px var(--spell))}
+.spell-guard .spell-impact{left:23%}.spell-guard .spell-charge{opacity:.3}
+.impacted .spell-impact{animation:spell-burst .7s ease-out both}.impacted .spell-ward-shield{animation:ward-impact .85s ease-out both}
+@keyframes spell-charge{0%{opacity:0;transform:translate(-50%,-50%) rotate(0) scale(.4)}65%{opacity:.8}100%{opacity:0;transform:translate(-50%,-50%) rotate(45deg) scale(1.2)}}
+@keyframes spell-flight{0%{opacity:0;left:23%;transform:translate(-50%,-50%) scale(.4) rotate(-20deg)}20%{opacity:1}85%{opacity:1}100%{opacity:0;left:77%;transform:translate(-50%,-50%) scale(1.1) rotate(15deg)}}
+@keyframes starfall-dive{0%{opacity:0;left:62%;top:3%;transform:translate(-50%,-50%) scale(.4) rotate(-30deg)}20%,85%{opacity:1}100%{opacity:0;left:77%;top:54%;transform:translate(-50%,-50%) scale(1.2) rotate(15deg)}}
+@keyframes spell-burst{0%{opacity:1;transform:translate(-50%,-50%) scale(.3)}35%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.5)}}
+@keyframes ward-rise{0%{opacity:0;transform:translate(-50%,-40%) scale(.65)}100%{opacity:.85;transform:translate(-50%,-50%) scale(1)}}
+@keyframes ward-impact{0%{opacity:1;transform:translate(-50%,-50%) scale(1.08);filter:drop-shadow(0 0 18px var(--spell))}35%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.18)}}
+@media(max-width:560px){.combat-spell{bottom:68px}.spell-charge{width:48px;height:48px}.spell-projectile{width:47px;height:47px}.spell-storm .spell-projectile{width:59px;height:59px}.spell-ward-shield{width:91px;height:104px}.spell-impact{width:92px;height:92px}}
+@media(prefers-reduced-motion:reduce){.spell-projectile{display:none}.spell-charge{animation:none;opacity:.5}.spell-ward-shield{animation:none!important;opacity:.65}.impacted .spell-impact{animation:none;opacity:.7}}
+:root[data-motion=reduced] .spell-projectile{display:none}:root[data-motion=reduced] .spell-charge{animation:none;opacity:.5}:root[data-motion=reduced] .spell-ward-shield{animation:none!important;opacity:.65}:root[data-motion=reduced] .impacted .spell-impact{animation:none;opacity:.7}
 
   </style>
   <script>
@@ -3653,6 +3678,39 @@ const SOUNDS = {
     tone({ t, f: 440, f2: 1320, dur: 0.55, vol: 0.04, type: 'triangle', verb: 0.5 });
     bell(1760, t + 0.45, 0.04, 0.9, 0.6);
   },
+  // Combat spells have a short charge, followed by an impact on the combat clock.
+  spellCast(t, { spell = 'ember', mode = 'attack' } = {}) {
+    if (mode === 'guard') {
+      tone({ t, f: spell === 'ward' ? 110 : 330, f2: spell === 'ward' ? 220 : 660, dur: .36, vol: .09, type: 'triangle', attack: .04, verb: .4, pan: -.25 });
+      noise({ t, dur: .3, vol: .06, f: 500, f2: 1800, attack: .04, verb: .35, pan: -.25 });
+    } else if (spell === 'ember') {
+      noise({ t, dur: .36, vol: .13, f: 450, f2: 2600, q: 1.2, attack: .03, verb: .25 });
+      tone({ t, f: 180, f2: 580, dur: .33, vol: .06, type: 'triangle', verb: .3 });
+    } else if (spell === 'storm') {
+      tone({ t, f: 180, f2: 1600, dur: .34, vol: .055, type: 'sawtooth', filter: { type: 'lowpass', f: 1800 }, verb: .3 });
+      for (let i = 0; i < 4; i++) noise({ t: t + i * .075, dur: .045, vol: .06, type: 'highpass', f: 3200, verb: .15 });
+    } else if (spell === 'starfall') {
+      [784, 1046.5, 1568].forEach((f, i) => bell(f, t + i * .09, .045, .45, .5, -.2 + i * .2));
+    }
+  },
+  spellImpact(t, { spell = 'ember', mode = 'attack' } = {}) {
+    if (mode === 'guard') {
+      bell(spell === 'ward' ? 440 : 1046.5, t, .1, .65, .5, -.25);
+      tone({ t, f: 130, f2: 65, dur: .25, vol: .12, verb: .3, pan: -.25 });
+      noise({ t, dur: .18, vol: .1, f: 750, f2: 300, verb: .3, pan: -.25 });
+    } else if (spell === 'ember') {
+      noise({ t, dur: .42, vol: .16, f: 1500, f2: 180, verb: .35, pan: .25 });
+      tone({ t, f: 110, f2: 45, dur: .32, vol: .12, verb: .35, pan: .25 });
+      for (let i = 0; i < 3; i++) noise({ t: t + .06 + i * .06, dur: .025, vol: .035, type: 'highpass', f: 4200, pan: .25 });
+    } else if (spell === 'storm') {
+      noise({ t, dur: .08, vol: .22, type: 'highpass', f: 2400, verb: .5, pan: .25 });
+      tone({ t, f: 90, f2: 35, dur: .45, vol: .15, verb: .45, pan: .25 });
+      bell(1480, t + .025, .05, .5, .4, .25);
+    } else if (spell === 'starfall') {
+      [1046.5, 1318.5, 2093].forEach((f, i) => bell(f, t + i * .035, .055, .7, .55, .25));
+      noise({ t, dur: .32, vol: .045, type: 'highpass', f: 5500, verb: .5, pan: .25 });
+    }
+  },
   harm(t) {
     tone({ t, f: 150, f2: 70, dur: 0.28, vol: 0.12, verb: 0.15 });
     noise({ t, dur: 0.12, vol: 0.05, type: 'lowpass', f: 320 });
@@ -6103,7 +6161,7 @@ Object.assign(exports,{oddsKey,requestOdds,percent});
 // The monster card, victory odds, and animated encounters.
 const E=require("engine.js");
 const { avatarArt, monsterArt, monsterName, itemArt }=require("art.js");
-const { describeCombatEvent }=require("combat-presentation.js");
+const { combatSpellCue, describeCombatEvent }=require("combat-presentation.js");
 const { playSfx, stopSfx, unlockSfx }=require("sfx.js");
 const { burst, confetti, countUp, motionOK }=require("ui-effects.js");
 const { $, app, esc, icon, modalShell, persist, today, view }=require("ui-core.js");
@@ -6132,6 +6190,17 @@ function updateOdds() {
     if (bar) bar.style.width = (chance || 0) * 100 + '%';
   });
 }
+function spellAnimation(cue) {
+  if (!cue) return '';
+  const star = '<path d="m60 16 10 32 32 12-32 10-10 32-12-32-32-10 32-12Z" fill="currentColor"/><path d="m60 37 6 17 17 6-17 6-6 17-6-17-17-6 17-6Z" fill="#fff8df"/>';
+  const projectiles = {
+    ember: '<path d="M12 48h12V36h12V24h12V12h12v12h12v12h12v36H72v12H36V72H24V60H12Z" fill="#d97036"/><path d="M36 48h12V24h12v24h12v24H36Z" fill="#ffd572"/><path d="M48 48h12v24H48Z" fill="#fff6cf"/><path d="M0 24h12v12H0Zm12 60h12v12H12Z" fill="#e8a550"/>',
+    storm: '<path d="M60 0 12 60h36L36 96l48-60H48Z" fill="#77cfe6"/><path d="M60 12 30 54h30L42 84l30-42H42Z" fill="#f0fcff"/><path d="M0 24h12v12H0Zm72 60h12v12H72Z" fill="#93c9ed"/>',
+    starfall: '<g transform="scale(.8)">' + star + '</g><path d="m83 53 5 14 14 5-14 5-5 14-5-14-14-5 14-5ZM18 0l4 12 12 4-12 4-4 12-4-12L2 16l12-4Z" fill="#e3c8fc"/>',
+  };
+  return `<div class="combat-spell spell-${cue.id} spell-${cue.mode}" aria-hidden="true"><div class="spell-charge"></div>${cue.mode === 'attack' ? `<svg class="spell-projectile" viewBox="0 0 108 108">${projectiles[cue.id] || ''}</svg>` : `<svg class="spell-ward-shield" viewBox="0 0 120 120"><path d="M60 6 104 24v40L90 86l-30 28-30-28-14-22V24Z" fill="var(--panel)" fill-opacity=".8" stroke="currentColor" stroke-width="4"/>${cue.id === 'starfall' ? star : '<path d="M40 33h40v15H40ZM31 53h25v16H31Zm33 0h25v16H64ZM45 74h30v15H45Z" fill="currentColor"/>'}</svg>`}<svg class="spell-impact" viewBox="0 0 120 120"><circle cx="60" cy="60" r="30" fill="none" stroke="currentColor" stroke-width="3"/><path d="M55 4h10v14H55Zm0 98h10v14H55ZM4 55h14v10H4Zm98 0h14v10h-14ZM19 19h11v11H19Zm71 0h11v11H90ZM19 90h11v11H19Zm71 0h11v11H90Z" fill="currentColor"/><path d="m60 38 6 16 16 6-16 6-6 16-6-16-16-6 16-6Z" fill="#fff8df"/></svg></div>`;
+}
+const stepContent = ({ title, detail, badges = [] }) => `<div class="battle-step-content"><strong>${esc(title)}</strong><p>${esc(detail)}</p><div class="combat-badges">${badges.map(b => `<span class="combat-badge ${b.tone}">${esc(b.label)}</span>`).join('')}</div></div>`;
 function renderBattleModal() {
   const r = app.modal.result,
     finished = app.modal.finished,
@@ -6174,7 +6243,16 @@ function renderBattleModal() {
       spell: E.SHOP.find(i => i.id === r.spell),
       pet,
     },
-    step = event ? describeCombatEvent(event, context) : null;
+    step = event ? describeCombatEvent(event, context) : null,
+    spellCue = !finished && combatSpellCue(event, context.spell);
+  // Overlapping invisible frames reserve the longest turn at any viewport width.
+  // This also accounts for a full loadout and wrapped badges, without clipping text.
+  const readyStep = { title: 'Ready your stance', detail: 'You attack first. Equipment and stats apply automatically.' };
+  const currentStep = finished ? {
+    title: r.won ? `${monsterName(r.monster)} defeated` : 'Your adventurer falls',
+    detail: app.modal.replay ? 'This is a replay. Health and rewards stay unchanged.' : r.won ? 'Loot collected. Your next opponent arrives tomorrow.' : 'Reflect to recover HP, then try again when you feel ready.',
+  } : step || readyStep;
+  const reservedSteps = finished ? '' : `<div class="battle-step-reserve" aria-hidden="true" inert>${[...new Set([stepContent(readyStep), ...r.events.map(e => stepContent(describeCombatEvent(e, context)))])].join('')}</div>`;
   const round = event?.round || Math.floor(Math.max(0, index) / 2) + 1;
   const stageClass = finished
     ? `outcome ${r.won ? 'victory' : 'defeat'}`
@@ -6220,16 +6298,16 @@ function renderBattleModal() {
     finished ? (r.won ? 'Victory!' : 'Defeated') : `Encounter · ${monsterName(r.monster)}`,
     `<div class="battle-body">
     <div class="battle-toolbar"><span>${finished ? `${round} rounds` : `${index < 0 ? 'GET READY' : `ROUND ${round} · ${event?.type === 'attack' ? 'YOUR TURN' : event?.type === 'rally' ? 'RECOVERY' : 'MONSTER’S TURN'}`}`}</span><div>${app.modal.replay ? '<span class="replay-label">REPLAY</span>' : ''}<span>${finished ? 'Encounter complete' : `Step ${Math.max(0, index + 1)} / ${r.events.length}`}</span><button class="icon-button" data-action="battle-mute" title="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}" aria-label="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}">${icon(app.state.settings.muted ? 'mute' : 'sound')}</button></div></div>
-    <div class="battle-stage ${stageClass}" id="battle-stage">${finished && r.won ? '<div class="victory-banner" aria-hidden="true"><span class="victory-rays"></span><strong>VICTORY</strong></div>' : ''}
+    <div class="battle-stage ${stageClass}" id="battle-stage">${spellAnimation(spellCue)}${finished && r.won ? '<div class="victory-banner" aria-hidden="true"><span class="victory-rays"></span><strong>VICTORY</strong></div>' : ''}
       <div class="battle-fighter player"><div class="fighter-scene"><div class="fighter-motion">${avatarArt(weapon, armor, false, { appearance: r.appearance || app.state.appearance, helmet, shield, boots })}</div>${effect('player')}</div><strong>${esc(r.playerName || app.state.name)}</strong><div class="health-bar" role="progressbar" aria-label="Adventurer health" aria-valuemin="0" aria-valuemax="${maximum}" aria-valuenow="${hp}" id="battle-player-bar"><div style="width:${(hp / maximum) * 100}%"></div></div><small id="battle-player-hp">${hp} / ${maximum} HP</small></div>
       <div class="battle-divider"><span>VS</span><i></i></div>
       <div class="battle-fighter monster"><div class="fighter-scene"><div class="fighter-motion">${monsterArt(r.monster, finished && r.won)}</div>${effect('monster')}</div><strong>${monsterName(r.monster)}</strong><div class="health-bar enemy" role="progressbar" aria-label="Monster health" aria-valuemin="0" aria-valuemax="${enemyMax}" aria-valuenow="${enemy}" id="battle-enemy-bar"><div style="width:${(enemy / enemyMax) * 100}%"></div></div><small id="battle-enemy-hp">${enemy} / ${enemyMax} HP</small></div>
     </div>
-    <div class="battle-step ${finished ? (r.won ? 'won' : 'lost') : step?.tone || 'ready'}" aria-live="polite"><strong>${finished ? (r.won ? `${monsterName(r.monster)} defeated` : 'Your adventurer falls') : step ? esc(step.title) : 'Ready your stance'}</strong><p>${finished ? (app.modal.replay ? 'This is a replay. Health and rewards stay unchanged.' : r.won ? 'Loot collected. Your next opponent arrives tomorrow.' : 'Reflect to recover HP, then try again when you feel ready.') : step ? esc(step.detail) : 'You attack first. Equipment and stats apply automatically.'}</p><div class="combat-badges">${(!finished && step ? step.badges : []).map(b => `<span class="combat-badge ${b.tone}">${esc(b.label)}</span>`).join('')}</div></div>
+    <div class="battle-step ${finished ? (r.won ? 'won' : 'lost') : step?.tone || 'ready'}">${reservedSteps}<div class="battle-step-current" aria-live="polite">${stepContent(currentStep)}</div></div>
     ${finished ? `<div class="battle-result">${r.won ? `<div class="loot-box loot-reveal">${r.loot.type === 'gold' ? icon('coin') + `<strong>+${r.loot.amount} gold</strong>` : itemArt(E.SHOP.find(i => i.id === r.loot.id)) + `<strong>${E.SHOP.find(i => i.id === r.loot.id).name}</strong>`}<span>${app.modal.replay ? 'Previously earned' : r.loot.type === 'gold' ? 'Added to your pouch' : 'Added to your equipment'}</span></div><button class="button primary wide" data-action="close-modal">Back to dashboard</button>` : `${!app.modal.replay ? `<button class="button primary wide" data-action="recover">${icon('pencil')}Reflect & recover</button>` : ''}<button class="button secondary wide" data-action="close-modal">Back to dashboard</button>`}</div>` : ''}
     <div class="combat-loadout">${chips.map(b => `<span class="${b.tone}">${esc(b.label)}</span>`).join('')}</div>
     ${
-      history.length
+      history.length || !finished
         ? `<details class="combat-history" ${finished ? 'open' : ''}><summary>Encounter log <span>${historyEnd} ${historyEnd === 1 ? 'step' : 'steps'}</span></summary><ol>${(finished
             ? r.events
             : history
@@ -6317,10 +6395,12 @@ function animateBattle(result, initialHP, replay = false) {
       return;
     }
     const event = result.events[app.modal.index],
-      description = describeCombatEvent(event);
+      description = describeCombatEvent(event),
+      spellCue = combatSpellCue(event, E.SHOP.find(i => i.id === result.spell));
     view.renderModal();
     const heavy = isHeavy(event, result.monster),
       finishing = event.type === 'attack' && event.enemy === 0;
+    if (spellCue) battleAudio.play('spellCast', { spell: spellCue.id, mode: spellCue.mode });
     if (event.type === 'attack') scheduleBattle(() => battleAudio.play('swing', { who: 'player' }), 120);
     if (event.type === 'hit' || event.type === 'deflect')
       scheduleBattle(() => battleAudio.play('swing', { who: 'monster' }), 120);
@@ -6329,6 +6409,7 @@ function animateBattle(result, initialHP, replay = false) {
         if (app.modal?.type !== 'battle') return;
         app.modal.impact = true;
         $('#battle-stage')?.classList.add('impacted');
+        if (spellCue) battleAudio.play('spellImpact', { spell: spellCue.id, mode: spellCue.mode });
         const maximum = result.maxHP || E.maxHP(app.state),
           enemyMax = E.monsterStats(result.monster).hp;
         const player = $('#battle-player-bar'),
@@ -6393,6 +6474,14 @@ Object.assign(exports,{renderMonster,updateOdds,finishBattlePlayback,modals,acti
 },
 "combat-presentation.js":function(require,exports){
 // Presentation only. These descriptions never roll dice or modify rewards.
+function combatSpellCue(event, spell) {
+  if (!event || !['ember', 'ward', 'storm', 'starfall'].includes(spell?.id)) return null;
+  // Twin strikes inherit half of the first strike, including its spell damage.
+  if (event.type === 'attack' && (event.spellBonus > 0 || (event.strike === 'twin' && spell.boosts?.attack > 0)))
+    return { id: spell.id, mode: 'attack' };
+  if (event.type === 'hit' && event.spellBlock > 0) return { id: spell.id, mode: 'guard' };
+  return null;
+}
 function describeCombatEvent(event, { monster = 'Monster', weapon, armor, shield, spell, pet } = {}) {
   const damage = event.actualDamage ?? event.amount;
   const badges = [];
@@ -6435,7 +6524,7 @@ function describeCombatEvent(event, { monster = 'Monster', weapon, armor, shield
   return {title:'Ready',detail:'',float:'',target:null,tone:'ready',badges,duration:1000};
 }
 
-Object.assign(exports,{describeCombatEvent});
+Object.assign(exports,{combatSpellCue,describeCombatEvent});
 },
 "ui-collection.js":function(require,exports){
 // Achievements and the bestiary.

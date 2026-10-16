@@ -662,10 +662,12 @@ uiTest('the character studio previews a locked style without saving, then buys i
 });
 
 uiTest('a won fight plays out, celebrates, and pays its loot', async page => {
-  await page.open({ save: strong() });
+  const save = strong(); save.preparedSpell = 'ember'; save.supplies.ember = 1;
+  await page.open({ save });
   await page.waitFor(() => /%$/.test(document.querySelector('#chance-value')?.textContent || ''));
   await page.click('#app [data-action="fight"]');
   await page.waitFor(() => document.querySelector('.battle-modal'));
+  await page.waitFor(() => document.querySelector('.battle-stage.impacted .spell-ember .spell-impact'));
   await page.click('[data-action="skip-battle"]');
   await page.waitFor(() => document.querySelector('.victory-banner'));
   assert.equal(await page.text('#modal-title'), 'Victory!');
@@ -675,6 +677,45 @@ uiTest('a won fight plays out, celebrates, and pays its loot', async page => {
   assert.equal(s.monster.defeatedOn, today(s));
   await page.click('.battle-result [data-action="close-modal"]');
   await page.waitFor(() => /Next opponent arrives tomorrow/.test(document.querySelector('#app .monster-panel')?.textContent || ''));
+});
+
+uiTest('combat stays the same height through spell and equipment turns on desktop and mobile', async page => {
+  const base = strong(); base.gold = 5000; base.monster.number = 5;
+  for (const id of ['eclipse', 'sunplate', 'aegis', 'windstep', 'starhelm', 'drake']) E.buy(base, id);
+  base.hp = E.maxHP(base);
+  const results = [null, 'ember', 'ward', 'storm', 'starfall'].map(id => {
+    const s = structuredClone(base);
+    if (id) { s.preparedSpell = id; s.supplies[id] = 1; }
+    let seed = 7;
+    return E.fight(s, today(s), () => ((seed = (Math.imul(1664525, seed) + 1013904223) >>> 0), seed / 4294967296));
+  });
+  await page.open({ save: base });
+  for (const width of [1280, 390]) {
+    await page.cmd('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: width < 600 });
+    const reports = await page.evaluate(async results => {
+      const version = new URL(document.querySelector('script[src*="app.js"]').src).search;
+      const { app, view } = await import('./ui-core.js' + version);
+      return results.map(result => {
+        const heights = [], panels = [], modes = new Set();
+        for (let index = -1; index < result.events.length; index++) {
+          app.modal = { type: 'battle', result, index, finished: false, impact: false, initialHP: result.initialHP, replay: true };
+          view.renderModal();
+          const panel = document.querySelector('.battle-step'), modal = document.querySelector('.modal');
+          heights.push(modal.getBoundingClientRect().height); panels.push(panel.getBoundingClientRect().height);
+          if (panel.scrollHeight > panel.clientHeight + 1) throw Error('Turn text clipped');
+          const effect = document.querySelector('.combat-spell');
+          if (effect) modes.add(effect.className);
+        }
+        return { spell: result.spell, modalSpread: Math.max(...heights) - Math.min(...heights), panelSpread: Math.max(...panels) - Math.min(...panels), modes: [...modes] };
+      });
+    }, results);
+    for (const report of reports) {
+      assert.ok(report.modalSpread < 1, `${width}px ${report.spell} modal moves`);
+      assert.ok(report.panelSpread < 1, `${width}px ${report.spell} turn panel moves`);
+      if (report.spell) assert.ok(report.modes.length, `${report.spell} has a visible effect`);
+    }
+    assert.equal(reports.find(r => r.spell === 'starfall').modes.length, 2, 'Starfall attacks and guards');
+  }
 });
 
 uiTest('shields and boots are sold with armor, and powered fights replay with their effects', async page => {

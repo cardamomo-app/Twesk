@@ -1,8 +1,8 @@
 // Task list, project filter, task dialog, and task actions.
-import * as E from './engine.js?v=0.23.1';
-import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.23.1';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.23.1';
-import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.23.1';
+import * as E from './engine.js?v=0.23.2';
+import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.23.2';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.23.2';
+import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.23.2';
 
 const inProject = t => !app.taskProject || E.tags(t.title).includes(app.taskProject);
 // Open tasks per project tag, in order of first appearance.

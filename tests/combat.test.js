@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {freshState,fight,validateState,SHOP} from '../engine.js';
-import {describeCombatEvent} from '../combat-presentation.js';
+import {combatSpellCue,describeCombatEvent} from '../combat-presentation.js';
 import {monsterArt} from '../art.js';
 const day='2026-10-08';
 function encounter(){
@@ -48,6 +48,25 @@ test('older saved encounters remain readable without new metadata',()=>{
   assert.equal(description.float,'−9 HP');assert.equal(description.detail,'9 damage');
   const {state}=encounter();for(const r of state.battles){delete r.loadout;delete r.levels;delete r.initialHP;delete r.maxHP;delete r.playerName;}
   assert.doesNotThrow(()=>validateState(state));
+});
+test('spell animation cues follow the recorded bonus, including twin strikes and both Starfall effects',()=>{
+  for(const id of ['ember','ward','storm','starfall']) {
+    const state=freshState();state.preparedSpell=id;state.supplies[id]=1;
+    const result=fight(state,day,()=>0),spell=SHOP.find(i=>i.id===id),before=JSON.stringify(result);
+    for(const event of result.events) {
+      const cue=combatSpellCue(event,spell);
+      if(event.type==='attack'&&spell.boosts.attack) assert.deepEqual(cue,{id,mode:'attack'});
+      else if(event.type==='hit'&&event.spellBlock) assert.deepEqual(cue,{id,mode:'guard'});
+      else assert.equal(cue,null);
+    }
+    assert.equal(JSON.stringify(result),before);
+    assert.equal(state.preparedSpell,null);assert.equal(state.supplies[id],0);
+    assert.deepEqual(combatSpellCue({type:'attack',strike:'twin'},spell),spell.boosts.attack?{id,mode:'attack'}:null);
+    for(const event of [{type:'attack',spellBonus:0},{type:'hit',spellBlock:0},{type:'deflect'},{type:'rally'},null])
+      assert.equal(combatSpellCue(event,spell),null);
+  }
+  assert.equal(combatSpellCue({type:'attack',spellBonus:3},null),null);
+  assert.equal(combatSpellCue({type:'attack',spellBonus:3},{id:'unknown'}),null);
 });
 test('defeated monster art uses X eyes and an accessible defeated description',()=>{
   assert.match(monsterArt(1,true),/defeated-eyes/);assert.match(monsterArt(1,true),/defeated, with X eyes/);

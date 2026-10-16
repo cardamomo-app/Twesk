@@ -1,4 +1,12 @@
 // Presentation only. These descriptions never roll dice or modify rewards.
+export function combatSpellCue(event, spell) {
+  if (!event || !['ember', 'ward', 'storm', 'starfall'].includes(spell?.id)) return null;
+  // Twin strikes inherit half of the first strike, including its spell damage.
+  if (event.type === 'attack' && (event.spellBonus > 0 || (event.strike === 'twin' && spell.boosts?.attack > 0)))
+    return { id: spell.id, mode: 'attack' };
+  if (event.type === 'hit' && event.spellBlock > 0) return { id: spell.id, mode: 'guard' };
+  return null;
+}
 export function describeCombatEvent(event, { monster = 'Monster', weapon, armor, shield, spell, pet } = {}) {
   const damage = event.actualDamage ?? event.amount;
   const badges = [];

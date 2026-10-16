@@ -1,12 +1,12 @@
 // The monster card, victory odds, and animated encounters.
-import * as E from './engine.js?v=0.23.1';
-import { avatarArt, monsterArt, monsterName, itemArt } from './art.js?v=0.23.1';
-import { describeCombatEvent } from './combat-presentation.js?v=0.23.1';
-import { playSfx, stopSfx, unlockSfx } from './sfx.js?v=0.23.1';
-import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.23.1';
-import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.23.1';
-import { announceBadges, commit } from './ui-modal.js?v=0.23.1';
-import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.23.1';
+import * as E from './engine.js?v=0.23.2';
+import { avatarArt, monsterArt, monsterName, itemArt } from './art.js?v=0.23.2';
+import { combatSpellCue, describeCombatEvent } from './combat-presentation.js?v=0.23.2';
+import { playSfx, stopSfx, unlockSfx } from './sfx.js?v=0.23.2';
+import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.23.2';
+import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.23.2';
+import { announceBadges, commit } from './ui-modal.js?v=0.23.2';
+import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.23.2';
 export function renderMonster() {
   const number = app.state.monster.number,
     won = !!app.state.monster.defeatedOn,
@@ -30,6 +30,17 @@ export function updateOdds() {
     if (bar) bar.style.width = (chance || 0) * 100 + '%';
   });
 }
+function spellAnimation(cue) {
+  if (!cue) return '';
+  const star = '<path d="m60 16 10 32 32 12-32 10-10 32-12-32-32-10 32-12Z" fill="currentColor"/><path d="m60 37 6 17 17 6-17 6-6 17-6-17-17-6 17-6Z" fill="#fff8df"/>';
+  const projectiles = {
+    ember: '<path d="M12 48h12V36h12V24h12V12h12v12h12v12h12v36H72v12H36V72H24V60H12Z" fill="#d97036"/><path d="M36 48h12V24h12v24h12v24H36Z" fill="#ffd572"/><path d="M48 48h12v24H48Z" fill="#fff6cf"/><path d="M0 24h12v12H0Zm12 60h12v12H12Z" fill="#e8a550"/>',
+    storm: '<path d="M60 0 12 60h36L36 96l48-60H48Z" fill="#77cfe6"/><path d="M60 12 30 54h30L42 84l30-42H42Z" fill="#f0fcff"/><path d="M0 24h12v12H0Zm72 60h12v12H72Z" fill="#93c9ed"/>',
+    starfall: '<g transform="scale(.8)">' + star + '</g><path d="m83 53 5 14 14 5-14 5-5 14-5-14-14-5 14-5ZM18 0l4 12 12 4-12 4-4 12-4-12L2 16l12-4Z" fill="#e3c8fc"/>',
+  };
+  return `<div class="combat-spell spell-${cue.id} spell-${cue.mode}" aria-hidden="true"><div class="spell-charge"></div>${cue.mode === 'attack' ? `<svg class="spell-projectile" viewBox="0 0 108 108">${projectiles[cue.id] || ''}</svg>` : `<svg class="spell-ward-shield" viewBox="0 0 120 120"><path d="M60 6 104 24v40L90 86l-30 28-30-28-14-22V24Z" fill="var(--panel)" fill-opacity=".8" stroke="currentColor" stroke-width="4"/>${cue.id === 'starfall' ? star : '<path d="M40 33h40v15H40ZM31 53h25v16H31Zm33 0h25v16H64ZM45 74h30v15H45Z" fill="currentColor"/>'}</svg>`}<svg class="spell-impact" viewBox="0 0 120 120"><circle cx="60" cy="60" r="30" fill="none" stroke="currentColor" stroke-width="3"/><path d="M55 4h10v14H55Zm0 98h10v14H55ZM4 55h14v10H4Zm98 0h14v10h-14ZM19 19h11v11H19Zm71 0h11v11H90ZM19 90h11v11H19Zm71 0h11v11H90Z" fill="currentColor"/><path d="m60 38 6 16 16 6-16 6-6 16-6-16-16-6 16-6Z" fill="#fff8df"/></svg></div>`;
+}
+const stepContent = ({ title, detail, badges = [] }) => `<div class="battle-step-content"><strong>${esc(title)}</strong><p>${esc(detail)}</p><div class="combat-badges">${badges.map(b => `<span class="combat-badge ${b.tone}">${esc(b.label)}</span>`).join('')}</div></div>`;
 function renderBattleModal() {
   const r = app.modal.result,
     finished = app.modal.finished,
@@ -72,7 +83,16 @@ function renderBattleModal() {
       spell: E.SHOP.find(i => i.id === r.spell),
       pet,
     },
-    step = event ? describeCombatEvent(event, context) : null;
+    step = event ? describeCombatEvent(event, context) : null,
+    spellCue = !finished && combatSpellCue(event, context.spell);
+  // Overlapping invisible frames reserve the longest turn at any viewport width.
+  // This also accounts for a full loadout and wrapped badges, without clipping text.
+  const readyStep = { title: 'Ready your stance', detail: 'You attack first. Equipment and stats apply automatically.' };
+  const currentStep = finished ? {
+    title: r.won ? `${monsterName(r.monster)} defeated` : 'Your adventurer falls',
+    detail: app.modal.replay ? 'This is a replay. Health and rewards stay unchanged.' : r.won ? 'Loot collected. Your next opponent arrives tomorrow.' : 'Reflect to recover HP, then try again when you feel ready.',
+  } : step || readyStep;
+  const reservedSteps = finished ? '' : `<div class="battle-step-reserve" aria-hidden="true" inert>${[...new Set([stepContent(readyStep), ...r.events.map(e => stepContent(describeCombatEvent(e, context)))])].join('')}</div>`;
   const round = event?.round || Math.floor(Math.max(0, index) / 2) + 1;
   const stageClass = finished
     ? `outcome ${r.won ? 'victory' : 'defeat'}`
@@ -118,16 +138,16 @@ function renderBattleModal() {
     finished ? (r.won ? 'Victory!' : 'Defeated') : `Encounter · ${monsterName(r.monster)}`,
     `<div class="battle-body">
     <div class="battle-toolbar"><span>${finished ? `${round} rounds` : `${index < 0 ? 'GET READY' : `ROUND ${round} · ${event?.type === 'attack' ? 'YOUR TURN' : event?.type === 'rally' ? 'RECOVERY' : 'MONSTER’S TURN'}`}`}</span><div>${app.modal.replay ? '<span class="replay-label">REPLAY</span>' : ''}<span>${finished ? 'Encounter complete' : `Step ${Math.max(0, index + 1)} / ${r.events.length}`}</span><button class="icon-button" data-action="battle-mute" title="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}" aria-label="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}">${icon(app.state.settings.muted ? 'mute' : 'sound')}</button></div></div>
-    <div class="battle-stage ${stageClass}" id="battle-stage">${finished && r.won ? '<div class="victory-banner" aria-hidden="true"><span class="victory-rays"></span><strong>VICTORY</strong></div>' : ''}
+    <div class="battle-stage ${stageClass}" id="battle-stage">${spellAnimation(spellCue)}${finished && r.won ? '<div class="victory-banner" aria-hidden="true"><span class="victory-rays"></span><strong>VICTORY</strong></div>' : ''}
       <div class="battle-fighter player"><div class="fighter-scene"><div class="fighter-motion">${avatarArt(weapon, armor, false, { appearance: r.appearance || app.state.appearance, helmet, shield, boots })}</div>${effect('player')}</div><strong>${esc(r.playerName || app.state.name)}</strong><div class="health-bar" role="progressbar" aria-label="Adventurer health" aria-valuemin="0" aria-valuemax="${maximum}" aria-valuenow="${hp}" id="battle-player-bar"><div style="width:${(hp / maximum) * 100}%"></div></div><small id="battle-player-hp">${hp} / ${maximum} HP</small></div>
       <div class="battle-divider"><span>VS</span><i></i></div>
       <div class="battle-fighter monster"><div class="fighter-scene"><div class="fighter-motion">${monsterArt(r.monster, finished && r.won)}</div>${effect('monster')}</div><strong>${monsterName(r.monster)}</strong><div class="health-bar enemy" role="progressbar" aria-label="Monster health" aria-valuemin="0" aria-valuemax="${enemyMax}" aria-valuenow="${enemy}" id="battle-enemy-bar"><div style="width:${(enemy / enemyMax) * 100}%"></div></div><small id="battle-enemy-hp">${enemy} / ${enemyMax} HP</small></div>
     </div>
-    <div class="battle-step ${finished ? (r.won ? 'won' : 'lost') : step?.tone || 'ready'}" aria-live="polite"><strong>${finished ? (r.won ? `${monsterName(r.monster)} defeated` : 'Your adventurer falls') : step ? esc(step.title) : 'Ready your stance'}</strong><p>${finished ? (app.modal.replay ? 'This is a replay. Health and rewards stay unchanged.' : r.won ? 'Loot collected. Your next opponent arrives tomorrow.' : 'Reflect to recover HP, then try again when you feel ready.') : step ? esc(step.detail) : 'You attack first. Equipment and stats apply automatically.'}</p><div class="combat-badges">${(!finished && step ? step.badges : []).map(b => `<span class="combat-badge ${b.tone}">${esc(b.label)}</span>`).join('')}</div></div>
+    <div class="battle-step ${finished ? (r.won ? 'won' : 'lost') : step?.tone || 'ready'}">${reservedSteps}<div class="battle-step-current" aria-live="polite">${stepContent(currentStep)}</div></div>
     ${finished ? `<div class="battle-result">${r.won ? `<div class="loot-box loot-reveal">${r.loot.type === 'gold' ? icon('coin') + `<strong>+${r.loot.amount} gold</strong>` : itemArt(E.SHOP.find(i => i.id === r.loot.id)) + `<strong>${E.SHOP.find(i => i.id === r.loot.id).name}</strong>`}<span>${app.modal.replay ? 'Previously earned' : r.loot.type === 'gold' ? 'Added to your pouch' : 'Added to your equipment'}</span></div><button class="button primary wide" data-action="close-modal">Back to dashboard</button>` : `${!app.modal.replay ? `<button class="button primary wide" data-action="recover">${icon('pencil')}Reflect & recover</button>` : ''}<button class="button secondary wide" data-action="close-modal">Back to dashboard</button>`}</div>` : ''}
     <div class="combat-loadout">${chips.map(b => `<span class="${b.tone}">${esc(b.label)}</span>`).join('')}</div>
     ${
-      history.length
+      history.length || !finished
         ? `<details class="combat-history" ${finished ? 'open' : ''}><summary>Encounter log <span>${historyEnd} ${historyEnd === 1 ? 'step' : 'steps'}</span></summary><ol>${(finished
             ? r.events
             : history
@@ -215,10 +235,12 @@ function animateBattle(result, initialHP, replay = false) {
       return;
     }
     const event = result.events[app.modal.index],
-      description = describeCombatEvent(event);
+      description = describeCombatEvent(event),
+      spellCue = combatSpellCue(event, E.SHOP.find(i => i.id === result.spell));
     view.renderModal();
     const heavy = isHeavy(event, result.monster),
       finishing = event.type === 'attack' && event.enemy === 0;
+    if (spellCue) battleAudio.play('spellCast', { spell: spellCue.id, mode: spellCue.mode });
     if (event.type === 'attack') scheduleBattle(() => battleAudio.play('swing', { who: 'player' }), 120);
     if (event.type === 'hit' || event.type === 'deflect')
       scheduleBattle(() => battleAudio.play('swing', { who: 'monster' }), 120);
@@ -227,6 +249,7 @@ function animateBattle(result, initialHP, replay = false) {
         if (app.modal?.type !== 'battle') return;
         app.modal.impact = true;
         $('#battle-stage')?.classList.add('impacted');
+        if (spellCue) battleAudio.play('spellImpact', { spell: spellCue.id, mode: spellCue.mode });
         const maximum = result.maxHP || E.maxHP(app.state),
           enemyMax = E.monsterStats(result.monster).hp;
         const player = $('#battle-player-bar'),

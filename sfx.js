@@ -318,6 +318,39 @@ const SOUNDS = {
     tone({ t, f: 440, f2: 1320, dur: 0.55, vol: 0.04, type: 'triangle', verb: 0.5 });
     bell(1760, t + 0.45, 0.04, 0.9, 0.6);
   },
+  // Combat spells have a short charge, followed by an impact on the combat clock.
+  spellCast(t, { spell = 'ember', mode = 'attack' } = {}) {
+    if (mode === 'guard') {
+      tone({ t, f: spell === 'ward' ? 110 : 330, f2: spell === 'ward' ? 220 : 660, dur: .36, vol: .09, type: 'triangle', attack: .04, verb: .4, pan: -.25 });
+      noise({ t, dur: .3, vol: .06, f: 500, f2: 1800, attack: .04, verb: .35, pan: -.25 });
+    } else if (spell === 'ember') {
+      noise({ t, dur: .36, vol: .13, f: 450, f2: 2600, q: 1.2, attack: .03, verb: .25 });
+      tone({ t, f: 180, f2: 580, dur: .33, vol: .06, type: 'triangle', verb: .3 });
+    } else if (spell === 'storm') {
+      tone({ t, f: 180, f2: 1600, dur: .34, vol: .055, type: 'sawtooth', filter: { type: 'lowpass', f: 1800 }, verb: .3 });
+      for (let i = 0; i < 4; i++) noise({ t: t + i * .075, dur: .045, vol: .06, type: 'highpass', f: 3200, verb: .15 });
+    } else if (spell === 'starfall') {
+      [784, 1046.5, 1568].forEach((f, i) => bell(f, t + i * .09, .045, .45, .5, -.2 + i * .2));
+    }
+  },
+  spellImpact(t, { spell = 'ember', mode = 'attack' } = {}) {
+    if (mode === 'guard') {
+      bell(spell === 'ward' ? 440 : 1046.5, t, .1, .65, .5, -.25);
+      tone({ t, f: 130, f2: 65, dur: .25, vol: .12, verb: .3, pan: -.25 });
+      noise({ t, dur: .18, vol: .1, f: 750, f2: 300, verb: .3, pan: -.25 });
+    } else if (spell === 'ember') {
+      noise({ t, dur: .42, vol: .16, f: 1500, f2: 180, verb: .35, pan: .25 });
+      tone({ t, f: 110, f2: 45, dur: .32, vol: .12, verb: .35, pan: .25 });
+      for (let i = 0; i < 3; i++) noise({ t: t + .06 + i * .06, dur: .025, vol: .035, type: 'highpass', f: 4200, pan: .25 });
+    } else if (spell === 'storm') {
+      noise({ t, dur: .08, vol: .22, type: 'highpass', f: 2400, verb: .5, pan: .25 });
+      tone({ t, f: 90, f2: 35, dur: .45, vol: .15, verb: .45, pan: .25 });
+      bell(1480, t + .025, .05, .5, .4, .25);
+    } else if (spell === 'starfall') {
+      [1046.5, 1318.5, 2093].forEach((f, i) => bell(f, t + i * .035, .055, .7, .55, .25));
+      noise({ t, dur: .32, vol: .045, type: 'highpass', f: 5500, verb: .5, pan: .25 });
+    }
+  },
   harm(t) {
     tone({ t, f: 150, f2: 70, dur: 0.28, vol: 0.12, verb: 0.15 });
     noise({ t, dur: 0.12, vol: 0.05, type: 'lowpass', f: 320 });

@@ -482,6 +482,57 @@ const SOUNDS = {
       noise({ t, dur: 0.3, vol: 0.18, type: 'lowpass', f: 180, attack: 0.08, pan });
     }
   },
+  // Weapon signatures share a dry swing beneath their material or magical accent.
+  weaponSwing(t, { voice = 'steel', pitch = 1 } = {}) {
+    const axe = ['wood', 'stone', 'ice'].includes(voice), pan = -.2;
+    noise({ t, dur: axe ? .25 : .15, vol: .2, f: (axe ? 550 : 1700) * pitch, f2: (axe ? 2100 : 3900) * pitch, attack: .02, verb: .12, pan });
+    if (voice === 'fist') tone({ t: t + .05, f: 140, f2: 65, dur: .12, vol: .1, verb: .1, pan });
+    else if (voice === 'leaf' || voice === 'wood') noise({ t: t + .03, dur: .14, vol: .065, type: 'highpass', f: 4200 * pitch, verb: .1, pan });
+    else if (voice === 'steel' || voice === 'dagger') bell(voice === 'dagger' ? 1800 * pitch : 950 * pitch, t + .06, .035, .28, .2, pan);
+    else if (voice === 'chime' || voice === 'solar') {
+      bell(784 * pitch, t + .04, .045, .5, .4, pan);
+      bell(1175 * pitch, t + .1, .025, .45, .4, .15);
+    } else if (voice === 'venom') tone({ t: t + .03, f: 900, f2: 190, dur: .25, vol: .06, type: 'triangle', verb: .3, pan });
+    else if (voice === 'stone') tone({ t: t + .06, f: 100, f2: 45, dur: .24, vol: .13, verb: .15, pan });
+    else if (voice === 'ice') [1400, 2200, 2900].forEach((f, i) => bell(f * pitch, t + .04 + i * .035, .03, .32, .35, pan));
+    else if (voice === 'shadow' || voice === 'eclipse') {
+      tone({ t, f: 300 * pitch, f2: 90, dur: .32, vol: .07, type: 'triangle', verb: .45, pan });
+      bell(voice === 'eclipse' ? 660 : 1320, t + .1, .025, .4, .5, pan);
+    }
+  },
+  // The same creature signature accompanies both a hit and a narrowly avoided attack.
+  creatureAttack(t, { voice = 'leaf', pitch = 1 } = {}) {
+    const pan = .25;
+    if (voice === 'leaf') {
+      noise({ t, dur: .28, vol: .17, f: 1200 * pitch, f2: 3500, q: .8, verb: .15, pan });
+      tone({ t: t + .05, f: 160, f2: 80, dur: .2, vol: .06, pan });
+    } else if (voice === 'fire') {
+      noise({ t, dur: .42, vol: .2, f: 380, f2: 1800, q: .8, attack: .035, verb: .3, pan });
+      tone({ t, f: 85, f2: 140, dur: .3, vol: .06, pan });
+    } else if (voice === 'wind') noise({ t, dur: .4, vol: .18, f: 600, f2: 2400 * pitch, q: 1.6, attack: .05, verb: .4, pan });
+    else if (voice === 'stone') {
+      [0, .09].forEach(d => { noise({ t: t + d, dur: .07, vol: .15, f: 1100, q: 1.1, pan }); tone({ t: t + d, f: 140 * pitch, f2: 60, dur: .13, vol: .1, pan }); });
+    } else if (voice === 'horn') {
+      noise({ t, dur: .3, vol: .19, f: 300, f2: 1100, attack: .03, pan });
+      tone({ t, f: 150 * pitch, f2: 260, dur: .28, vol: .07, type: 'triangle', verb: .3, pan });
+    } else if (voice === 'ice') [1046, 1568, 2093].forEach((f, i) => bell(f * pitch, t + i * .07, .045, .5, .4, pan));
+    else if (voice === 'solar') {
+      tone({ t, f: 85, f2: 40, dur: .35, vol: .19, verb: .3, pan });
+      noise({ t: t + .06, dur: .25, vol: .14, type: 'lowpass', f: 480, verb: .3, pan });
+      bell(660 * pitch, t + .12, .035, .5, .3, pan);
+    } else if (voice === 'lunar') {
+      noise({ t, dur: .35, vol: .06, type: 'highpass', f: 5000, attack: .06, verb: .5, pan });
+      [1318, 1046, 784].forEach((f, i) => bell(f * pitch, t + i * .07, .035, .5, .5, pan));
+    }
+  },
+  weaponPower(t, { power = 'critical' } = {}) {
+    if (power === 'freeze') [1760, 2349, 3136].forEach((f, i) => bell(f, t + i * .055, .05, .65, .5, .25));
+    else if (power === 'venom') [0, .08, .16].forEach(d => tone({ t: t + d, f: 460, f2: 170, dur: .1, vol: .045, type: 'triangle', verb: .2, pan: .25 }));
+    else if (power === 'drain') [392, 587, 784].forEach((f, i) => tone({ t: t + i * .09, f, dur: .35, vol: .035, verb: .5, pan: .25 - i * .25 }));
+    else if (power === 'sunder') { noise({ t, dur: .17, vol: .12, f: 550, f2: 200, verb: .15, pan: .25 }); tone({ t, f: 90, f2: 40, dur: .18, vol: .08, pan: .25 }); }
+    else if (power === 'stagger') { tone({ t, f: 320, f2: 110, dur: .3, vol: .08, verb: .3, pan: .25 }); bell(920, t + .08, .035, .3, .3, .25); }
+    else { noise({ t, dur: .055, vol: .14, type: 'highpass', f: 3500, pan: .25 }); bell(1568, t, .06, .4, .35, .25); }
+  },
   impact(t, { target = 'monster', heavy = false } = {}) {
     const pan = target === 'monster' ? 0.25 : -0.25,
       f = rand(95, 125);

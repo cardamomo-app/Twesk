@@ -668,6 +668,7 @@ uiTest('a won fight plays out, celebrates, and pays its loot', async page => {
   await page.click('#app [data-action="fight"]');
   await page.waitFor(() => document.querySelector('.battle-modal'));
   await page.waitFor(() => document.querySelector('.battle-stage.impacted .spell-ember .spell-impact'));
+  assert.ok(await page.exists('.combat-attack.attack-unarmed .attack-impact'));
   await page.click('[data-action="skip-battle"]');
   await page.waitFor(() => document.querySelector('.victory-banner'));
   assert.equal(await page.text('#modal-title'), 'Victory!');
@@ -678,6 +679,42 @@ uiTest('a won fight plays out, celebrates, and pays its loot', async page => {
   await page.click('.battle-result [data-action="close-modal"]');
   await page.waitFor(() => /Next opponent arrives tomorrow/.test(document.querySelector('#app .monster-panel')?.textContent || ''));
 });
+
+uiTest('weapon and creature signatures render together with spells and disappear on the result', async page => {
+  const base = strong(); base.gold = 10000;
+  const results = E.SHOP.filter(i => i.type === 'weapon').map(weapon => {
+    const s = structuredClone(base); E.buy(s, weapon.id); s.monster.number = 5;
+    s.preparedSpell = 'starfall'; s.supplies.starfall = 1;
+    return E.fight(s, today(s), () => .6);
+  });
+  for (let n = 1; n <= 9; n++) {
+    const s = structuredClone(base); s.monster.number = n;
+    results.push(E.fight(s, today(s), () => .8));
+  }
+  await page.open({ save: base });
+  const checked = await page.evaluate(async results => {
+    const version = new URL(document.querySelector('script[src*="app.js"]').src).search;
+    const { app, view } = await import('./ui-core.js' + version);
+    const species = ['mossling','emberback','cloud-wisp','pebblejaw','duskhorn','frost-sprout','sunstone-golem','moonmoth'];
+    let frames = 0;
+    for (const result of results) {
+      for (const type of ['attack','hit']) {
+        const index = result.events.findIndex(e => e.type === type); if (index < 0) continue;
+        app.modal = { type:'battle', result, index, finished:false, impact:true, initialHP:result.initialHP, replay:true };
+        view.renderModal(); document.querySelector('#battle-stage').classList.add('impacted');
+        const id = type === 'attack' ? result.loadout.weapon || 'unarmed' : species[(result.monster-1)%8];
+        const effect = document.querySelector('.combat-attack.attack-' + id);
+        if (!effect?.querySelector('.attack-trail') || !effect.querySelector('.attack-impact')) throw Error('Missing ' + id);
+        if (result.spell && !document.querySelector('.combat-spell')) throw Error('Spell missing alongside weapon');
+        frames++;
+      }
+    }
+    return frames;
+  }, results);
+  assert.ok(checked >= 30, 'weapons and all creature species rendered');
+  await page.click('[data-action="skip-battle"]');
+  assert.ok(!(await page.exists('.combat-attack')), 'attack layers end with the encounter');
+}, { width:390, height:844 });
 
 uiTest('combat stays the same height through spell and equipment turns on desktop and mobile', async page => {
   const base = strong(); base.gold = 5000; base.monster.number = 5;

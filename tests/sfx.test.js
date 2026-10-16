@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createContext, runInContext } from 'node:vm';
+import { WEAPON_ATTACKS, MONSTER_ATTACKS } from '../combat-attack-art.js';
 
 // Exercise the public sound API against audio-device interruptions, with no browser or speakers.
 const source = readFileSync(new URL('../sfx.js', import.meta.url), 'utf8').replace(/\bexport /g, '') + '\nthis.sfx = { configureSfx, playSfx, stopSfx, SOUND_NAMES };';
@@ -45,6 +46,24 @@ test('all combat spell casts and impacts sound, respect mute, and stop with batt
   h.playSfx('spellCast', { spell:'ember', channel:'battle' });
   h.playSfx('spellImpact', { spell:'ward', mode:'guard', channel:'battle' });
   assert.equal(h.starts.length,before);
+});
+test('every weapon, creature, and activated weapon power produces its combat sound', () => {
+  const h = audioHarness();
+  for (const [name, profiles] of [['weaponSwing', Object.values(WEAPON_ATTACKS)], ['creatureAttack', MONSTER_ATTACKS]])
+    for (const { id, voice, pitch } of profiles) {
+      const before = h.starts.length;
+      h.playSfx(name, { voice, pitch, channel: 'battle' });
+      assert.ok(h.starts.length > before, id);
+    }
+  for (const power of ['freeze', 'venom', 'critical', 'drain', 'sunder', 'stagger']) {
+    const before = h.starts.length;
+    h.playSfx('weaponPower', { power, channel: 'battle' });
+    assert.ok(h.starts.length > before, power);
+  }
+  const before = h.starts.length; h.configureSfx({ muted: () => true });
+  for (const name of ['weaponSwing', 'creatureAttack', 'weaponPower']) h.playSfx(name, { channel: 'battle' });
+  assert.equal(h.starts.length, before);
+  const stopped = h.stops.length; h.stopSfx('battle'); assert.ok(h.stops.length > stopped);
 });
 test('game sounds request mixable audio, with no dependency on AudioSession support', () => {
   const session = { type: 'auto' }, h = audioHarness({ session });

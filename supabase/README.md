@@ -19,10 +19,14 @@ completed by the project owner on 2026-10-10.
 Supabase's default email sender only sends to project team addresses, with tight
 rate limits. This is sufficient for the owner's personal use. Before inviting
 other users, configure custom SMTP under Authentication → Emails. See
-https://supabase.com/docs/guides/auth/auth-smtp . Both Confirm signup and Magic
-link templates may optionally include `{{ .Token }}` to enable entering a code
-inside Twesk (helpful for installed mobile apps). Standard sign-in links work
-without template changes. Keep expiration/rate limits in place.
+https://supabase.com/docs/guides/auth/auth-smtp .
+
+Twesk uses sign-in links only. This Free project uses Supabase’s default SMTP service, which locks template customization for projects created after
+2026-06-03. Adding email codes would first require custom SMTP or a paid
+Supabase plan, followed by templates containing `{{ .Token }}` and restoring
+the in-app code form. See
+https://supabase.com/changelog/46599-changes-to-email-template-customisation-on-free-tier .
+Keep expiration/rate limits in place.
 
 ## Data and conflict handling
 

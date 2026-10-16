@@ -7165,7 +7165,7 @@ const modals = {
     let content;
     if (!syncConfigured()) content = `<p>${window.__TWESK_STANDALONE__ ? 'Open the online app to use account sync. You can import your backup there.' : 'Account sync is being connected. Your progress is still saved on this device.'}</p><a class="button primary" href="https://cardamomo-app.github.io/Twesk/">Open online Twesk</a>`;
     else if (user) content = `<p>Signed in as <strong>${esc(user.email)}</strong></p><div id="sync-details">${syncDetails()}</div><p class="form-help">Your adventure is private to your account. Sound, theme, and motion preferences stay on each device. Backups remain available in Settings.</p><div class="backup-actions"><button class="button primary" data-action="sync-now">Sync now</button><button class="button secondary" data-action="sync-signout">Sign out on this device</button></div><p class="form-help">Signing out keeps this device’s progress. Sign out on shared devices when you’re finished.</p>`;
-    else content = `<p>Sign in with the same email on each device. Your existing adventure stays here until you sign in.</p><form id="sync-email-form"><label>Email<input name="email" type="email" autocomplete="email" required maxlength="254" value="${esc(emailSent)}" autofocus></label><button class="button primary" ${authBusy ? 'disabled' : ''}>${authBusy ? 'Sending…' : emailSent ? 'Send another sign-in link' : 'Email me a sign-in link'}</button></form>${emailSent ? '<p class="form-help">Check your inbox and open the sign-in link on this device. If your email includes a code, you can enter it below.</p><form id="sync-code-form"><label>Email code<input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" required></label><button class="button secondary">Verify code</button></form>' : ''}`;
+    else content = `<p>Sign in with the same email on each device. Your existing adventure stays here until you sign in.</p><form id="sync-email-form"><label>Email<input name="email" type="email" autocomplete="email" required maxlength="254" value="${esc(emailSent)}" autofocus></label><button class="button primary" ${authBusy ? 'disabled' : ''}>${authBusy ? 'Sending…' : emailSent ? 'Send another sign-in link' : 'Email me a sign-in link'}</button></form>${emailSent ? '<p class="form-help">Check your inbox and open the sign-in link on this device.</p>' : ''}`;
     return modalShell('Your adventure, everywhere', `<div class="form-body sync-body">${content}<p id="sync-auth-message" class="form-help" role="status">${esc(authMessage)}</p></div>`);
   },
   'sync-conflict'() {
@@ -7212,14 +7212,6 @@ const forms = {
       emailSent = email; authMessage = 'Sign-in email sent. The link expires after an hour.';
     } catch { authMessage = 'Couldn’t send a sign-in email. Check the address and connection, then try again in a minute.'; }
     authBusy = false; if (app.modal?.type === 'sync') view.renderModal();
-  },
-  async 'sync-code-form'(data) {
-    if (!client || authBusy || !emailSent) return;
-    authBusy = true;
-    const { error } = await client.auth.verifyOtp({ email: emailSent, token: String(data.get('code')).trim(), type: 'email' });
-    authBusy = false;
-    authMessage = error ? 'That code is invalid or expired. Request a new sign-in email.' : '';
-    if (app.modal?.type === 'sync') view.renderModal();
   },
 };
 function installSync() {

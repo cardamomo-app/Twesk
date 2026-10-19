@@ -1,8 +1,8 @@
 // Task list, project filter, task dialog, and task actions.
-import * as E from './engine.js?v=0.27.0';
-import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.27.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.27.0';
-import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.27.0';
+import * as E from './engine.js?v=0.28.0';
+import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.28.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.28.0';
+import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.28.0';
 
 const inProject = t => !app.taskProject || E.tags(t.title).includes(app.taskProject);
 // Open tasks per project tag, in order of first appearance.
@@ -88,7 +88,7 @@ export const modals = {
         <fieldset class="task-repeat-picker"><legend>${icon('repeat')}Repeat</legend><div class="task-repeat-options">${repeats}</div></fieldset>
         ${!t?.done ? `<fieldset class="task-step-editor"><legend>Steps</legend><div id="task-step-fields">${(t?.steps || []).map(stepEditor).join('')}</div><button type="button" class="button secondary subtle add-step" data-action="add-task-step">${icon('plus')}Add a step</button></fieldset>` : ''}
         ${t?.inbox ? '<label class="checkbox-label"><input type="checkbox" name="sort" checked>Move out of the task inbox</label>' : ''}
-        <div class="form-actions task-dialog-actions">${t ? `<span class="task-form-secondary"><button type="button" class="icon-button task-delete" data-action="delete-task" data-id="${t.id}" aria-label="Delete task" title="Delete task">${icon('trash')}</button>${!t.done ? `<button type="button" class="button secondary subtle" data-action="task-to-vault" data-id="${t.id}" title="Take it off your list and keep it in the Vault to look into later">${icon('vault')}To Vault</button>` : ''}</span>` : '<span></span>'}<button class="button primary" type="submit">${t ? 'Save changes' : 'Add task'}${icon(t ? 'check' : 'plus')}</button></div>
+        <div class="form-actions task-dialog-actions">${t ? `<span class="task-form-secondary"><button type="button" class="icon-button task-delete" data-action="delete-task" data-id="${t.id}" aria-label="Delete task" title="Delete task">${icon('trash')}</button>${!t.done ? `<button type="button" class="button secondary subtle" data-action="task-to-vault" data-id="${t.id}" title="Take it off your list and keep it in the Vault to look into later">${icon('vault')}To Vault</button>` : ''}</span>` : '<span></span>'}<button class="button primary" type="submit" aria-keyshortcuts="Meta+Enter Control+Enter" title="Confirm (⌘Enter / Ctrl+Enter)">${t ? 'Save changes' : 'Add task'}${icon(t ? 'check' : 'plus')}</button></div>
       </form>`,
       'task-modal',
     );

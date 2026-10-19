@@ -89,7 +89,7 @@ After changing app files, run `npm run build` to regenerate `sw.js` (its offline
 - Name and timezone settings (new saves start in this device's timezone; Settings offers a one-click switch if they differ), light/dark themes, sound mute, reduced motion, keyboard capture, and local backups.
 - Confirmed full reset with recoverable previous progress, plus a self-contained HTML build for opening without a local server.
 
-Quick capture: **Command/Ctrl-K**. Vault: **Command/Ctrl-J**. Escape closes dialogs. Reward sounds use a local audio synthesizer. Where supported, the app requests a mixable ambient audio session so effects can play alongside music or video. A scheduled chime can resume or replace an interrupted audio context without waiting for a click; Safari may still restrict audio when a PWA is backgrounded or the device is locked.
+Quick capture: **Command/Ctrl-K**. Vault: **Command/Ctrl-J**. Confirm a task or Vault entry: **Command/Ctrl-Enter** (also when editing). Plain Enter keeps its normal behavior for new lines and hashtag suggestions. Escape closes dialogs. Reward sounds use a local audio synthesizer. Where supported, the app requests a mixable ambient audio session so effects can play alongside music or video. A scheduled chime can resume or replace an interrupted audio context without waiting for a click; Safari may still restrict audio when a PWA is backgrounded or the device is locked.
 
 ## Verify
 

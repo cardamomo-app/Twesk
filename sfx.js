@@ -231,11 +231,12 @@ function comboStep() {
 }
 
 const SOUNDS = {
-  // A tiny wooden tap and soft pip: saved, without the shimmer or melody of a reward.
+  // Two warm, overlapping notes in a major third: a gentle acknowledgment, with no error-like pitch drop.
   taskCreated(t) {
-    tone({ t, f: 360, f2: 150, dur: .045, vol: .055, type: 'triangle', verb: 0 });
-    noise({ t, dur: .012, vol: .022, type: 'bandpass', f: 1000, q: .7, verb: 0 });
-    tone({ t: t + .04, f: 720, f2: 800, dur: .085, vol: .045, verb: 0 });
+    tone({ t, f: 349.23, dur: .18, vol: .09, attack: .012, verb: .12 });
+    tone({ t, f: 698.46, dur: .065, vol: .014, attack: .008, type: 'triangle', verb: .08 });
+    tone({ t: t + .075, f: 440, dur: .24, vol: .085, attack: .012, verb: .12 });
+    tone({ t: t + .075, f: 880, dur: .09, vol: .012, attack: .008, type: 'triangle', verb: .08 });
   },
   // A dry little ratchet and spring, only when the duration crosses a dial notch.
   wind(t, { direction = 1 } = {}) {

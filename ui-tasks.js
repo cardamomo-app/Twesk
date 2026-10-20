@@ -1,10 +1,11 @@
 // Task list, project filter, task dialog, and task actions.
-import * as E from './engine.js?v=0.28.0';
-import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.28.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.28.0';
-import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.28.0';
+import * as E from './engine.js?v=0.29.0';
+import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.29.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.29.0';
+import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.29.0';
 
-const inProject = t => !app.taskProject || E.tags(t.title).includes(app.taskProject);
+const NO_TAG = '__untagged__';
+const inProject = t => !app.taskProject || (app.taskProject === NO_TAG ? E.tags(t.title).length === 0 : E.tags(t.title).includes(app.taskProject));
 // Open tasks per project tag, in order of first appearance.
 function projectCounts() {
   const counts = new Map();
@@ -14,11 +15,12 @@ function projectCounts() {
 }
 export function renderProjects() {
   const counts = projectCounts();
-  if (app.taskProject && !counts.has(app.taskProject)) app.taskProject = null;
-  if (!counts.size) return '';
+  if (app.taskProject && app.taskProject !== NO_TAG && !counts.has(app.taskProject)) app.taskProject = null;
+  if (!app.state.tasks.length) return '';
+  const untagged = app.state.tasks.filter(t => !t.done && E.tags(t.title).length === 0).length;
   const chip = (project, label, count) =>
     `<button class="project-chip ${app.taskProject === project ? 'selected' : ''}" data-action="task-project" data-project="${esc(project || '')}" aria-pressed="${app.taskProject === project}">${esc(label)}${count === null ? '' : `<span>${count}</span>`}</button>`;
-  return `<div class="project-chips" role="group" aria-label="Filter tasks by project">${chip(null, 'All', null)}${[...counts].map(([tag, n]) => chip(tag, tag, n)).join('')}</div>`;
+  return `<div class="project-chips" role="group" aria-label="Filter tasks by project">${chip(null, 'All', null)}${chip(NO_TAG, 'No tag', untagged)}${[...counts].map(([tag, n]) => chip(tag, tag, n)).join('')}${counts.size ? `<button class="icon-button project-manage" data-action="manage-task-tags" aria-label="Manage task tags" title="Manage task tags">${icon('tag')}</button>` : ''}</div>`;
 }
 function dueLabel(due) {
   const days = E.daysBetween(today(), due);
@@ -72,6 +74,13 @@ function stepEditor(step = { id: '', title: '' }) {
   return `<div class="step-editor-row"><input type="hidden" name="stepId" value="${esc(step.id)}"><input name="stepTitle" aria-label="Step" maxlength="160" placeholder="A small next step" value="${esc(step.title)}"><button type="button" class="icon-button" data-action="remove-task-step" aria-label="Remove step">${icon('close')}</button></div>`;
 }
 export const modals = {
+  'task-tags'() {
+    const rows = [...projectCounts()].map(([tag, open]) => {
+      const total = app.state.tasks.filter(t => E.tags(t.title).includes(tag)).length;
+      return `<div class="task-tag-row" role="listitem"><span class="task-tag-mark" aria-hidden="true">${icon('tag')}</span><span class="task-tag-info"><strong>${esc(tag)}</strong><small>${open} open · ${total - open} completed</small></span><button class="button secondary task-tag-remove" data-action="remove-task-tag" data-tag="${esc(tag)}" aria-label="Remove ${esc(tag)} from tasks">${icon('trash')}Remove</button></div>`;
+    }).join('');
+    return modalShell('Task tags', `<div class="form-body task-tag-manager"><p>Remove a tag from all its tasks, including completed ones. Your tasks stay; Vault entries keep their tags.</p><div class="task-tag-list" role="list" aria-label="Task tags">${rows || '<p class="task-tag-empty">No task tags to manage.</p>'}</div></div>`, 'task-tags-modal');
+  },
   task() {
     const t = app.state.tasks.find(t => t.id === app.modal.id);
     const tiers = Object.entries(E.TASK_GOLD)
@@ -132,10 +141,26 @@ export const actions = {
     view.render();
     $(`.project-chip[data-project="${CSS.escape(app.taskProject || '')}"]`)?.focus();
   },
+  'manage-task-tags'() {
+    openModal({ type: 'task-tags' });
+  },
+  'remove-task-tag'(b) {
+    const tag = b.dataset.tag;
+    const index = [...b.closest('.task-tag-list').querySelectorAll('[data-action="remove-task-tag"]')].indexOf(b);
+    const changes = commit(() => E.removeTaskTag(app.state, tag));
+    if (!changes?.length) return;
+    const buttons = [...document.querySelectorAll('#overlay [data-action="remove-task-tag"]')];
+    (buttons[Math.min(index, buttons.length - 1)] || $('#overlay [data-action="close-modal"]'))?.focus();
+    toast(`${tag} removed from ${changes.length} ${changes.length === 1 ? 'task' : 'tasks'}.`, () => {
+      const restored = commit(() => E.undoTaskTagRemoval(app.state, changes));
+      if (restored) toast(`${tag} restored.`);
+    });
+  },
   'new-task'() {
     // In a project view, new tasks start in that project.
-    openModal({ type: 'task', prefill: app.taskProject ? ` ${app.taskProject}` : '' });
-    if (app.taskProject) requestAnimationFrame(() => $('#task-form [name="title"]')?.setSelectionRange(0, 0));
+    const project = app.taskProject && app.taskProject !== NO_TAG ? app.taskProject : null;
+    openModal({ type: 'task', prefill: project ? ` ${project}` : '' });
+    if (project) requestAnimationFrame(() => $('#task-form [name="title"]')?.setSelectionRange(0, 0));
   },
   'edit-task'(b, { id }) {
     openModal({ type: 'task', id });

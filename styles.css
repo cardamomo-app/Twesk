@@ -275,6 +275,20 @@ button.monster-scene:hover{background:color-mix(in srgb,var(--surface) 65%,trans
 .project-chip.selected{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
 .project-chip span{font-size:9px;color:var(--muted)}
 .project-chip.selected span{color:var(--accent)}
+.project-manage{width:26px;height:25px;margin-left:auto;border:1px solid var(--line);border-radius:8px}
+.project-manage .icon{width:14px;height:14px}
+.task-tag-manager>p{font-size:12px;line-height:1.8;color:var(--secondary)}
+.task-tag-list{margin-top:18px}
+.task-tag-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.task-tag-row:last-child{border-bottom:0}
+.task-tag-mark{display:flex;align-items:center;justify-content:center;flex:0 0 34px;height:34px;background:var(--accent-soft);color:var(--accent);border-radius:10px}
+.task-tag-mark .icon{width:17px;height:17px}
+.task-tag-info{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.task-tag-info strong{font-size:12px;font-weight:600;overflow-wrap:anywhere}
+.task-tag-info small{font-size:10px;color:var(--muted)}
+.task-tag-remove{flex-shrink:0;padding:7px 9px;min-height:32px;font-size:10px}
+.task-tag-remove .icon{width:13px;height:13px}
+.task-tag-empty{font-size:12px;color:var(--muted);padding:16px 0}
 .task-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .task-tag{color:var(--accent);font-size:inherit;padding:0;border-radius:3px}
 .task-tag:hover{text-decoration:underline}

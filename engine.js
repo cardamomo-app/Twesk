@@ -1,6 +1,6 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.28.0';
-import {validHabitIcon} from './habit-icons.js?v=0.28.0';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.29.0';
+import {validHabitIcon} from './habit-icons.js?v=0.29.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -149,6 +149,30 @@ export function undoHarm(s, id, logId, today) {
 }
 export const TAG_PATTERN = /#[\p{L}\p{N}_-]+/gu;
 export const tags = text => [...new Set((text.match(TAG_PATTERN) || []).map(t => t.toLowerCase()))];
+// Remove a project label without changing task identity, rewards, order, or Vault entries.
+export function removeTaskTag(s, tag) {
+  tag = String(tag || '').toLowerCase();
+  if (tags(tag).length !== 1 || tags(tag)[0] !== tag) return [];
+  const changes = [];
+  for (const task of s.tasks) {
+    if (!tags(task.title).includes(tag)) continue;
+    const before = task.title;
+    const after = before.replace(TAG_PATTERN, match => match.toLowerCase() === tag ? '' : match)
+      .replace(/[ \t]{2,}/g, ' ').trim() || 'Untitled task';
+    task.title = after;
+    changes.push({ id: task.id, before, after });
+  }
+  return changes;
+}
+export function undoTaskTagRemoval(s, changes) {
+  let restored = 0;
+  for (const change of changes) {
+    const task = s.tasks.find(t => t.id === change.id);
+    // A later edit or deletion takes precedence over an older Undo action.
+    if (task && task.title === change.after) { task.title = change.before; restored++; }
+  }
+  return restored;
+}
 // Hashtag autocomplete: every tag in tasks and non-archived notes, most used first.
 export function knownTags(s) {
   const counts = new Map();

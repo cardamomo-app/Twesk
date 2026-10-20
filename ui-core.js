@@ -1,7 +1,7 @@
 // Shared interface foundation: the app store, saving, small HTML helpers, and toasts.
-import * as E from './engine.js?v=0.28.0';
-import { goldArt } from './art.js?v=0.28.0';
-import { HABIT_ICONS } from './habit-icons.js?v=0.28.0';
+import * as E from './engine.js?v=0.29.0';
+import { goldArt } from './art.js?v=0.29.0';
+import { HABIT_ICONS } from './habit-icons.js?v=0.29.0';
 export const $ = s => document.querySelector(s);
 export const $$ = s => [...document.querySelectorAll(s)];
 export const esc = v =>
@@ -92,6 +92,7 @@ const icons = {
   chevron: '<path d="m9 5 7 7-7 7"/>',
   down: '<path d="m6 9 6 6 6-6"/>',
   more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+  tag: '<path d="M3 3h8l10 10-8 8L3 11Z"/><circle cx="7.5" cy="7.5" r="1"/>',
   vault: '<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M3 5h18M9 10h6m-3 0v5"/>',
   moon: '<path d="M20 14a8 8 0 0 1-10-10 8 8 0 1 0 10 10Z"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/>',

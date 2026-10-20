@@ -101,10 +101,10 @@ uiTest('recurring tasks and #project filters', async page => {
   };
   await addTask('Water the plants #home', 'daily');
   await addTask('Read two papers #thesis');
-  // Chips follow the task list (newest first), after "All".
+  // Project tags follow the built-in filters in task-list order (newest first).
   assert.deepEqual(
     await page.evaluate(() => [...document.querySelectorAll('#app .project-chip')].map(c => c.firstChild.textContent)),
-    ['All', '#thesis', '#home'],
+    ['All', 'No tag', '#thesis', '#home'],
   );
   await page.click('#app .project-chip[data-project="#thesis"]');
   assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#app .task-title')].map(t => t.textContent)), ['Read two papers #thesis']);

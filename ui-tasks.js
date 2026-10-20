@@ -1,8 +1,8 @@
 // Task list, project filter, task dialog, and task actions.
-import * as E from './engine.js?v=0.29.0';
-import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.29.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.29.0';
-import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.29.0';
+import * as E from './engine.js?v=0.30.0';
+import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.30.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.30.0';
+import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.30.0';
 
 const NO_TAG = '__untagged__';
 const inProject = t => !app.taskProject || (app.taskProject === NO_TAG ? E.tags(t.title).length === 0 : E.tags(t.title).includes(app.taskProject));
@@ -206,6 +206,7 @@ export const forms = {
   'task-form'(data) {
     const title = data.get('title').trim();
     if (!title) return;
+    const creating = !app.modal.id;
     const r = commit(() => {
       const task = E.saveTask(
         app.state,
@@ -222,6 +223,7 @@ export const forms = {
       return task;
     });
     if (r) {
+      if (creating) sound('taskCreated');
       if (r.steps?.length) app.openTaskSteps.add(r.id);
       closeModal();
       view.render();

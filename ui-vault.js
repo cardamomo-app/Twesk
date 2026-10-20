@@ -1,11 +1,11 @@
 // The Vault: notes, journal entries, quick capture, and recovery reflections.
-import * as E from './engine.js?v=0.29.0';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.29.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.29.0';
-import { isJournalExport, notesToText } from './notes-export.js?v=0.29.0';
-import { rewardEffect, sound } from './ui-effects.js?v=0.29.0';
-import { vaultArt } from './vault-art.js?v=0.29.0';
-import { VAULT_SECTIONS, inVaultSection, needsReview, vaultTone } from './vault-model.js?v=0.29.0';
+import * as E from './engine.js?v=0.30.0';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.30.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.30.0';
+import { isJournalExport, notesToText } from './notes-export.js?v=0.30.0';
+import { rewardEffect, sound } from './ui-effects.js?v=0.30.0';
+import { vaultArt } from './vault-art.js?v=0.30.0';
+import { VAULT_SECTIONS, inVaultSection, needsReview, vaultTone } from './vault-model.js?v=0.30.0';
 const noteDate = n =>
   new Intl.DateTimeFormat('en', {
     month: 'short',
@@ -121,7 +121,8 @@ const reviewQueue = () =>
     .filter(n => needsReview(n) && !app.modal.skipped.includes(n.id))
     .sort((a, b) => a.created.localeCompare(b.created));
 function convert(id, sourceRect) {
-  const wasInbox = needsReview(app.state.notes.find(n => n.id === id) || {});
+  const note = app.state.notes.find(n => n.id === id);
+  const wasInbox = needsReview(note || {}), creating = !note?.taskId;
   const r = commit(() => {
     const task = E.convertNote(app.state, id);
     const reward = wasInbox ? E.rewardReview(app.state, today()) : 0;
@@ -129,7 +130,8 @@ function convert(id, sourceRect) {
   });
   if (r) {
     toast('Sent to your task inbox.');
-    if (r.reward) celebrateReview(r.reward, sourceRect); else sound('note');
+    if (r.task && creating) sound('taskCreated');
+    if (r.reward) celebrateReview(r.reward, sourceRect);
   }
 }
 function performReview(id, status, sourceRect) {
@@ -326,7 +328,7 @@ export const forms = {
   'capture-form'(data) {
     const text = data.get('text').trim();
     if (!text) return;
-    const previous = app.modal;
+    const previous = app.modal, creatingTask = previous.kind === 'task' && !previous.id;
     const sourceRect = $('#capture-gold').getBoundingClientRect();
     const r = commit(() => {
       const result = E.saveNote(
@@ -339,13 +341,14 @@ export const forms = {
         },
         today(),
       );
-      if (previous.kind === 'task' && !previous.id) E.convertNote(app.state, result.note.id);
+      if (creatingTask) E.convertNote(app.state, result.note.id);
       return result;
     });
     if (r) {
       if (r.note.kind === 'journal') app.vaultFilter = 'journal';
       closeModal();
-      if (r.reward) rewardEffect(sourceRect, r.reward); else sound('note');
+      if (creatingTask) sound('taskCreated');
+      if (r.reward) rewardEffect(sourceRect, r.reward); else if (!creatingTask) sound('note');
       toast(
         previous.recovery
           ? `Reflection saved. +${r.healed} HP${r.reward ? ` · +${r.reward} gold` : ''}.`

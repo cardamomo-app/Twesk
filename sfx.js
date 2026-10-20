@@ -231,6 +231,12 @@ function comboStep() {
 }
 
 const SOUNDS = {
+  // A tiny wooden tap and soft pip: saved, without the shimmer or melody of a reward.
+  taskCreated(t) {
+    tone({ t, f: 360, f2: 150, dur: .045, vol: .055, type: 'triangle', verb: 0 });
+    noise({ t, dur: .012, vol: .022, type: 'bandpass', f: 1000, q: .7, verb: 0 });
+    tone({ t: t + .04, f: 720, f2: 800, dur: .085, vol: .045, verb: 0 });
+  },
   // A dry little ratchet and spring, only when the duration crosses a dial notch.
   wind(t, { direction = 1 } = {}) {
     noise({ t, dur: .028, vol: .075, type: 'bandpass', f: direction > 0 ? 2300 : 1700, q: 1.1, verb: 0 });

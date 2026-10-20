@@ -1,5 +1,12 @@
 // Saved hues keep project identities stable; new tags draw from unused colors first.
-export const TAG_HUES = [8, 32, 55, 88, 123, 155, 181, 209, 238, 269, 301, 332];
+export const TAG_COLORS = [
+  { hue: 8, name: 'Coral' }, { hue: 32, name: 'Amber' }, { hue: 55, name: 'Gold' },
+  { hue: 88, name: 'Lime' }, { hue: 123, name: 'Leaf' }, { hue: 155, name: 'Mint' },
+  { hue: 181, name: 'Teal' }, { hue: 209, name: 'Blue' }, { hue: 238, name: 'Indigo' },
+  { hue: 269, name: 'Violet' }, { hue: 301, name: 'Orchid' }, { hue: 332, name: 'Rose' },
+];
+export const TAG_HUES = TAG_COLORS.map(color => color.hue);
+const hueDistance = (a, b) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
 const canonicalTag = tag => typeof tag === 'string' && /^#[\p{L}\p{N}\p{M}_-]+$/u.test(tag) && tag === tag.toLowerCase();
 function hashTag(tag) {
   let hash = 2166136261;
@@ -26,6 +33,25 @@ export function rememberTagColors(state, tagList, { legacy = false, random = Mat
       available = unused.filter(hue => gap(hue) === largest);
       if (!available.length) available = TAG_HUES;
     }
+    if (!legacy && used.size) {
+      const recent = Object.values(state.tagColors).slice(-2), last = recent.at(-1), previous = recent.length > 1 ? recent[0] : null;
+      const distinct = hue => hueDistance(hue, last) >= 90 && (previous === null || hueDistance(hue, previous) >= 45);
+      let choices = available.filter(distinct);
+      if (!choices.length) {
+        // Expand rather than finish a palette with two neighboring shades in a row.
+        const unused = Array.from({ length: 360 }, (_, hue) => hue).filter(hue => !used.has(hue));
+        const pool = unused.length ? unused : TAG_HUES;
+        choices = pool.filter(distinct);
+        if (!choices.length) choices = pool.filter(hue => hueDistance(hue, last) >= 90);
+        if (!choices.length) {
+          const farthest = Math.max(...pool.map(hue => hueDistance(hue, last)));
+          choices = pool.filter(hue => hueDistance(hue, last) === farthest);
+        }
+      }
+      const separation = hue => Math.min(...[...used].map(other => hueDistance(hue, other)));
+      const best = Math.max(...choices.map(separation));
+      available = choices.filter(hue => separation(hue) >= best - 8);
+    }
     const index = legacy ? hashTag(tag) % available.length : Math.floor(random() * available.length);
     state.tagColors[tag] = available[index];
     used.add(available[index]);
@@ -35,4 +61,11 @@ export function rememberTagColors(state, tagList, { legacy = false, random = Mat
 export function tagHue(state, tag) {
   const key = tag.toLowerCase();
   return state.tagColors?.[key] ?? TAG_HUES[hashTag(key) % TAG_HUES.length];
+}
+export function setTagColor(state, tag, hue) {
+  const key = String(tag || '').toLowerCase();
+  if (!canonicalTag(key) || !Number.isInteger(hue) || hue < 0 || hue >= 360) throw new Error('Choose a valid tag color.');
+  state.tagColors ??= {};
+  state.tagColors[key] = hue;
+  return hue;
 }

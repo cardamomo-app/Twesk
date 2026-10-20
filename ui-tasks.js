@@ -1,8 +1,9 @@
 // Task list, project filter, task dialog, and task actions.
-import * as E from './engine.js?v=0.32.0';
-import { $, app, coin, esc, icon, iconButton, modalShell, tagStyle, toast, today, view } from './ui-core.js?v=0.32.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.32.0';
-import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.32.0';
+import * as E from './engine.js?v=0.33.0';
+import { $, app, coin, esc, icon, iconButton, modalShell, tagStyle, toast, today, view } from './ui-core.js?v=0.33.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.33.0';
+import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.33.0';
+import { TAG_COLORS } from './tag-colors.js?v=0.33.0';
 
 const NO_TAG = '__untagged__';
 const inProject = t => !app.taskProject || (app.taskProject === NO_TAG ? E.tags(t.title).length === 0 : E.tags(t.title).includes(app.taskProject));
@@ -75,11 +76,14 @@ function stepEditor(step = { id: '', title: '' }) {
 }
 export const modals = {
   'task-tags'() {
-    const rows = [...projectCounts()].map(([tag, open]) => {
+    const rows = [...projectCounts()].map(([tag, open], index) => {
       const total = app.state.tasks.filter(t => E.tags(t.title).includes(tag)).length;
-      return `<div class="task-tag-row tag-colored" ${tagStyle(tag)} role="listitem"><span class="task-tag-mark" aria-hidden="true">${icon('tag')}</span><span class="task-tag-info"><strong>${esc(tag)}</strong><small>${open} open · ${total - open} completed</small></span><button class="button secondary task-tag-remove" data-action="remove-task-tag" data-tag="${esc(tag)}" aria-label="Remove ${esc(tag)} from tasks">${icon('trash')}Remove</button></div>`;
+      const hue = E.tagHue(app.state, tag), expanded = app.modal.colorTag === tag;
+      const choices = TAG_COLORS.some(color => color.hue === hue) ? TAG_COLORS : [{ hue, name: 'Current' }, ...TAG_COLORS];
+      const palette = expanded ? `<div class="task-tag-palette" id="tag-palette-${index}" role="group" aria-label="Color for ${esc(tag)}">${choices.map(color => `<button class="tag-color-swatch tag-colored ${color.hue === hue ? 'selected' : ''}" style="--tag-hue:${color.hue}" data-action="set-task-tag-color" data-tag="${esc(tag)}" data-hue="${color.hue}" aria-label="${color.name} for ${esc(tag)}" aria-pressed="${color.hue === hue}" title="${color.name}"><span>${color.hue === hue ? icon('check') : ''}</span></button>`).join('')}</div>` : `<div id="tag-palette-${index}" hidden></div>`;
+      return `<div class="task-tag-entry" role="listitem"><div class="task-tag-row tag-colored" ${tagStyle(tag)}><button class="task-tag-mark task-tag-color" data-action="choose-task-tag-color" data-tag="${esc(tag)}" aria-label="Change color for ${esc(tag)}" title="Change color for ${esc(tag)}" aria-expanded="${expanded}" aria-controls="tag-palette-${index}">${icon('tag')}</button><span class="task-tag-info"><strong>${esc(tag)}</strong><small>${open} open · ${total - open} completed</small></span><button class="button secondary task-tag-remove" data-action="remove-task-tag" data-tag="${esc(tag)}" aria-label="Remove ${esc(tag)} from tasks">${icon('trash')}Remove</button></div>${palette}</div>`;
     }).join('');
-    return modalShell('Task tags', `<div class="form-body task-tag-manager"><p>Remove a tag from all its tasks, including completed ones. Your tasks stay; Vault entries keep their tags.</p><div class="task-tag-list" role="list" aria-label="Task tags">${rows || '<p class="task-tag-empty">No task tags to manage.</p>'}</div></div>`, 'task-tags-modal');
+    return modalShell('Task tags', `<div class="form-body task-tag-manager"><p>Click a tag’s color to change it. Removing a tag clears it from open and completed tasks; Vault entries keep their tags.</p><div class="task-tag-list" role="list" aria-label="Task tags">${rows || '<p class="task-tag-empty">No task tags to manage.</p>'}</div></div>`, 'task-tags-modal');
   },
   task() {
     const t = app.state.tasks.find(t => t.id === app.modal.id);
@@ -144,8 +148,20 @@ export const actions = {
   'manage-task-tags'() {
     openModal({ type: 'task-tags' });
   },
+  'choose-task-tag-color'(b) {
+    const tag = b.dataset.tag;
+    app.modal.colorTag = app.modal.colorTag === tag ? null : tag;
+    view.renderModal();
+    $(`#overlay [data-action="choose-task-tag-color"][data-tag="${CSS.escape(tag)}"]`)?.focus();
+  },
+  'set-task-tag-color'(b) {
+    const tag = b.dataset.tag, hue = Number(b.dataset.hue);
+    const result = commit(() => E.setTagColor(app.state, tag, hue));
+    if (result !== undefined) $(`#overlay [data-action="set-task-tag-color"][data-tag="${CSS.escape(tag)}"][data-hue="${hue}"]`)?.focus();
+  },
   'remove-task-tag'(b) {
     const tag = b.dataset.tag;
+    if (app.modal.colorTag === tag) app.modal.colorTag = null;
     const index = [...b.closest('.task-tag-list').querySelectorAll('[data-action="remove-task-tag"]')].indexOf(b);
     const changes = commit(() => E.removeTaskTag(app.state, tag));
     if (!changes?.length) return;

@@ -1,6 +1,8 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.31.0';
-import {validHabitIcon} from './habit-icons.js?v=0.31.0';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.32.0';
+import {validHabitIcon} from './habit-icons.js?v=0.32.0';
+import {rememberTagColors,validTagColors} from './tag-colors.js?v=0.32.0';
+export {tagHue} from './tag-colors.js?v=0.32.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -45,7 +47,7 @@ export function freshState() {
       habit('Check in with someone', 'heart', 20), habit('Do something kind', 'heart', 10),
       habit('Mindless scrolling', 'harm', 3), habit('Fast food', 'harm', 7),
     ],
-    notes: [], noteGold: {}, reviewDates: [], inventory: [], equipped: { weapon: null, armor: null, helmet: null, shield: null, boots: null }, potions: 0,
+    notes: [], tagColors: {}, noteGold: {}, reviewDates: [], inventory: [], equipped: { weapon: null, armor: null, helmet: null, shield: null, boots: null }, potions: 0,
     supplies: {}, preparedSpell: null, tonic: null, activePet: null, wardrobe: [], history: {}, ambience: null, petHat: null,
     progress: createProgress(),
     monster: { number: 1, defeatedOn: null }, battles: [], pendingRecovery: false,
@@ -219,6 +221,7 @@ export function saveTask(s, { id, title, tier, repeat = null, sort = false, step
   if (!task?.done && !Object.hasOwn(TASK_GOLD, tier)) throw new Error('Choose a task size.');
   if (!task) { task = { id: uid(), title, tier, done: false, earned: 0 }; s.tasks.unshift(task); }
   task.title = title;
+  rememberTagColors(s, tags(title));
   if (!task.done && nextSteps !== undefined) {
     const previous = new Map((task.steps || []).map(step => [step.id, step.done]));
     task.steps = nextSteps.map(step => ({ ...step, done: previous.get(step.id) ?? false }));
@@ -332,6 +335,7 @@ export function saveNote(s, { id, text, kind = 'note', recovery = false }, today
     progress.notes++;if(note.kind==='journal')progress.journals++;
   }
   note.text = text.trim();
+  rememberTagColors(s, tags(note.text));
   const reward = captureReward(s, { id: note.id, text }, today);
   note.paid += reward; s.gold += reward; s.noteGold[today] = (s.noteGold[today] || 0) + reward;
   let healed = 0;
@@ -352,6 +356,7 @@ export function togglePin(s, id) {
 export function convertNote(s, id, tier = 'quick') {
   const note = s.notes.find(n => n.id === id);
   if (!note) throw new Error('Note not found.');
+  rememberTagColors(s, tags(note.taskTitle || note.text));
   if (note.taskId) return s.tasks.find(t => t.id === note.taskId) || null;
   // A task that was moved back to the Vault returns with its original title, size, and repeat.
   if (note.taskTitle) {
@@ -824,5 +829,8 @@ export function validateState(value) {
   if(!s.history||typeof s.history!=='object'||Array.isArray(s.history)||Object.keys(s.history).length>HISTORY_DAYS)fail();
   for(const [day,r] of Object.entries(s.history))if(!date(day)||!r||typeof r!=='object'||!integer(r.tasks,0,10000)||!integer(r.gold,0,1e6)||!Array.isArray(r.levels)||r.levels.length>40||!r.levels.every(c=>CATEGORIES.includes(c)))fail();
   s.revision=integer(s.revision)?s.revision:0;
+  if(s.tagColors===undefined)s.tagColors={};
+  if(!validTagColors(s.tagColors))fail();
+  rememberTagColors(s, [...s.tasks.map(t=>t.title), ...s.notes.flatMap(n=>[n.text,n.taskTitle||''])].flatMap(tags), {legacy:true});
   return s;
 }

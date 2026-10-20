@@ -1,7 +1,7 @@
 // Shared interface foundation: the app store, saving, small HTML helpers, and toasts.
-import * as E from './engine.js?v=0.31.0';
-import { goldArt } from './art.js?v=0.31.0';
-import { HABIT_ICONS } from './habit-icons.js?v=0.31.0';
+import * as E from './engine.js?v=0.32.0';
+import { goldArt } from './art.js?v=0.32.0';
+import { HABIT_ICONS } from './habit-icons.js?v=0.32.0';
 export const $ = s => document.querySelector(s);
 export const $$ = s => [...document.querySelectorAll(s)];
 export const esc = v =>
@@ -10,6 +10,7 @@ export const esc = v =>
     c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
   );
 export const KEY = 'twesk.v1';
+export const tagStyle = tag => `style="--tag-hue:${E.tagHue(app.state, tag)}"`;
 
 // View state that resets with a new adventure.
 export function viewDefaults() {

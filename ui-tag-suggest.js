@@ -1,8 +1,8 @@
 // Hashtag autocomplete for task titles, captured notes, and Vault search.
 // Typing "#" plus a letter or two suggests hashtags already used in tasks and notes, most used first.
 // ↑/↓ choose, Enter or Tab accept, Escape closes the list (without closing the dialog); clicks work too.
-import * as E from './engine.js?v=0.31.0';
-import { app, esc } from './ui-core.js?v=0.31.0';
+import * as E from './engine.js?v=0.32.0';
+import { app, esc, tagStyle } from './ui-core.js?v=0.32.0';
 
 const FIELDS = '[data-tag-suggest]';
 let field = null,
@@ -75,7 +75,7 @@ function render(token) {
   box.innerHTML = items
     .map(
       ({ tag, count }, i) =>
-        `<div class="tag-option ${i === active ? 'active' : ''}" role="option" id="tag-option-${i}" aria-selected="${i === active}" data-index="${i}"><span>${esc(tag)}</span><small>${count}</small></div>`,
+        `<div class="tag-option tag-colored ${i === active ? 'active' : ''}" ${tagStyle(tag)} role="option" id="tag-option-${i}" aria-selected="${i === active}" data-index="${i}"><span>${esc(tag)}</span><small>${count}</small></div>`,
     )
     .join('');
   let top = field.offsetTop + field.offsetHeight + 4,

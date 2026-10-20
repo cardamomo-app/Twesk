@@ -970,3 +970,18 @@ button.hashtag:hover{text-decoration:underline}
 
 /* Keep the brand, date, and every control readable on the narrowest phones. */
 @media(max-width:400px){.topbar{height:auto;min-height:90px;padding-top:10px;padding-bottom:10px;flex-direction:column;align-items:stretch;gap:5px}.topbar-brand{width:100%;justify-content:space-between;flex-shrink:0}.topbar-date{max-width:none;white-space:nowrap;padding-left:0;border-left:0;font-size:9px;text-align:right}.topbar-actions{align-self:flex-end}}
+
+/* Project colors stay quiet until selected, with a readable shade in either theme. */
+.tag-colored{--tag-color:hsl(var(--tag-hue) 46% 28%)}
+:root[data-theme=dark] .tag-colored{--tag-color:hsl(var(--tag-hue) 60% 76%)}
+.project-chip.tag-colored{color:var(--tag-color);background:color-mix(in srgb,var(--tag-color) 7%,var(--panel));border-color:color-mix(in srgb,var(--tag-color) 24%,var(--line))}
+.project-chip.tag-colored:hover{background:color-mix(in srgb,var(--tag-color) 12%,var(--panel))}
+.project-chip.tag-colored.selected,.vault-tag-chips .project-chip.tag-colored.selected{color:var(--tag-color);background:color-mix(in srgb,var(--tag-color) 16%,var(--panel));border-color:var(--tag-color);font-weight:700}
+.project-chip.tag-colored span,.project-chip.tag-colored.selected span{color:var(--tag-color)}
+.task-tag.tag-colored,.task-row.completed .task-tag.tag-colored{color:var(--tag-color)}
+.task-tag.tag-colored{background:color-mix(in srgb,var(--tag-color) 7%,var(--panel));padding:0 3px}
+.task-tag-row.tag-colored .task-tag-mark{color:var(--tag-color);background:color-mix(in srgb,var(--tag-color) 10%,var(--panel))}
+.task-tag-row.tag-colored .task-tag-info strong{color:var(--tag-color)}
+.tag-option.tag-colored{color:var(--tag-color)}
+.tag-option.tag-colored.active,.tag-option.tag-colored:hover{background:color-mix(in srgb,var(--tag-color) 10%,var(--panel))}
+.vault-modal .note-text .hashtag.tag-colored,.review-modal .review-text .hashtag.tag-colored{color:var(--tag-color);background:color-mix(in srgb,var(--tag-color) 7%,var(--panel));border-radius:4px;padding:0 3px}

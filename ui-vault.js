@@ -1,11 +1,11 @@
 // The Vault: notes, journal entries, quick capture, and recovery reflections.
-import * as E from './engine.js?v=0.31.0';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.31.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.31.0';
-import { isJournalExport, notesToText } from './notes-export.js?v=0.31.0';
-import { rewardEffect, sound } from './ui-effects.js?v=0.31.0';
-import { vaultArt } from './vault-art.js?v=0.31.0';
-import { VAULT_SECTIONS, inVaultSection, needsReview, vaultTone } from './vault-model.js?v=0.31.0';
+import * as E from './engine.js?v=0.32.0';
+import { $, app, coin, esc, icon, modalShell, tagStyle, toast, today, view } from './ui-core.js?v=0.32.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.32.0';
+import { isJournalExport, notesToText } from './notes-export.js?v=0.32.0';
+import { rewardEffect, sound } from './ui-effects.js?v=0.32.0';
+import { vaultArt } from './vault-art.js?v=0.32.0';
+import { VAULT_SECTIONS, inVaultSection, needsReview, vaultTone } from './vault-model.js?v=0.32.0';
 const noteDate = n =>
   new Intl.DateTimeFormat('en', {
     month: 'short',
@@ -17,7 +17,7 @@ const noteText = text =>
   esc(text).replace(
     /(^|\s)(#[\p{L}\p{N}_-]+)/gu,
     (_, space, tag) =>
-      `${space}<button class="hashtag" data-action="vault-tag" data-tag="${tag.toLowerCase()}" title="Show notes tagged ${tag}">${tag}</button>`,
+      `${space}<button class="hashtag tag-colored" ${tagStyle(tag)} data-action="vault-tag" data-tag="${tag.toLowerCase()}" title="Show notes tagged ${tag}">${tag}</button>`,
   );
 const inTab = n => inVaultSection(n, app.vaultFilter);
 const searchable = n => `${n.text} ${n.kind === 'journal' ? '#reflection' : ''}`.toLowerCase();
@@ -33,7 +33,7 @@ function renderTagChips() {
     .sort((a, b) => b[1] - a[1])
     .map(
       ([tag, n]) =>
-        `<button class="project-chip ${app.vaultTag === tag ? 'selected' : ''}" data-action="vault-tag" data-tag="${esc(tag)}" aria-pressed="${app.vaultTag === tag}">${esc(tag)}<span>${n}</span></button>`,
+        `<button class="project-chip tag-colored ${app.vaultTag === tag ? 'selected' : ''}" ${tagStyle(tag)} data-action="vault-tag" data-tag="${esc(tag)}" aria-pressed="${app.vaultTag === tag}">${esc(tag)}<span>${n}</span></button>`,
     )
     .join('')}</div>`;
 }
@@ -168,7 +168,7 @@ export const modals = {
       note = queue[0],
       sorted = app.modal.sorted;
     const body = note
-      ? `<div class="review-progress"><span>${queue.length} to sort${app.modal.skipped.length ? ` · ${app.modal.skipped.length} skipped` : ''}</span><span>${sorted} sorted</span></div><article class="review-card" data-vault-tone="${vaultTone(note)}">${noteHeading(note)}<p class="review-text">${esc(note.text).replace(/(^|\s)(#[\p{L}\p{N}_-]+)/gu, '$1<span class="hashtag">$2</span>')}</p></article><div class="review-actions"><button class="button secondary" data-action="review-keep" data-id="${note.id}">${icon('check')}Keep<kbd>K</kbd></button><button class="button secondary" data-action="review-task" data-id="${note.id}">${icon('arrow')}${note.taskTitle ? 'Back to tasks' : 'Make a task'}<kbd>T</kbd></button><button class="button secondary" data-action="review-archive" data-id="${note.id}">${icon('vault')}Archive<kbd>A</kbd></button><button class="text-button" data-action="review-skip" data-id="${note.id}">Skip for now<kbd>S</kbd></button></div><div class="review-help">${reviewBonus()}</div>`
+      ? `<div class="review-progress"><span>${queue.length} to sort${app.modal.skipped.length ? ` · ${app.modal.skipped.length} skipped` : ''}</span><span>${sorted} sorted</span></div><article class="review-card" data-vault-tone="${vaultTone(note)}">${noteHeading(note)}<p class="review-text">${esc(note.text).replace(/(^|\s)(#[\p{L}\p{N}_-]+)/gu, (_, space, tag) => `${space}<span class="hashtag tag-colored" ${tagStyle(tag)}>${tag}</span>`)}</p></article><div class="review-actions"><button class="button secondary" data-action="review-keep" data-id="${note.id}">${icon('check')}Keep<kbd>K</kbd></button><button class="button secondary" data-action="review-task" data-id="${note.id}">${icon('arrow')}${note.taskTitle ? 'Back to tasks' : 'Make a task'}<kbd>T</kbd></button><button class="button secondary" data-action="review-archive" data-id="${note.id}">${icon('vault')}Archive<kbd>A</kbd></button><button class="text-button" data-action="review-skip" data-id="${note.id}">Skip for now<kbd>S</kbd></button></div><div class="review-help">${reviewBonus()}</div>`
       : `<div class="empty-state review-done"><span class="empty-symbol">${icon('check')}</span><h3>${sorted ? 'All sorted' : 'Nothing waiting'}</h3><p>${sorted ? `You sorted ${sorted} ${sorted === 1 ? 'note' : 'notes'}.` : 'Your inbox is clear.'}${app.modal.skipped.length ? ` ${app.modal.skipped.length} skipped ${app.modal.skipped.length === 1 ? 'note is' : 'notes are'} still in Needs review.` : ''}</p><button class="button primary" data-action="vault">Back to the Vault</button></div>`;
     return modalShell(
       vaultTitle('Review captures', 'review'),

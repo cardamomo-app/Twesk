@@ -1,8 +1,8 @@
 // Task list, project filter, task dialog, and task actions.
-import * as E from './engine.js?v=0.31.0';
-import { $, app, coin, esc, icon, iconButton, modalShell, toast, today, view } from './ui-core.js?v=0.31.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.31.0';
-import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.31.0';
+import * as E from './engine.js?v=0.32.0';
+import { $, app, coin, esc, icon, iconButton, modalShell, tagStyle, toast, today, view } from './ui-core.js?v=0.32.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.32.0';
+import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.32.0';
 
 const NO_TAG = '__untagged__';
 const inProject = t => !app.taskProject || (app.taskProject === NO_TAG ? E.tags(t.title).length === 0 : E.tags(t.title).includes(app.taskProject));
@@ -19,7 +19,7 @@ export function renderProjects() {
   if (!app.state.tasks.length) return '';
   const untagged = app.state.tasks.filter(t => !t.done && E.tags(t.title).length === 0).length;
   const chip = (project, label, count) =>
-    `<button class="project-chip ${app.taskProject === project ? 'selected' : ''}" data-action="task-project" data-project="${esc(project || '')}" aria-pressed="${app.taskProject === project}">${esc(label)}${count === null ? '' : `<span>${count}</span>`}</button>`;
+    `<button class="project-chip ${project?.startsWith('#') ? 'tag-colored' : ''} ${app.taskProject === project ? 'selected' : ''}" ${project?.startsWith('#') ? tagStyle(project) : ''} data-action="task-project" data-project="${esc(project || '')}" aria-pressed="${app.taskProject === project}">${esc(label)}${count === null ? '' : `<span>${count}</span>`}</button>`;
   return `<div class="project-chips" role="group" aria-label="Filter tasks by project">${chip(null, 'All', null)}${chip(NO_TAG, 'No tag', untagged)}${[...counts].map(([tag, n]) => chip(tag, tag, n)).join('')}${counts.size ? `<button class="icon-button project-manage" data-action="manage-task-tags" aria-label="Manage task tags" title="Manage task tags">${icon('tag')}</button>` : ''}</div>`;
 }
 function dueLabel(due) {
@@ -36,7 +36,7 @@ function taskTitle(title) {
     .split(/(#[\p{L}\p{N}_-]+)/u)
     .map((part, i) =>
       i % 2
-        ? `<button class="task-tag" data-action="task-project" data-project="${esc(part.toLowerCase())}" title="Show ${esc(part)} tasks">${esc(part)}</button>`
+        ? `<button class="task-tag tag-colored" ${tagStyle(part)} data-action="task-project" data-project="${esc(part.toLowerCase())}" title="Show ${esc(part)} tasks">${esc(part)}</button>`
         : esc(part),
     )
     .join('');
@@ -77,7 +77,7 @@ export const modals = {
   'task-tags'() {
     const rows = [...projectCounts()].map(([tag, open]) => {
       const total = app.state.tasks.filter(t => E.tags(t.title).includes(tag)).length;
-      return `<div class="task-tag-row" role="listitem"><span class="task-tag-mark" aria-hidden="true">${icon('tag')}</span><span class="task-tag-info"><strong>${esc(tag)}</strong><small>${open} open · ${total - open} completed</small></span><button class="button secondary task-tag-remove" data-action="remove-task-tag" data-tag="${esc(tag)}" aria-label="Remove ${esc(tag)} from tasks">${icon('trash')}Remove</button></div>`;
+      return `<div class="task-tag-row tag-colored" ${tagStyle(tag)} role="listitem"><span class="task-tag-mark" aria-hidden="true">${icon('tag')}</span><span class="task-tag-info"><strong>${esc(tag)}</strong><small>${open} open · ${total - open} completed</small></span><button class="button secondary task-tag-remove" data-action="remove-task-tag" data-tag="${esc(tag)}" aria-label="Remove ${esc(tag)} from tasks">${icon('trash')}Remove</button></div>`;
     }).join('');
     return modalShell('Task tags', `<div class="form-body task-tag-manager"><p>Remove a tag from all its tasks, including completed ones. Your tasks stay; Vault entries keep their tags.</p><div class="task-tag-list" role="list" aria-label="Task tags">${rows || '<p class="task-tag-empty">No task tags to manage.</p>'}</div></div>`, 'task-tags-modal');
   },

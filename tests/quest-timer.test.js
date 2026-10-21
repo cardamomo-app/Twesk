@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../quest-timer.js';
+import * as E from '../engine.js';
 
 test('a focus session uses elapsed wall time through pause, resume and reload', () => {
   let timer = T.startTimer(T.freshTimer('task', 5), 1000);
@@ -61,4 +62,19 @@ test('saved timers from before HP rewards still load, and bad credit is rejected
   assert.equal(T.readTimer(old).credited,0);
   assert.equal(T.readTimer({...old,credited:30}).taskId,null,'credit above the session length resets the clock');
   assert.equal(T.readTimer({...old,credited:1.5}).taskId,null);
+});
+test('HP and gold rewards survive pause and reload without paying a minute twice',()=>{
+  const s=E.freshState();s.hp=98;
+  let timer=T.startTimer(T.freshTimer('task',5),1000);
+  const credit=now=>{const due=T.minutesDue(timer,now);const reward=E.focusReward(s,due);timer=T.creditMinutes(timer,due);return reward;};
+  assert.deepEqual(credit(60_999),{healed:0,gold:0});
+  assert.deepEqual(credit(181_000),{healed:2,gold:1});
+  timer=T.readTimer(JSON.parse(JSON.stringify(T.pauseTimer(timer,211_000))));
+  assert.deepEqual(credit(400_000),{healed:0,gold:0},'paused time and reloading earn nothing extra');
+  timer=T.startTimer(timer,400_000);
+  assert.deepEqual(credit(430_000),{healed:0,gold:1},'the unfinished half-minute resumes');
+  timer=T.finishTimer(timer,999_999);
+  assert.deepEqual(credit(999_999),{healed:0,gold:1});
+  assert.deepEqual(credit(999_999),{healed:0,gold:0});
+  assert.equal(s.hp,100);assert.equal(s.gold,3);assert.equal(timer.credited,5);
 });

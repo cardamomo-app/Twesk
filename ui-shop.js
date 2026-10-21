@@ -1,13 +1,13 @@
 // Shop and inventory: buying, equipping, potions, spells, and pets.
-import * as E from './engine.js?v=0.33.0';
-import { avatarFaceArt, itemArt, monsterName, petArt } from './art.js?v=0.33.0';
+import * as E from './engine.js?v=0.34.0';
+import { avatarFaceArt, itemArt, monsterName, petArt } from './art.js?v=0.34.0';
 import { APPEARANCE, APPEARANCE_LABELS } from './appearance.js';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.33.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.33.0';
-import { burst, countUp, sound } from './ui-effects.js?v=0.33.0';
-import { potionCount } from './ui-character.js?v=0.33.0';
-import { playDelight } from './ui-delights.js?v=0.33.0';
-import { percent, requestOdds } from './ui-odds.js?v=0.33.0';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.34.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.34.0';
+import { burst, countUp, sound } from './ui-effects.js?v=0.34.0';
+import { potionCount } from './ui-character.js?v=0.34.0';
+import { playDelight } from './ui-delights.js?v=0.34.0';
+import { percent, requestOdds } from './ui-odds.js?v=0.34.0';
 // Odds are compared against the next opponent, at full health when currently at 0 HP.
 function comparisonBase() {
   const s = app.state;

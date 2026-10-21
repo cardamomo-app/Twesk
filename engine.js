@@ -1,8 +1,8 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.33.0';
-import {validHabitIcon} from './habit-icons.js?v=0.33.0';
-import {rememberTagColors,validTagColors} from './tag-colors.js?v=0.33.0';
-export {tagHue,setTagColor} from './tag-colors.js?v=0.33.0';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.34.0';
+import {validHabitIcon} from './habit-icons.js?v=0.34.0';
+import {rememberTagColors,validTagColors} from './tag-colors.js?v=0.34.0';
+export {tagHue,setTagColor} from './tag-colors.js?v=0.34.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -251,6 +251,15 @@ export function focusHeal(s, minutes) {
   s.hp += amount;
   s.pendingRecovery = s.hp < maxHP(s) && s.pendingRecovery;
   return amount;
+}
+// Each whole focus minute heals first; minutes spent at full health earn gold instead.
+// Split catch-up batches at the health cap so a minute never pays both rewards.
+export const FOCUS_GOLD_PER_MINUTE = 1;
+export function focusReward(s, minutes) {
+  const healed = focusHeal(s, minutes);
+  const gold = (minutes - Math.ceil(healed / FOCUS_HP_PER_MINUTE)) * FOCUS_GOLD_PER_MINUTE;
+  s.gold += gold;
+  return { healed, gold };
 }
 // The adventure is one open task or one positive habit not yet done today (pass `today` to check that).
 export function setCurrentQuest(s, id = null, today = null) {

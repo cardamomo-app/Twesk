@@ -265,3 +265,25 @@ test('focus heals 1 HP per minute, capped at maximum HP, and works from 0 HP',()
   E.focusHeal(s,200);assert.equal(s.pendingRecovery,false,'recovered once full');
   assert.throws(()=>E.focusHeal(s,-1));assert.throws(()=>E.focusHeal(s,1.5));
 });
+test('Adventure minutes heal first, then earn one gold per minute at full health',()=>{
+  const s=E.freshState();s.hp=98;s.gold=7;
+  assert.deepEqual(E.focusReward(s,1),{healed:1,gold:0});assert.equal(s.hp,99);assert.equal(s.gold,7);
+  assert.deepEqual(E.focusReward(s,1),{healed:1,gold:0},'the minute reaching full HP only heals');
+  assert.deepEqual(E.focusReward(s,1),{healed:0,gold:1});assert.equal(s.hp,100);assert.equal(s.gold,8);
+  s.hp=97;
+  assert.deepEqual(E.focusReward(s,1),{healed:1,gold:0},'taking damage switches back to healing');
+  assert.equal(s.gold,8);
+});
+test('Adventure catch-up splits healing and gold at the actual Body and equipment HP cap',()=>{
+  const s=E.freshState();s.xp.body=600;s.inventory=['helm'];s.equipped.helmet='helm';
+  const max=E.maxHP(s);assert.equal(max,142);s.hp=max-2;s.gold=10;s.pendingRecovery=true;
+  assert.deepEqual(E.focusReward(s,5),{healed:2,gold:3});
+  assert.equal(s.hp,max);assert.equal(s.gold,13);assert.equal(s.pendingRecovery,false);
+  assert.deepEqual(E.focusReward(s,60),{healed:0,gold:60});assert.equal(s.gold,73);
+  assert.deepEqual(E.focusReward(s,0),{healed:0,gold:0});
+  const before=JSON.stringify(s);
+  for(const minutes of [-1,1.5,NaN,Infinity])assert.throws(()=>E.focusReward(s,minutes));
+  assert.equal(JSON.stringify(s),before,'invalid minutes never mutate rewards');
+  assert.deepEqual(s.history,{},'Adventure gold does not inflate the calendar’s task-gold tally');
+  assert.doesNotThrow(()=>E.validateState(JSON.parse(JSON.stringify(s))));
+});

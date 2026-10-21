@@ -1,12 +1,13 @@
 // One task, a little trail, and a device-local focus timer.
-import * as E from './engine.js?v=0.33.0';
-import * as T from './quest-timer.js?v=0.33.0';
-import { avatarJourneyArt } from './avatar-model.js?v=0.33.0';
-import { resolvedHabitIcon } from './habit-icons.js?v=0.33.0';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.33.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.33.0';
-import { rewardEffect, sound } from './ui-effects.js?v=0.33.0';
-import { unlockSfx } from './sfx.js?v=0.33.0';
+import * as E from './engine.js?v=0.34.0';
+import * as T from './quest-timer.js?v=0.34.0';
+import { goldArt } from './art.js?v=0.34.0';
+import { avatarJourneyArt } from './avatar-model.js?v=0.34.0';
+import { resolvedHabitIcon } from './habit-icons.js?v=0.34.0';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.34.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.34.0';
+import { rewardEffect, sound } from './ui-effects.js?v=0.34.0';
+import { unlockSfx } from './sfx.js?v=0.34.0';
 
 const TIMER_KEY = 'twesk.quest-timer.v1';
 let timer = T.freshTimer(), dialDrag = null, owed = 0;
@@ -27,40 +28,52 @@ const calm = () => !app.modal && !app.taskDragging && !dialDrag && !app.busy;
 function creditFocus() {
   const due = T.minutesDue(timer), minutes = due + owed;
   if (!minutes) return;
-  const healed = commit(() => E.focusHeal(app.state, minutes));
-  if (healed === undefined) return;
+  const reward = commit(() => E.focusReward(app.state, minutes));
+  if (reward === undefined) return;
   timer = T.creditMinutes(timer, due); owed = 0; saveClock();
-  if (healed > 0) {
+  if (reward.healed > 0) {
     sound('focusHeal');
-    rewardEffect($('[data-focus-meter]'), healed, 'hp');
+    rewardEffect($('[data-focus-meter]'), reward.healed, 'hp');
   }
+  if (reward.gold > 0) rewardEffect($('[data-focus-meter]'), reward.gold, 'gold');
 }
-// The health meter: current HP, plus a softly shimmering segment for what this session can still
-// restore (1 HP per minute), filling smoothly as the current minute passes.
+// Show healing until HP is full, then a golden minute meter for the next coin.
 function meterValues(now = Date.now()) {
   const max = E.maxHP(app.state), hp = app.state.hp;
   const restore = Math.min(timer.minutes - timer.credited + owed, max - hp);
-  const minute = timer.status === 'running' ? ((timer.minutes * 60000 - T.remaining(timer, now)) % 60000) / 60000 : 0;
-  return { max, hp, restore, earned: Math.min(restore, T.minutesDue(timer, now) + owed + minute) };
+  const minute = ((timer.minutes * 60000 - T.remaining(timer, now)) % 60000) / 60000;
+  const pending = T.minutesDue(timer, now) + owed + minute;
+  return { max, hp, restore, gold: hp >= max, minute: Math.min(1, pending), earned: Math.min(restore, pending) };
+}
+function meterLabel(v) {
+  return v.gold
+    ? `Full health · 1 gold per Adventure minute · ${v.hp} of ${v.max} HP`
+    : `Focus restores up to ${v.restore} HP · ${v.hp} of ${v.max} HP`;
+}
+function meterContents(v) {
+  const pct = n => `${((100 * n) / v.max).toFixed(2)}%`;
+  return `<span class="focus-meter-icon" aria-hidden="true">${v.gold ? goldArt(1, true) : icon('heart')}</span><span class="focus-bar"><span class="focus-hp" style="width:${v.gold ? '0%' : pct(v.hp)}"></span><span class="focus-gain" style="left:${v.gold ? '0%' : pct(v.hp)};width:${v.gold ? '100%' : pct(v.restore)}"><span class="focus-earned" style="width:${v.gold ? 100 * v.minute : v.restore ? 100 * v.earned / v.restore : 0}%"></span></span></span>`;
+}
+function updateMeter(meter, v) {
+  const label = meterLabel(v), gold = meter.classList.contains('is-gold');
+  if (meter.getAttribute('aria-label') !== label) { meter.setAttribute('aria-label', label); meter.title = label; }
+  if (gold !== v.gold) meter.innerHTML = meterContents(v);
+  meter.classList.toggle('is-gold', v.gold);
+  const pct = n => `${((100 * n) / v.max).toFixed(2)}%`;
+  meter.querySelector('.focus-hp').style.width = v.gold ? '0%' : pct(v.hp);
+  Object.assign(meter.querySelector('.focus-gain').style, { left: v.gold ? '0%' : pct(v.hp), width: v.gold ? '100%' : pct(v.restore) });
+  meter.querySelector('.focus-earned').style.width = `${v.gold ? 100 * v.minute : v.restore ? 100 * v.earned / v.restore : 0}%`;
 }
 function focusMeter() {
-  const v = meterValues(), pct = n => `${((100 * n) / v.max).toFixed(2)}%`;
-  const label = v.restore
-    ? `Focus restores up to ${v.restore} HP · ${v.hp} of ${v.max} HP`
-    : `Full health · ${v.hp} of ${v.max} HP`;
-  return `<div class="focus-meter ${v.restore ? '' : 'is-full'}" role="img" aria-label="${label}" title="${label}" data-focus-meter>${icon('heart')}<span class="focus-bar"><span class="focus-hp" style="width:${pct(v.hp)}"></span><span class="focus-gain" style="left:${pct(v.hp)};width:${pct(v.restore)}"><span class="focus-earned" style="width:${v.restore ? ((100 * v.earned) / v.restore).toFixed(1) : 0}%"></span></span></span></div>`;
+  const v = meterValues();
+  const label = meterLabel(v);
+  return `<div class="focus-meter ${v.gold ? 'is-gold' : ''}" role="img" aria-label="${label}" title="${label}" data-focus-meter>${meterContents(v)}</div>`;
 }
 // Update the meter in place, so its shimmer and smooth width changes keep running between ticks.
 function refreshMeter() {
   const meter = $('[data-focus-meter]');
   if (!meter) return;
-  const v = meterValues(), pct = n => `${((100 * n) / v.max).toFixed(2)}%`;
-  const label = v.restore ? `Focus restores up to ${v.restore} HP · ${v.hp} of ${v.max} HP` : `Full health · ${v.hp} of ${v.max} HP`;
-  if (meter.getAttribute('aria-label') !== label) { meter.setAttribute('aria-label', label); meter.title = label; }
-  meter.classList.toggle('is-full', !v.restore);
-  meter.querySelector('.focus-hp').style.width = pct(v.hp);
-  Object.assign(meter.querySelector('.focus-gain').style, { left: pct(v.hp), width: pct(v.restore) });
-  meter.querySelector('.focus-earned').style.width = `${v.restore ? ((100 * v.earned) / v.restore).toFixed(1) : 0}%`;
+  updateMeter(meter, meterValues());
 }
 const canReset = () => timer.status !== 'ready' || timer.remainingMs !== timer.minutes * 60000;
 const timeText = ms => `${Math.floor(Math.ceil(ms / 1000) / 60).toString().padStart(2, '0')}:${(Math.ceil(ms / 1000) % 60).toString().padStart(2, '0')}`;
@@ -129,7 +142,7 @@ export const actions = {
     $('[data-action="quest-play"]')?.focus({ preventScroll: true });
   },
   'quest-reset'() {
-    // Minutes already focused keep their HP; only the clock starts over.
+    // Minutes already focused keep their rewards; only the clock starts over.
     timer = T.pauseTimer(timer); creditFocus();
     timer = T.freshTimer(currentQuest()?.id || null, timer.minutes); saveClock(); view.render();
     $('[data-action="quest-play"]')?.focus({ preventScroll: true });

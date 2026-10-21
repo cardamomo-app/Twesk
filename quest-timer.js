@@ -1,6 +1,6 @@
 // A device-local focus clock. Deadlines keep time through sleep and reloads.
-// Each finished minute of focus restores 1 HP; `credited` counts the minutes of this session
-// already turned into HP, so no minute is ever rewarded twice.
+// Each finished minute earns HP or gold; `credited` counts the minutes of this session
+// already rewarded, so no minute is ever rewarded twice.
 export const MIN_MINUTES = 5;
 export const MAX_MINUTES = 60;
 export function freshTimer(taskId = null, minutes = 25) {
@@ -37,7 +37,7 @@ export function durationTimer(timer, minutes) {
   if (timer.status === 'running' || !Number.isFinite(minutes)) return timer;
   return freshTimer(timer.taskId, Math.max(5, Math.min(60, Math.round(minutes / 5) * 5)));
 }
-// Whole minutes focused so far in this session, and how many of them still await their HP.
+// Whole minutes focused so far in this session, and how many still await their reward.
 export const focusedMinutes = (timer, now = Date.now()) => Math.floor((timer.minutes * 60000 - remaining(timer, now)) / 60000);
 export const minutesDue = (timer, now = Date.now()) => Math.max(0, focusedMinutes(timer, now) - timer.credited);
 export const creditMinutes = (timer, minutes) => ({ ...timer, credited: Math.min(timer.minutes, timer.credited + minutes) });

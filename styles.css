@@ -719,14 +719,16 @@ button.hashtag:hover{text-decoration:underline}
 .quest-reset:disabled{opacity:.4;cursor:default}
 .quest-reset>.icon{width:14px;height:14px}
 .quest-play:disabled{opacity:.45;cursor:default}
-/* Focus meter: current HP and what this session can restore */
-.focus-meter{display:flex;align-items:center;gap:5px;max-width:118px}
-.focus-meter>.icon{width:11px;height:11px;flex-shrink:0;color:var(--heart)}
-.focus-meter.is-full>.icon{fill:var(--heart)}
+/* Focus meter: healing below maximum HP, a coin each minute at full health */
+.focus-meter{--focus-color:var(--heart);display:flex;align-items:center;gap:5px;max-width:118px}
+.focus-meter-icon{display:flex;align-items:center;justify-content:center;width:16px;height:16px;flex-shrink:0;color:var(--focus-color)}
+.focus-meter-icon>.icon{width:11px;height:11px}
+.focus-meter-icon>svg{width:16px;height:16px}
+.focus-meter.is-gold{--focus-color:var(--gold)}
 .focus-bar{position:relative;flex:1;height:6px;border-radius:99px;background:var(--surface-hover);overflow:hidden}
 .focus-hp{position:absolute;inset:0 auto 0 0;border-radius:99px;background:var(--heart);transition:width .6s ease-out}
-.focus-gain{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(-45deg,color-mix(in srgb,var(--heart) 38%,transparent) 0 2px,color-mix(in srgb,var(--heart) 16%,transparent) 2px 4px);transition:left .6s ease-out,width .6s ease-out}
-.focus-earned{display:block;height:100%;background:color-mix(in srgb,var(--heart) 75%,#fff);transition:width .5s linear}
+.focus-gain{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(-45deg,color-mix(in srgb,var(--focus-color) 38%,transparent) 0 2px,color-mix(in srgb,var(--focus-color) 16%,transparent) 2px 4px);transition:left .6s ease-out,width .6s ease-out}
+.focus-earned{display:block;height:100%;background:color-mix(in srgb,var(--focus-color) 75%,#fff);transition:width .5s linear}
 .is-walking .focus-gain{animation:focus-shimmer 2.4s ease-in-out infinite}
 @keyframes focus-shimmer{50%{opacity:.6}}
 .reward-pop.hp{color:var(--heart)}

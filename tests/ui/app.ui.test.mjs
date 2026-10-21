@@ -279,6 +279,33 @@ uiTest('a habit drags onto the adventure, reorders in its category, and leaves t
   await page.waitFor(id => JSON.parse(localStorage.getItem('twesk.v1')).habits.find(h => h.id === id).logs.length === 1, { args: [second.id] });
 });
 
+uiTest('Adventure picker switches between tasks and available habits with keyboard tabs', async page => {
+  const s = E.freshState(), doneTask = s.tasks[0], doneHabit = s.habits[0];
+  E.toggleTask(s, doneTask.id, today(s)); E.completeHabit(s, doneHabit.id, today(s));
+  await page.open({ save: s });
+  await page.click('[data-action="quest-choose"]');
+  assert.equal(await page.evaluate(() => document.querySelector('#quest-tab-tasks').getAttribute('aria-selected')), 'true');
+  assert.equal(await page.count('.quest-option'), 2);
+  await page.click('#quest-tab-habits');
+  assert.equal(await page.count('.quest-option'), s.habits.filter(h => h.category !== 'harm').length - 1);
+  assert.ok(!(await page.exists(`.quest-option[data-id="${doneHabit.id}"]`)));
+  assert.ok(!(await page.exists(`.quest-option[data-id="${s.habits.find(h => h.category === 'harm').id}"]`)));
+  await page.press('ArrowLeft');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'quest-tab-tasks');
+  await page.press('End');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'quest-tab-habits');
+  const habit = s.habits.find(h => h.category === 'mind');
+  await page.click(`.quest-option[data-id="${habit.id}"]`);
+  assert.ok(!(await page.exists('.quest-modal')));
+  assert.equal((await page.save()).habits.find(h => h.id === habit.id).pinned, true);
+  assert.equal((await page.save()).gold, s.gold, 'selection earns no gold');
+  await page.click('[data-action="quest-choose"]');
+  assert.equal(await page.evaluate(() => document.querySelector('#quest-tab-habits').getAttribute('aria-selected')), 'true');
+  assert.equal(await page.evaluate(id => document.querySelector(`.quest-option[data-id="${id}"]`).getAttribute('aria-pressed'), habit.id), 'true');
+  await page.click('[data-action="quest-clear"]');
+  assert.ok(!(await page.exists('.quest-task')));
+});
+
 uiTest('adventure steps open and close inside the box, and repeats sit beside the gold', async page => {
   const s = E.freshState();
   const quest = s.tasks[0];
@@ -892,9 +919,10 @@ uiTest('adjusting the duration winds the timer, but a running countdown does not
   assert.equal(await page.evaluate(() => window.__voices), voices, 'countdown is quiet between HP chimes');
   await page.click('[data-action="quest-play"]');
   await page.click('[data-action="mute"]');
+  const pausedVoices = await page.evaluate(() => window.__voices);
   await page.evaluate(() => document.querySelector('.quest-dial').focus());
   await page.press('ArrowLeft');
-  assert.equal(await page.evaluate(() => window.__voices), voices, 'muting also silences winding');
+  assert.equal(await page.evaluate(() => window.__voices), pausedVoices, 'muting also silences winding');
 });
 
 uiTest('the history calendar shows today’s habit and task', async page => {

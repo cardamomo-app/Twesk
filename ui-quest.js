@@ -1,18 +1,18 @@
 // One task, a little trail, and a device-local focus timer.
-import * as E from './engine.js?v=0.35.0';
-import * as T from './quest-timer.js?v=0.35.0';
-import { goldArt } from './art.js?v=0.35.0';
-import { avatarJourneyArt } from './avatar-model.js?v=0.35.0';
-import { resolvedHabitIcon } from './habit-icons.js?v=0.35.0';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.35.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.35.0';
-import { rewardEffect, sound } from './ui-effects.js?v=0.35.0';
-import { unlockSfx } from './sfx.js?v=0.35.0';
+import * as E from './engine.js?v=0.36.0';
+import * as T from './quest-timer.js?v=0.36.0';
+import { goldArt } from './art.js?v=0.36.0';
+import { avatarJourneyArt } from './avatar-model.js?v=0.36.0';
+import { resolvedHabitIcon } from './habit-icons.js?v=0.36.0';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.36.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.36.0';
+import { rewardEffect, sound } from './ui-effects.js?v=0.36.0';
+import { unlockSfx } from './sfx.js?v=0.36.0';
 
 const TIMER_KEY = 'twesk.quest-timer.v1';
 let timer = T.freshTimer(), dialDrag = null, owed = 0;
 try { timer = T.readTimer(JSON.parse(localStorage.getItem(TIMER_KEY))); } catch {}
-// The adventure is an open task, or a positive habit dragged in from the habits column.
+// The adventure is an open task or positive habit, selected in the picker or dragged onto the card.
 export const currentQuest = () => app.state.tasks.find(t => !t.done && t.pinned) || app.state.habits.find(h => h.pinned);
 const isHabit = item => !!item?.category;
 function saveClock() {
@@ -117,14 +117,20 @@ export function renderQuest() {
 }
 function selectQuest(id) {
   if (app.busy) return;
-  const selected = commit(() => E.setCurrentQuest(app.state, id));
+  const selected = commit(() => E.setCurrentQuest(app.state, id, today()));
   if (!selected) return;
   closeModal();
   sound('note');
   $('[data-action="quest-play"]')?.focus({ preventScroll: true });
 }
 export const actions = {
-  'quest-choose'() { openModal({ type: 'quest' }); },
+  'quest-choose'() { openModal({ type: 'quest', tab: isHabit(currentQuest()) ? 'habits' : 'tasks' }); },
+  'quest-tab'(b) {
+    if (app.modal?.type !== 'quest' || !['tasks', 'habits'].includes(b.dataset.tab)) return;
+    app.modal.tab = b.dataset.tab;
+    view.renderModal();
+    $(`#quest-tab-${app.modal.tab}`)?.focus();
+  },
   'quest-select'(b, { id }) { selectQuest(id); },
   'quest-clear'() {
     commit(() => E.setCurrentQuest(app.state));
@@ -150,10 +156,25 @@ export const actions = {
 };
 export const modals = {
   quest() {
+    const tab = app.modal.tab === 'habits' ? 'habits' : 'tasks', current = currentQuest(), day = today();
     const tasks = app.state.tasks.filter(t => !t.done);
-    return modalShell(`${icon('compass')} Choose your adventure`, `<div class="quest-options">${tasks.length ? tasks.map(t => `<button class="quest-option ${t.id === currentQuest()?.id ? 'selected' : ''}" data-action="quest-select" data-id="${t.id}"><span>${icon(t.id === currentQuest()?.id ? 'compass' : 'arrow')}</span><strong>${esc(t.title)}</strong>${coin(E.TASK_GOLD[t.tier], true)}</button>`).join('') : '<p>Add a task to begin your next adventure.</p>'}${currentQuest() ? `<button class="quest-return" data-action="quest-clear">${icon('undo')}Return current ${isHabit(currentQuest()) ? 'habit to your habits' : 'task to the list'}</button>` : ''}</div>`, 'quest-modal');
+    const habits = app.state.habits.filter(h => h.category !== 'harm' && !h.logs.some(l => l.day === day));
+    const options = tab === 'tasks'
+      ? tasks.map(t => `<button class="quest-option ${t.id === current?.id ? 'selected' : ''}" data-action="quest-select" data-id="${t.id}" aria-pressed="${t.id === current?.id}"><span>${icon(t.id === current?.id ? 'compass' : 'arrow')}</span><strong>${esc(t.title)}</strong>${coin(E.TASK_GOLD[t.tier], true)}</button>`).join('')
+      : E.CATEGORIES.map(category => {
+        const items = habits.filter(h => h.category === category);
+        return items.length ? `<section class="quest-habit-group ${category}" aria-labelledby="quest-category-${category}"><h3 id="quest-category-${category}">${E.CATEGORY_META[category].label}</h3>${items.map(h => `<button class="quest-option quest-habit-option ${h.id === current?.id ? 'selected' : ''}" data-action="quest-select" data-id="${h.id}" aria-pressed="${h.id === current?.id}"><span>${icon(resolvedHabitIcon(h))}</span><strong>${esc(h.title)}</strong><span class="xp-badge">+${Math.round(h.base * E.momentum(h, day))} XP</span></button>`).join('')}</section>` : '';
+      }).join('');
+    const empty = tab === 'tasks' ? 'No open tasks.' : app.state.habits.some(h => h.category !== 'harm') ? 'All your habits are done for today.' : 'No habits yet.';
+    return modalShell(`${icon('compass')} Choose your adventure`, `<div class="quest-tabs" role="tablist" aria-label="Adventure type">${[['tasks', 'Tasks', 'check'], ['habits', 'Habits', 'leaf']].map(([key, label, symbol]) => `<button role="tab" id="quest-tab-${key}" aria-controls="quest-options" aria-selected="${tab === key}" tabindex="${tab === key ? '0' : '-1'}" ${tab === key ? 'autofocus' : ''} data-action="quest-tab" data-tab="${key}">${icon(symbol)}${label}</button>`).join('')}</div><div class="quest-options" id="quest-options" role="tabpanel" aria-labelledby="quest-tab-${tab}" tabindex="0">${options || `<p>${empty}</p>`}</div>${current ? `<div class="quest-picker-footer"><button class="quest-return" data-action="quest-clear">${icon('undo')}Return current ${isHabit(current) ? 'habit to your habits' : 'task to the list'}</button></div>` : ''}`, 'quest-modal');
   },
 };
+export function onKeydown(event) {
+  if (!event.target.matches('[data-action="quest-tab"]') || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+  event.preventDefault();
+  const tab = event.key === 'Home' ? 'tasks' : event.key === 'End' ? 'habits' : event.target.dataset.tab === 'tasks' ? 'habits' : 'tasks';
+  $(`#quest-tab-${tab}`)?.click();
+}
 function tick() {
   reconcile();
   const finished = T.finishTimer(timer);

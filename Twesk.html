@@ -713,6 +713,19 @@ button.hashtag:hover{text-decoration:underline}
 .quest-session-progress{position:absolute;bottom:0;left:0;right:0;height:2px;background:transparent}.quest-session-progress>span{display:block;height:100%;background:var(--accent);opacity:.45}
 .quest-modal{width:440px}.quest-modal .modal-header h2{display:flex;align-items:center;gap:9px}.quest-modal .modal-header h2>.icon{width:20px;height:20px;color:var(--accent)}.quest-options{padding:10px 22px 22px;max-height:60vh;overflow:auto}.quest-option{display:flex;align-items:center;gap:11px;text-align:left;width:100%;padding:12px 6px;border-bottom:1px solid var(--line);border-radius:6px}.quest-option:last-child{border:0}.quest-option:hover,.quest-option.selected{background:var(--accent-soft)}.quest-option>span:first-child{color:var(--accent);display:flex}.quest-option>.gold-value{margin-left:auto;font-size:10px;flex-shrink:0}.quest-option .gold-pile{width:27px;height:24px}.quest-option strong{font-weight:450;font-size:12px;overflow-wrap:anywhere}.quest-option .icon{width:16px;height:16px}.quest-options>p{font-size:12px;color:var(--secondary);padding:10px 0}.quest-options>.task-step{padding:11px 0;border-bottom:1px solid var(--line);font-size:12px}
 .quest-return{display:flex;align-items:center;gap:9px;width:100%;margin-top:12px;padding:12px 6px;border-top:1px solid var(--line);font-size:11px;color:var(--secondary);text-align:left}.quest-return:hover{color:var(--accent)}.quest-return>.icon{width:15px;height:15px}
+.quest-tabs{display:flex;gap:4px;padding:4px;margin:4px 22px 8px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.quest-tabs button{display:flex;align-items:center;justify-content:center;gap:7px;flex:1;min-height:36px;padding:8px 14px;border-radius:7px;font-size:12px;color:var(--secondary)}
+.quest-tabs button>.icon{width:15px;height:15px}
+.quest-tabs button:hover{color:var(--text);background:var(--surface-hover)}
+.quest-tabs button[aria-selected=true]{background:var(--panel);color:var(--accent);font-weight:600;box-shadow:0 1px 4px #0000000a}
+.quest-modal .quest-options{min-height:180px;max-height:min(52vh,420px);padding-bottom:16px}
+.quest-habit-group+.quest-habit-group{margin-top:12px}
+.quest-habit-group h3{margin:4px 6px 5px;color:var(--cat);font-size:10px;font-weight:650;letter-spacing:.07em}
+.quest-habit-option>span:first-child{align-items:center;justify-content:center;width:28px;height:28px;flex-shrink:0;border-radius:8px;background:color-mix(in srgb,var(--cat) 10%,transparent);color:var(--cat)}
+.quest-option strong{flex:1;min-width:0}
+.quest-habit-option>.xp-badge{margin-left:auto;flex-shrink:0;color:var(--cat)}
+.quest-picker-footer{padding:0 22px 18px}
+.quest-picker-footer .quest-return{margin-top:0}
 @keyframes quest-gait-a{0%,100%{visibility:visible}50%{visibility:hidden}}@keyframes quest-gait-b{0%,100%{visibility:hidden}50%{visibility:visible}}@keyframes quest-step-bob{0%,50%,100%{transform:translateY(0)}25%,75%{transform:translateY(-1.5px)}}@keyframes quest-trail{to{stroke-dashoffset:12}}
 @media(prefers-reduced-motion:reduce){.is-walking .journey-walker,.is-walking .journey-walker>svg,.is-walking .trail-path{animation:none!important}.is-walking .journey-walker>svg+svg{visibility:hidden}}
 [data-motion=reduced] .is-walking .journey-walker,[data-motion=reduced] .is-walking .journey-walker>svg,[data-motion=reduced] .is-walking .trail-path{animation:none!important}[data-motion=reduced] .is-walking .journey-walker>svg+svg{visibility:hidden}
@@ -1201,6 +1214,7 @@ document.addEventListener('keydown', event => {
   vault.onKeydown(event);
   history.onKeydown(event);
   shop.onKeydown(event);
+  quest.onKeydown(event);
   character.onKeydown(event);
 });
 document.addEventListener('keydown', event => {
@@ -1221,8 +1235,8 @@ document.addEventListener('keydown', event => {
   }
   if (event.key === 'Tab' && app.modal) {
     const focusable = $$(
-      '#overlay button:not([disabled]),#overlay input:not([hidden]):not([disabled]),#overlay textarea,#overlay select:not([disabled]),#overlay a[href]',
-    ).filter(e => e.offsetParent !== null);
+      '#overlay button:not([disabled]),#overlay input:not([hidden]):not([disabled]),#overlay textarea,#overlay select:not([disabled]),#overlay a[href],#overlay [tabindex="0"]',
+    ).filter(e => e.offsetParent !== null && e.tabIndex >= 0);
     const first = focusable[0],
       last = focusable.at(-1);
     if (event.shiftKey && document.activeElement === first) {
@@ -4636,7 +4650,7 @@ const { unlockSfx }=require("sfx.js");
 const TIMER_KEY = 'twesk.quest-timer.v1';
 let timer = T.freshTimer(), dialDrag = null, owed = 0;
 try { timer = T.readTimer(JSON.parse(localStorage.getItem(TIMER_KEY))); } catch {}
-// The adventure is an open task, or a positive habit dragged in from the habits column.
+// The adventure is an open task or positive habit, selected in the picker or dragged onto the card.
 const currentQuest = () => app.state.tasks.find(t => !t.done && t.pinned) || app.state.habits.find(h => h.pinned);
 const isHabit = item => !!item?.category;
 function saveClock() {
@@ -4741,14 +4755,20 @@ function renderQuest() {
 }
 function selectQuest(id) {
   if (app.busy) return;
-  const selected = commit(() => E.setCurrentQuest(app.state, id));
+  const selected = commit(() => E.setCurrentQuest(app.state, id, today()));
   if (!selected) return;
   closeModal();
   sound('note');
   $('[data-action="quest-play"]')?.focus({ preventScroll: true });
 }
 const actions = {
-  'quest-choose'() { openModal({ type: 'quest' }); },
+  'quest-choose'() { openModal({ type: 'quest', tab: isHabit(currentQuest()) ? 'habits' : 'tasks' }); },
+  'quest-tab'(b) {
+    if (app.modal?.type !== 'quest' || !['tasks', 'habits'].includes(b.dataset.tab)) return;
+    app.modal.tab = b.dataset.tab;
+    view.renderModal();
+    $(`#quest-tab-${app.modal.tab}`)?.focus();
+  },
   'quest-select'(b, { id }) { selectQuest(id); },
   'quest-clear'() {
     commit(() => E.setCurrentQuest(app.state));
@@ -4774,10 +4794,25 @@ const actions = {
 };
 const modals = {
   quest() {
+    const tab = app.modal.tab === 'habits' ? 'habits' : 'tasks', current = currentQuest(), day = today();
     const tasks = app.state.tasks.filter(t => !t.done);
-    return modalShell(`${icon('compass')} Choose your adventure`, `<div class="quest-options">${tasks.length ? tasks.map(t => `<button class="quest-option ${t.id === currentQuest()?.id ? 'selected' : ''}" data-action="quest-select" data-id="${t.id}"><span>${icon(t.id === currentQuest()?.id ? 'compass' : 'arrow')}</span><strong>${esc(t.title)}</strong>${coin(E.TASK_GOLD[t.tier], true)}</button>`).join('') : '<p>Add a task to begin your next adventure.</p>'}${currentQuest() ? `<button class="quest-return" data-action="quest-clear">${icon('undo')}Return current ${isHabit(currentQuest()) ? 'habit to your habits' : 'task to the list'}</button>` : ''}</div>`, 'quest-modal');
+    const habits = app.state.habits.filter(h => h.category !== 'harm' && !h.logs.some(l => l.day === day));
+    const options = tab === 'tasks'
+      ? tasks.map(t => `<button class="quest-option ${t.id === current?.id ? 'selected' : ''}" data-action="quest-select" data-id="${t.id}" aria-pressed="${t.id === current?.id}"><span>${icon(t.id === current?.id ? 'compass' : 'arrow')}</span><strong>${esc(t.title)}</strong>${coin(E.TASK_GOLD[t.tier], true)}</button>`).join('')
+      : E.CATEGORIES.map(category => {
+        const items = habits.filter(h => h.category === category);
+        return items.length ? `<section class="quest-habit-group ${category}" aria-labelledby="quest-category-${category}"><h3 id="quest-category-${category}">${E.CATEGORY_META[category].label}</h3>${items.map(h => `<button class="quest-option quest-habit-option ${h.id === current?.id ? 'selected' : ''}" data-action="quest-select" data-id="${h.id}" aria-pressed="${h.id === current?.id}"><span>${icon(resolvedHabitIcon(h))}</span><strong>${esc(h.title)}</strong><span class="xp-badge">+${Math.round(h.base * E.momentum(h, day))} XP</span></button>`).join('')}</section>` : '';
+      }).join('');
+    const empty = tab === 'tasks' ? 'No open tasks.' : app.state.habits.some(h => h.category !== 'harm') ? 'All your habits are done for today.' : 'No habits yet.';
+    return modalShell(`${icon('compass')} Choose your adventure`, `<div class="quest-tabs" role="tablist" aria-label="Adventure type">${[['tasks', 'Tasks', 'check'], ['habits', 'Habits', 'leaf']].map(([key, label, symbol]) => `<button role="tab" id="quest-tab-${key}" aria-controls="quest-options" aria-selected="${tab === key}" tabindex="${tab === key ? '0' : '-1'}" ${tab === key ? 'autofocus' : ''} data-action="quest-tab" data-tab="${key}">${icon(symbol)}${label}</button>`).join('')}</div><div class="quest-options" id="quest-options" role="tabpanel" aria-labelledby="quest-tab-${tab}" tabindex="0">${options || `<p>${empty}</p>`}</div>${current ? `<div class="quest-picker-footer"><button class="quest-return" data-action="quest-clear">${icon('undo')}Return current ${isHabit(current) ? 'habit to your habits' : 'task to the list'}</button></div>` : ''}`, 'quest-modal');
   },
 };
+function onKeydown(event) {
+  if (!event.target.matches('[data-action="quest-tab"]') || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+  event.preventDefault();
+  const tab = event.key === 'Home' ? 'tasks' : event.key === 'End' ? 'habits' : event.target.dataset.tab === 'tasks' ? 'habits' : 'tasks';
+  $(`#quest-tab-${tab}`)?.click();
+}
 function tick() {
   reconcile();
   const finished = T.finishTimer(timer);
@@ -4859,7 +4894,7 @@ function installQuest() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
 }
 
-Object.assign(exports,{currentQuest,renderQuest,actions,modals,installQuest});
+Object.assign(exports,{currentQuest,renderQuest,actions,modals,onKeydown,installQuest});
 },
 "quest-timer.js":function(require,exports){
 // A device-local focus clock. Deadlines keep time through sleep and reloads.

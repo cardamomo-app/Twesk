@@ -1,27 +1,27 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.35.0';
-import { flameArt } from './brand-art.js?v=0.35.0';
-import { avatarFaceArt } from './art.js?v=0.35.0';
-import { awardAchievements } from './achievements.js?v=0.35.0';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.35.0';
-import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.35.0';
-import { closeModal, openModal } from './ui-modal.js?v=0.35.0';
-import * as tasks from './ui-tasks.js?v=0.35.0';
-import * as quest from './ui-quest.js?v=0.35.0';
-import * as habits from './ui-habits.js?v=0.35.0';
-import * as vault from './ui-vault.js?v=0.35.0';
-import { vaultArt } from './vault-art.js?v=0.35.0';
-import * as character from './ui-character.js?v=0.35.0';
-import * as shop from './ui-shop.js?v=0.35.0';
-import * as battle from './ui-battle.js?v=0.35.0';
-import * as collection from './ui-collection.js?v=0.35.0';
-import * as settings from './ui-settings.js?v=0.35.0';
-import * as sync from './ui-sync.js?v=0.35.0';
-import * as history from './ui-history.js?v=0.35.0';
-import { installDelights, renderAmbience } from './ui-delights.js?v=0.35.0';
-import { installTagSuggest } from './ui-tag-suggest.js?v=0.35.0';
-import { installTaskOrder } from './ui-task-order.js?v=0.35.0';
-import * as fullscreen from './ui-fullscreen.js?v=0.35.0';
+import * as E from './engine.js?v=0.36.0';
+import { flameArt } from './brand-art.js?v=0.36.0';
+import { avatarFaceArt } from './art.js?v=0.36.0';
+import { awardAchievements } from './achievements.js?v=0.36.0';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.36.0';
+import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.36.0';
+import { closeModal, openModal } from './ui-modal.js?v=0.36.0';
+import * as tasks from './ui-tasks.js?v=0.36.0';
+import * as quest from './ui-quest.js?v=0.36.0';
+import * as habits from './ui-habits.js?v=0.36.0';
+import * as vault from './ui-vault.js?v=0.36.0';
+import { vaultArt } from './vault-art.js?v=0.36.0';
+import * as character from './ui-character.js?v=0.36.0';
+import * as shop from './ui-shop.js?v=0.36.0';
+import * as battle from './ui-battle.js?v=0.36.0';
+import * as collection from './ui-collection.js?v=0.36.0';
+import * as settings from './ui-settings.js?v=0.36.0';
+import * as sync from './ui-sync.js?v=0.36.0';
+import * as history from './ui-history.js?v=0.36.0';
+import { installDelights, renderAmbience } from './ui-delights.js?v=0.36.0';
+import { installTagSuggest } from './ui-tag-suggest.js?v=0.36.0';
+import { installTaskOrder } from './ui-task-order.js?v=0.36.0';
+import * as fullscreen from './ui-fullscreen.js?v=0.36.0';
 
 const features = [tasks, quest, habits, vault, character, shop, battle, collection, settings, history, sync, fullscreen];
 const modals = Object.assign({}, ...features.map(f => f.modals));
@@ -163,6 +163,7 @@ document.addEventListener('keydown', event => {
   vault.onKeydown(event);
   history.onKeydown(event);
   shop.onKeydown(event);
+  quest.onKeydown(event);
   character.onKeydown(event);
 });
 document.addEventListener('keydown', event => {
@@ -183,8 +184,8 @@ document.addEventListener('keydown', event => {
   }
   if (event.key === 'Tab' && app.modal) {
     const focusable = $$(
-      '#overlay button:not([disabled]),#overlay input:not([hidden]):not([disabled]),#overlay textarea,#overlay select:not([disabled]),#overlay a[href]',
-    ).filter(e => e.offsetParent !== null);
+      '#overlay button:not([disabled]),#overlay input:not([hidden]):not([disabled]),#overlay textarea,#overlay select:not([disabled]),#overlay a[href],#overlay [tabindex="0"]',
+    ).filter(e => e.offsetParent !== null && e.tabIndex >= 0);
     const first = focusable[0],
       last = focusable.at(-1);
     if (event.shiftKey && document.activeElement === first) {

@@ -699,6 +699,19 @@ button.hashtag:hover{text-decoration:underline}
 .quest-session-progress{position:absolute;bottom:0;left:0;right:0;height:2px;background:transparent}.quest-session-progress>span{display:block;height:100%;background:var(--accent);opacity:.45}
 .quest-modal{width:440px}.quest-modal .modal-header h2{display:flex;align-items:center;gap:9px}.quest-modal .modal-header h2>.icon{width:20px;height:20px;color:var(--accent)}.quest-options{padding:10px 22px 22px;max-height:60vh;overflow:auto}.quest-option{display:flex;align-items:center;gap:11px;text-align:left;width:100%;padding:12px 6px;border-bottom:1px solid var(--line);border-radius:6px}.quest-option:last-child{border:0}.quest-option:hover,.quest-option.selected{background:var(--accent-soft)}.quest-option>span:first-child{color:var(--accent);display:flex}.quest-option>.gold-value{margin-left:auto;font-size:10px;flex-shrink:0}.quest-option .gold-pile{width:27px;height:24px}.quest-option strong{font-weight:450;font-size:12px;overflow-wrap:anywhere}.quest-option .icon{width:16px;height:16px}.quest-options>p{font-size:12px;color:var(--secondary);padding:10px 0}.quest-options>.task-step{padding:11px 0;border-bottom:1px solid var(--line);font-size:12px}
 .quest-return{display:flex;align-items:center;gap:9px;width:100%;margin-top:12px;padding:12px 6px;border-top:1px solid var(--line);font-size:11px;color:var(--secondary);text-align:left}.quest-return:hover{color:var(--accent)}.quest-return>.icon{width:15px;height:15px}
+.quest-tabs{display:flex;gap:4px;padding:4px;margin:4px 22px 8px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.quest-tabs button{display:flex;align-items:center;justify-content:center;gap:7px;flex:1;min-height:36px;padding:8px 14px;border-radius:7px;font-size:12px;color:var(--secondary)}
+.quest-tabs button>.icon{width:15px;height:15px}
+.quest-tabs button:hover{color:var(--text);background:var(--surface-hover)}
+.quest-tabs button[aria-selected=true]{background:var(--panel);color:var(--accent);font-weight:600;box-shadow:0 1px 4px #0000000a}
+.quest-modal .quest-options{min-height:180px;max-height:min(52vh,420px);padding-bottom:16px}
+.quest-habit-group+.quest-habit-group{margin-top:12px}
+.quest-habit-group h3{margin:4px 6px 5px;color:var(--cat);font-size:10px;font-weight:650;letter-spacing:.07em}
+.quest-habit-option>span:first-child{align-items:center;justify-content:center;width:28px;height:28px;flex-shrink:0;border-radius:8px;background:color-mix(in srgb,var(--cat) 10%,transparent);color:var(--cat)}
+.quest-option strong{flex:1;min-width:0}
+.quest-habit-option>.xp-badge{margin-left:auto;flex-shrink:0;color:var(--cat)}
+.quest-picker-footer{padding:0 22px 18px}
+.quest-picker-footer .quest-return{margin-top:0}
 @keyframes quest-gait-a{0%,100%{visibility:visible}50%{visibility:hidden}}@keyframes quest-gait-b{0%,100%{visibility:hidden}50%{visibility:visible}}@keyframes quest-step-bob{0%,50%,100%{transform:translateY(0)}25%,75%{transform:translateY(-1.5px)}}@keyframes quest-trail{to{stroke-dashoffset:12}}
 @media(prefers-reduced-motion:reduce){.is-walking .journey-walker,.is-walking .journey-walker>svg,.is-walking .trail-path{animation:none!important}.is-walking .journey-walker>svg+svg{visibility:hidden}}
 [data-motion=reduced] .is-walking .journey-walker,[data-motion=reduced] .is-walking .journey-walker>svg,[data-motion=reduced] .is-walking .trail-path{animation:none!important}[data-motion=reduced] .is-walking .journey-walker>svg+svg{visibility:hidden}

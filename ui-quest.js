@@ -1,13 +1,13 @@
 // One task, a little trail, and a device-local focus timer.
-import * as E from './engine.js?v=0.34.0';
-import * as T from './quest-timer.js?v=0.34.0';
-import { goldArt } from './art.js?v=0.34.0';
-import { avatarJourneyArt } from './avatar-model.js?v=0.34.0';
-import { resolvedHabitIcon } from './habit-icons.js?v=0.34.0';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.34.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.34.0';
-import { rewardEffect, sound } from './ui-effects.js?v=0.34.0';
-import { unlockSfx } from './sfx.js?v=0.34.0';
+import * as E from './engine.js?v=0.35.0';
+import * as T from './quest-timer.js?v=0.35.0';
+import { goldArt } from './art.js?v=0.35.0';
+import { avatarJourneyArt } from './avatar-model.js?v=0.35.0';
+import { resolvedHabitIcon } from './habit-icons.js?v=0.35.0';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.35.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.35.0';
+import { rewardEffect, sound } from './ui-effects.js?v=0.35.0';
+import { unlockSfx } from './sfx.js?v=0.35.0';
 
 const TIMER_KEY = 'twesk.quest-timer.v1';
 let timer = T.freshTimer(), dialDrag = null, owed = 0;
@@ -133,8 +133,8 @@ export const actions = {
   },
   'quest-play'() {
     reconcile(); unlockSfx();
-    // A fresh session (not a resume) sets off with its own little call.
-    if (timer.status === 'ready' || timer.status === 'finished') sound('setOff');
+    // Pausing and resuming get short cues; a fresh session keeps its setting-off call.
+    sound(timer.status === 'running' ? 'focusPause' : timer.status === 'paused' ? 'focusResume' : 'setOff');
     timer = timer.status === 'running' ? T.pauseTimer(timer) : T.startTimer(timer);
     saveClock();
     creditFocus();

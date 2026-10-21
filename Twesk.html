@@ -3869,6 +3869,15 @@ const SOUNDS = {
     tone({ t, f: direction > 0 ? 620 : 480, f2: 220, dur: .045, vol: .035, type: 'triangle', verb: 0 });
     noise({ t: t + .025, dur: .018, vol: .035, type: 'highpass', f: 3500, verb: 0 });
   },
+  // A soft, warm resting note; resuming answers with a tiny upward step.
+  focusPause(t) {
+    tone({ t, f: 392, dur: .16, vol: .055, attack: .008, verb: .08 });
+    tone({ t, f: 196, dur: .11, vol: .025, attack: .008, type: 'triangle', verb: .05 });
+  },
+  focusResume(t) {
+    tone({ t, f: 392, dur: .1, vol: .045, attack: .008, verb: .08 });
+    tone({ t: t + .055, f: 523.25, dur: .14, vol: .055, attack: .008, verb: .08 });
+  },
   // A small campsite wind chime: an invitation to rest, rather than a victory fanfare.
   trailBell(t) {
     [880, 1174.66, 1318.51, 987.77].forEach((f, i) => bell(f, t + i * .23, .065, 1.5, .55, (i - 1.5) * .18));
@@ -4748,8 +4757,8 @@ const actions = {
   },
   'quest-play'() {
     reconcile(); unlockSfx();
-    // A fresh session (not a resume) sets off with its own little call.
-    if (timer.status === 'ready' || timer.status === 'finished') sound('setOff');
+    // Pausing and resuming get short cues; a fresh session keeps its setting-off call.
+    sound(timer.status === 'running' ? 'focusPause' : timer.status === 'paused' ? 'focusResume' : 'setOff');
     timer = timer.status === 'running' ? T.pauseTimer(timer) : T.startTimer(timer);
     saveClock();
     creditFocus();

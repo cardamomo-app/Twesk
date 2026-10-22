@@ -603,6 +603,46 @@ const SOUNDS = {
     const f = rand(1400, 1900);
     tone({ t: t + 0.08, f, f2: f * 1.35, dur: 0.32, vol: 0.09, verb: 0.5, pan: -0.25 });
   },
+  // Companion voices and assists are quiet enough to layer with weapons and spells.
+  petCall(t, { pet } = {}) {
+    if (pet === 'fox') {
+      tone({ t, f: 650, f2: 920, dur: .1, vol: .045, type: 'triangle', verb: .1 });
+      tone({ t: t + .08, f: 760, f2: 600, dur: .12, vol: .035, verb: .1 });
+      noise({ t, dur: .14, vol: .035, f: 2600, type: 'highpass', verb: .1 });
+    } else if (pet === 'owl') {
+      tone({ t, f: 340, f2: 290, dur: .17, vol: .06, attack: .025, verb: .2 });
+      tone({ t: t + .15, f: 420, f2: 350, dur: .18, vol: .045, attack: .025, verb: .2 });
+      noise({ t: t + .08, dur: .17, vol: .035, f: 1900, verb: .1 });
+    } else if (pet === 'tortoise') {
+      tone({ t, f: 150, f2: 95, dur: .15, vol: .065, type: 'triangle', verb: .08 });
+      noise({ t, dur: .06, vol: .05, f: 850, verb: .05 });
+    } else if (pet === 'cat') {
+      tone({ t, f: 440, f2: 590, dur: .19, vol: .045, attack: .02, verb: .2 });
+      tone({ t: t + .1, f: 82, dur: .3, vol: .04, type: 'triangle', attack: .04, verb: .1 });
+    } else if (pet === 'drake') {
+      tone({ t, f: 115, f2: 170, dur: .22, vol: .055, type: 'triangle', attack: .025, verb: .15 });
+      noise({ t: t + .1, dur: .24, vol: .07, f: 1700, f2: 3500, attack: .025, verb: .1 });
+    }
+  },
+  petImpact(t, { pet } = {}) {
+    if (pet === 'fox') {
+      noise({ t, dur: .19, vol: .07, f: 2800, f2: 850, verb: .1 });
+      tone({ t, f: 988, dur: .12, vol: .025, verb: .2 });
+    } else if (pet === 'owl') {
+      noise({ t, dur: .16, vol: .065, f: 3600, f2: 1500, verb: .1 });
+      tone({ t: t + .025, f: 784, dur: .14, vol: .035, verb: .2 });
+    } else if (pet === 'tortoise') {
+      tone({ t, f: 120, f2: 65, dur: .19, vol: .09, type: 'triangle', verb: .1 });
+      noise({ t, dur: .09, vol: .075, f: 950, q: 1.4, verb: .1 });
+    } else if (pet === 'cat') {
+      bell(880, t, .035, .5, .25);
+      bell(1108.73, t + .08, .025, .5, .3);
+      tone({ t, f: 82, dur: .35, vol: .035, type: 'triangle', attack: .04, verb: .1 });
+    } else if (pet === 'drake') {
+      noise({ t, dur: .27, vol: .09, f: 2200, f2: 500, verb: .12 });
+      tone({ t, f: 210, f2: 80, dur: .16, vol: .06, type: 'triangle', verb: .1 });
+    }
+  },
   // A soft two-bell chime when a minute of focus restores HP.
   focusHeal(t) {
     bell(784, t, 0.03, 0.9, 0.6, -0.15);

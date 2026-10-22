@@ -1,8 +1,8 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.37.0';
-import {validHabitIcon} from './habit-icons.js?v=0.37.0';
-import {rememberTagColors,validTagColors} from './tag-colors.js?v=0.37.0';
-export {tagHue,setTagColor} from './tag-colors.js?v=0.37.0';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.38.0';
+import {validHabitIcon} from './habit-icons.js?v=0.38.0';
+import {rememberTagColors,validTagColors} from './tag-colors.js?v=0.38.0';
+export {tagHue,setTagColor} from './tag-colors.js?v=0.38.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -629,11 +629,12 @@ export function boostSources(s) {
   return { spell: preparedSpell(s)?.boosts || {}, tonic: activeTonic(s)?.boosts || {}, pet: activePetItem(s)?.boosts || {} };
 }
 const boostTotal = (s,key) => Object.values(boostSources(s)).reduce((n,b)=>n+(b[key]||0),0);
+const dodgeChance = (s, bonus) => Math.min(.75, soulDeflect(level(s,'soul'))+bonus+(SHOP.find(i => i.id === s.equipped.boots)?.bonus || 0)/100);
 export function combatStats(s) {
   return {
     hp: s.hp, max: maxHP(s), attack: 4*(level(s,'mind')-1)+(SHOP.find(i => i.id === s.equipped.weapon)?.bonus || 0)+boostTotal(s,'attack'),
     armor: (SHOP.find(i => i.id === s.equipped.armor)?.bonus || 0)+boostTotal(s,'armor'),
-    dodge: Math.min(.75, soulDeflect(level(s,'soul'))+boostTotal(s,'dodge')+(SHOP.find(i => i.id === s.equipped.boots)?.bonus || 0)/100), rally: 15*(level(s,'heart')-1)+boostTotal(s,'rally'),
+    dodge: dodgeChance(s,boostTotal(s,'dodge')), rally: 15*(level(s,'heart')-1)+boostTotal(s,'rally'),
   };
 }
 export function victoryOdds(s) {
@@ -706,11 +707,16 @@ function encounter(p,m,w,rng,events=null,d={}) {
     strike(first,{baseDamage,weaponBonus:d.weaponBonus,mindBonus:d.mindBonus,spellBonus:d.spellBonus,petBonus:d.petBonus,...(crit?{critBonus:baseDamage}:{}),...(venomBonus?{venomBonus}:{})});
     if (!enemy) break;
     if (w.twin && rng()<w.twin) {
-      strike(Math.ceil(first/2),{strike:'twin'});
+      const petBonus=Math.ceil(first/2)-Math.ceil((first-(d.petBonus||0))/2);
+      strike(Math.ceil(first/2),{strike:'twin',...(petBonus?{petBonus}:{})});
       if (!enemy) break;
     }
     if (w.stagger && rng()<w.stagger) { log({type:'stagger',round,amount:0,hpBefore:hp,enemyBefore:enemy,hp,enemy}); continue; }
-    if (p.dodge && rng()<p.dodge) { log({type:'deflect',round,amount:0,soulLevel:d.soulLevel,hpBefore:hp,enemyBefore:enemy,hp,enemy}); continue; }
+    const dodgeRoll=p.dodge?rng():1;
+    if (dodgeRoll<p.dodge) {
+      const petDeflect=d.petDodge>0 && dodgeRoll>=d.nonPetDodge;
+      log({type:'deflect',round,amount:0,soulLevel:d.soulLevel,...(petDeflect?{petDeflect:true}:{}),hpBefore:hp,enemyBefore:enemy,hp,enemy}); continue;
+    }
     const rawDamage=Math.max(1,roll(m.attack-10,11)-dent), armored=Math.max(1,rawDamage-p.armor);
     const raised=!!w.block&&rng()<w.block, shieldBlock=raised?Math.floor(armored/2):0, injury=armored-shieldBlock;
     const hpBefore=hp, enemyBefore=enemy; hp=Math.max(0,hp-injury);
@@ -721,7 +727,8 @@ function encounter(p,m,w,rng,events=null,d={}) {
     if (!enemy) break;
     if (hp && ready && p.rally && hp<=p.max/2) {
       const healed=Math.min(p.max-hp,p.rally), before=hp; hp+=healed; ready=false;
-      log({type:'rally',round,amount:healed,heartLevel:d.heartLevel,hpBefore:before,enemyBefore:enemy,hp,enemy});
+      const petHeal=Math.max(0,healed-(p.rally-(d.petRally||0)));
+      log({type:'rally',round,amount:healed,heartLevel:d.heartLevel,...(petHeal?{petHeal}:{}),hpBefore:before,enemyBefore:enemy,hp,enemy});
     }
   }
   return {hp,enemy};
@@ -734,7 +741,7 @@ export function fight(s,today,rng=Math.random) {
   if(spell) { s.supplies[spell.id]--;s.preparedSpell=null; }
   if(tonic) s.tonic=null;
   const weaponBonus=SHOP.find(i=>i.id===s.equipped.weapon)?.bonus||0;
-  const detail={weaponBonus,mindBonus:4*(level(s,'mind')-1),spellBonus:boosts.spell.attack||0,petBonus:boosts.pet.attack||0,spellArmor:boosts.spell.armor||0,petArmor:boosts.pet.armor||0,soulLevel:level(s,'soul'),heartLevel:level(s,'heart')};
+  const detail={weaponBonus,mindBonus:4*(level(s,'mind')-1),spellBonus:boosts.spell.attack||0,petBonus:boosts.pet.attack||0,spellArmor:boosts.spell.armor||0,petArmor:boosts.pet.armor||0,petDodge:boosts.pet.dodge||0,nonPetDodge:dodgeChance(s,(boosts.spell.dodge||0)+(boosts.tonic.dodge||0)),petRally:boosts.pet.rally||0,soulLevel:level(s,'soul'),heartLevel:level(s,'heart')};
   const {hp,enemy}=encounter(p,m,gearPowers(s),rng,events,detail);
   s.hp=hp; let loot=null;
   if (!enemy) {
@@ -747,7 +754,7 @@ export function fight(s,today,rng=Math.random) {
       else { const item=choices[Math.floor(rng()*choices.length)]; s.inventory.push(item.id); loot={type:'equipment',id:item.id}; }
     }
   } else s.pendingRecovery=true;
-  const result={id:uid(),day:today,monster:s.monster.number,won:enemy===0,loot,hp,events,spell:spell?.id||null,tonic:tonic?.id||null,pet:pet?.id||null,initialHP:p.hp,maxHP:p.max,playerName:s.name,appearance:{...(s.appearance||DEFAULT_APPEARANCE)},loadout:{...s.equipped},levels:Object.fromEntries(CATEGORIES.map(c=>[c,level(s,c)]))};
+  const result={id:uid(),day:today,monster:s.monster.number,won:enemy===0,loot,hp,events,spell:spell?.id||null,tonic:tonic?.id||null,pet:pet?.id||null,petHat:pet?s.petHat:null,initialHP:p.hp,maxHP:p.max,playerName:s.name,appearance:{...(s.appearance||DEFAULT_APPEARANCE)},loadout:{...s.equipped},levels:Object.fromEntries(CATEGORIES.map(c=>[c,level(s,c)]))};
   s.battles.unshift(result); s.battles=s.battles.slice(0,50); return result;
 }
 
@@ -812,7 +819,8 @@ export function validateState(value) {
     if(!id(battle.id)||!date(battle.day)||!integer(battle.monster,1,500)||typeof battle.won!=='boolean'||!integer(battle.hp)||!array(battle.events,2000)||!battle.events.length) fail();
     for(const event of battle.events) {
       if(!event||!['attack','hit','deflect','rally','stagger'].includes(event.type)||!integer(event.amount)||!integer(event.hp)||!integer(event.enemy)) fail();
-      for(const key of ['round','actualDamage','baseDamage','weaponBonus','mindBonus','spellBonus','spellBlock','critBonus','venomBonus','healed','sunder','shieldBlock','thorns','hpBefore','enemyBefore','rawDamage','blocked','armorBonus','soulLevel','heartLevel']) if(event[key]!==undefined&&!integer(event[key])) fail();
+      for(const key of ['round','actualDamage','baseDamage','weaponBonus','mindBonus','spellBonus','spellBlock','petBonus','petBlock','petHeal','critBonus','venomBonus','healed','sunder','shieldBlock','thorns','hpBefore','enemyBefore','rawDamage','blocked','armorBonus','soulLevel','heartLevel']) if(event[key]!==undefined&&!integer(event[key])) fail();
+      if(event.petDeflect!==undefined&&typeof event.petDeflect!=='boolean')fail();
     }
     if(battle.won) {
       if(!battle.loot||!['gold','equipment'].includes(battle.loot.type)) fail();
@@ -826,6 +834,7 @@ export function validateState(value) {
     if(battle.spell!=null&&!SHOP.some(i=>i.id===battle.spell&&i.type==='spell'))fail();
     if(battle.tonic!=null&&!SHOP.some(i=>i.id===battle.tonic&&i.tonic))fail();
     if(battle.pet!=null&&!SHOP.some(i=>i.id===battle.pet&&i.type==='pet'))fail();
+    if(battle.petHat!=null&&!SHOP.some(i=>i.id===battle.petHat&&i.type==='pethat'))fail();
     if(battle.loadout) for(const type of GEAR_SLOTS) if(battle.loadout[type]!=null&&!SHOP.some(i=>i.id===battle.loadout[type]&&i.type===type)) fail();
     if(battle.levels&&!CATEGORIES.every(c=>integer(battle.levels[c],1))) fail();
   }

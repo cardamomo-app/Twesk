@@ -991,6 +991,51 @@ button.hashtag:hover{text-decoration:underline}
 @media(max-width:560px){.combat-attack{bottom:68px}.combat-attack>svg{width:98px;height:98px}.combat-attack .attack-projectile{width:56px;height:56px}.attack-iron .attack-trail,.attack-dawn .attack-trail,.motion-chop .attack-trail{width:112px;height:112px}.attack-twig .attack-trail,.motion-thrust .attack-trail{width:91px;height:91px}.combat-attack .attack-power{width:110px;height:110px}.combat-attack .power-freeze{width:104px;height:130px}.combat-attack .attack-drain{width:45px;height:45px}}
 @media(prefers-reduced-motion:reduce){.combat-attack .attack-projectile{display:none}.impacted .attack-trail,.impacted .attack-impact,.impacted .attack-power{animation:none;opacity:.65}.impacted .attack-drain{animation:none;opacity:.6;left:23%}}
 :root[data-motion=reduced] .combat-attack .attack-projectile{display:none}:root[data-motion=reduced] .impacted .attack-trail,:root[data-motion=reduced] .impacted .attack-impact,:root[data-motion=reduced] .impacted .attack-power{animation:none;opacity:.65}:root[data-motion=reduced] .impacted .attack-drain{animation:none;opacity:.6;left:23%}
+/* Companions share the battlefield; their assists are overlays, so turns never change its height. */
+.battle-companion{--pet-hop:55px;position:absolute;left:-3px;bottom:4px;width:100px;height:112px;z-index:4;pointer-events:none;text-align:center}
+.companion-art{position:absolute;inset:0 0 12px;display:block;transform-origin:50% 85%}
+.companion-art>svg{width:100%;height:100%;overflow:visible}
+.companion-name{position:absolute;bottom:0;left:-4px;right:-4px;font-size:9px;line-height:14px;color:var(--secondary);white-space:nowrap}
+.companion-ground{position:absolute;left:15%;right:15%;bottom:15px;height:13px;border-radius:50%;background:color-mix(in srgb,var(--pet-color) 13%,transparent);transition:box-shadow .2s}
+.is-assisting .companion-ground{box-shadow:0 0 24px 6px color-mix(in srgb,var(--pet-color) 32%,transparent)}
+.is-assisting .companion-art{filter:drop-shadow(0 0 7px color-mix(in srgb,var(--pet-color) 65%,transparent))}
+.companion-callout{position:absolute;left:0;top:-4px;transform:translateY(-100%);display:flex;flex-direction:column;gap:1px;width:max-content;max-width:135px;padding:6px 9px;border-radius:8px;border:1px solid color-mix(in srgb,var(--pet-color) 50%,var(--line));background:var(--panel);box-shadow:var(--shadow);text-align:left;z-index:8}
+.companion-callout strong{font-size:10px;line-height:1.35;color:var(--text);font-weight:650}
+.companion-callout>span{font-size:9px;line-height:1.4;color:color-mix(in srgb,var(--pet-color) 58%,var(--text));font-weight:650}
+.companion-enter .companion-art{animation:pet-arrive .65s ease-out both}
+.companion-victory .companion-art{animation:pet-cheer .8s ease-in-out 2}
+.companion-rest{opacity:.72}
+.pet-owl.is-assisting .companion-art{animation:owl-assist .85s ease-in-out both}
+.pet-drake.is-assisting .companion-art{animation:drake-assist .8s ease-in-out both}
+.pet-tortoise.is-assisting .companion-art{animation:shell-assist .85s ease-in-out both}
+.pet-fox.is-assisting .companion-art{animation:fox-assist .85s ease-in-out both}
+.pet-cat.is-assisting .companion-art{animation:cat-assist 1.15s ease-in-out both}
+@keyframes pet-arrive{0%{opacity:0;transform:translate(-12px,5px) scale(.85)}65%{opacity:1;transform:translate(0,-5px) scale(1.03)}100%{opacity:1;transform:none}}
+@keyframes pet-cheer{0%,100%{transform:none}45%{transform:translateY(-9px) rotate(-5deg)}70%{transform:translateY(-3px) rotate(4deg)}}
+@keyframes owl-assist{0%,100%{transform:none}30%{transform:translate(calc(var(--pet-hop)*.4),-40px) rotate(-12deg)}50%{transform:translate(var(--pet-hop),-23px) rotate(13deg)}75%{transform:translate(12px,-14px) rotate(-5deg)}}
+@keyframes drake-assist{0%,100%{transform:none}25%{transform:translate(-5px,-5px) rotate(-8deg)}50%{transform:translate(8px,-2px) rotate(8deg)}70%{transform:translate(4px,0) rotate(3deg)}}
+@keyframes shell-assist{0%,100%{transform:none}25%{transform:translate(9px,3px) scale(1.04,.88)}50%{transform:translate(12px,1px) rotate(-7deg) scale(1.08,.9)}75%{transform:translate(5px,2px)}}
+@keyframes fox-assist{0%,100%{transform:none}25%{transform:translate(calc(var(--pet-hop)*.2),-8px) rotate(-8deg)}45%{transform:translate(var(--pet-hop),-4px) rotate(8deg)}65%{transform:translate(calc(var(--pet-hop)*.4),-12px) rotate(-5deg)}}
+@keyframes cat-assist{0%,100%{transform:none}30%,65%{transform:translateY(-14px) rotate(-5deg)}80%{transform:translateY(-6px) rotate(3deg)}}
+.combat-pet-effect{position:absolute;inset:0 0 68px;pointer-events:none;z-index:5;color:var(--pet-color)}
+.pet-projectile{position:absolute;left:9%;top:74%;width:56px;height:56px;overflow:visible;filter:drop-shadow(0 0 7px var(--pet-color));animation:pet-flight .4s ease-in both}
+.pet-impact{position:absolute;left:77%;top:55%;width:112px;height:112px;overflow:visible;opacity:0;transform:translate(-50%,-50%);filter:drop-shadow(0 0 7px var(--pet-color))}
+.pet-effect-guard .pet-impact{left:27%;top:63%;width:112px;height:124px;transform:translate(-50%,-50%) scale(.8);opacity:.5}
+.pet-effect-deflect .pet-impact{left:23%;top:63%;width:145px;height:145px;opacity:.4;animation:pet-leaf-charge .4s ease-out both}
+.pet-effect-heal .pet-projectile{width:45px;height:45px;animation-name:pet-heal-flight}
+.pet-effect-heal .pet-impact{left:23%;top:63%;width:130px;height:130px}
+.impacted .pet-impact{animation:pet-burst .75s ease-out both}
+.impacted .pet-effect-guard .pet-impact{animation:shell-flash .8s ease-out both}
+.impacted .pet-effect-deflect .pet-impact{animation:pet-leaf-burst .8s ease-out both}
+@keyframes pet-flight{0%{opacity:0;left:9%;top:74%;transform:translate(-50%,-50%) scale(.45) rotate(-15deg)}20%,80%{opacity:1}100%{opacity:0;left:77%;top:55%;transform:translate(-50%,-50%) scale(1.1) rotate(20deg)}}
+@keyframes pet-heal-flight{0%{opacity:0;left:9%;top:74%;transform:translate(-50%,-50%) scale(.5)}20%,85%{opacity:1}100%{opacity:0;left:23%;top:52%;transform:translate(-50%,-50%) scale(1.15)}}
+@keyframes pet-burst{0%{opacity:1;transform:translate(-50%,-50%) scale(.4)}40%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}}
+@keyframes shell-flash{0%{opacity:.9;transform:translate(-50%,-50%) scale(.85)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.04)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.15)}}
+@keyframes pet-leaf-charge{0%{opacity:0;transform:translate(-50%,-50%) rotate(-45deg) scale(.7)}100%{opacity:.6;transform:translate(-50%,-50%) rotate(0) scale(1)}}
+@keyframes pet-leaf-burst{0%{opacity:.85;transform:translate(-50%,-50%) rotate(0) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) rotate(70deg) scale(1.4)}}
+@media(max-width:560px){.battle-companion{--pet-hop:24px;left:-7px;bottom:0;width:68px;height:81px}.companion-art{bottom:12px}.companion-name{font-size:8px;letter-spacing:-.15px}.companion-callout{max-width:108px;padding:5px 7px}.companion-callout strong{font-size:10px}.companion-callout>span{font-size:9px}.pet-projectile{width:40px;height:40px}.pet-effect-heal .pet-projectile{width:35px;height:35px}.pet-impact,.pet-effect-heal .pet-impact{width:86px;height:86px}.pet-effect-guard .pet-impact{width:80px;height:92px}.pet-effect-deflect .pet-impact{width:106px;height:106px}}
+@media(prefers-reduced-motion:reduce){.battle-companion *{animation:none!important;transition:none!important}.pet-projectile{display:none}.pet-effect-deflect .pet-impact{animation:none;opacity:.4}.impacted .pet-impact{animation:none!important;opacity:.7}}
+:root[data-motion=reduced] .battle-companion *{animation:none!important;transition:none!important}:root[data-motion=reduced] .pet-projectile{display:none}:root[data-motion=reduced] .pet-effect-deflect .pet-impact{animation:none;opacity:.4}:root[data-motion=reduced] .impacted .pet-impact{animation:none!important;opacity:.7}
 
 /* Keep the brand, date, and every control readable on the narrowest phones. */
 @media(max-width:400px){.topbar{height:auto;min-height:90px;padding-top:10px;padding-bottom:10px;flex-direction:column;align-items:stretch;gap:5px}.topbar-brand{width:100%;justify-content:space-between;flex-shrink:0}.topbar-date{max-width:none;white-space:nowrap;padding-left:0;border-left:0;font-size:9px;text-align:right}.topbar-actions{align-self:flex-end}}

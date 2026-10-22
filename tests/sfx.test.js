@@ -128,3 +128,14 @@ test('winding is a short rate-limited effect and respects mute', () => {
   assert.ok(first > 0); h.playSfx('wind', { direction: -1 }); assert.equal(h.starts.length, first);
   h.configureSfx({ muted: () => true }); h.playSfx('wind'); assert.equal(h.starts.length, first);
 });
+test('each companion has a call and assist sound, with battle mute and cancellation', () => {
+  const h = audioHarness();
+  for (const pet of ['fox', 'owl', 'tortoise', 'cat', 'drake']) for (const name of ['petCall', 'petImpact']) {
+    const before = h.starts.length;
+    h.playSfx(name, { pet, channel: 'battle' }); assert.ok(h.starts.length > before, `${pet} ${name}`);
+  }
+  const before = h.starts.length; h.configureSfx({ muted: () => true });
+  h.playSfx('petCall', { pet: 'drake', channel: 'battle' }); h.playSfx('petImpact', { pet: 'cat', channel: 'battle' });
+  assert.equal(h.starts.length, before);
+  const stops = h.stops.length; h.stopSfx('battle'); assert.ok(h.stops.length > stops);
+});

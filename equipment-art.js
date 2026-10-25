@@ -1,4 +1,4 @@
-import {avatarGeometry} from './avatar-model.js?v=0.38.0';
+import {avatarGeometry} from './avatar-model.js?v=0.39.0';
 import {createCuboidScene,projectPoint,visibleCuboidFaces} from './cuboid-renderer.js';
 
 const illustrations=new Map();
@@ -99,7 +99,7 @@ function pet(item){
     add(-17,-11,36,34,23,24,'#9985aa');add(-16,-10,58,7,12,8,'#766387');add(9,-10,58,7,12,8,'#766387');
     add(-13,12,41,11,2,13,'#ecdfc5');add(2,12,41,11,2,13,'#ecdfc5');
     add(-9,14,44,4,2,6,'#3e394c');add(5,14,44,4,2,6,'#3e394c');add(-3,14,38,6,4,7,'#d3a452');
-    add(-9,2,4,6,12,5,'#d3a452');add(3,2,4,6,12,5,'#d3a452');add(-9,10,18,18,2,17,'#c8b5c9');
+    add(-9,2,4,6,12,5,'#d3a452','pet paws');add(3,2,4,6,12,5,'#d3a452','pet paws');add(-9,10,18,18,2,17,'#c8b5c9');
   }else{
     const fox=item.id==='fox',fur=fox?'#c98c50':'#a2b2ca',dark=fox?'#755642':'#73839d',light=fox?'#f0ddbd':'#dbe4e8';
     add(-12,-14,9,24,29,23,fur);add(-15,3,29,30,23,23,fur);
@@ -134,6 +134,11 @@ function hatBoxes(hat) {
 }
 // Where a hat sits on each pet's head (between ears, tufts, or horns), and how large it is.
 const HAT_SPOTS={owl:{x:0,y:-1,z:60,scale:1},fox:{x:0,y:12,z:52,scale:.85},cat:{x:0,y:12,z:52,scale:.85},tortoise:{x:0,y:22,z:20,scale:.55},drake:{x:0,y:17,z:46,scale:.65}};
+function petHatBoxes(companion,hat,body){
+  if(!hat)return [];
+  const spot=HAT_SPOTS[companion.id]||{x:0,y:0,z:Math.max(...body.map(b=>b.z+b.h)),scale:1};
+  return hatBoxes(hat).map(b=>({...b,x:spot.x+b.x*spot.scale,y:spot.y+b.y*spot.scale,z:spot.z+b.z*spot.scale,w:b.w*spot.scale,d:b.d*spot.scale,h:b.h*spot.scale}));
+}
 // Recenters geometry on the display stand. Size comes from fitBoxes, so a hat added to a pet does not shrink the pet.
 function stage(item,fitBoxes){
   const minX=Math.min(...fitBoxes.map(b=>b.x)),maxX=Math.max(...fitBoxes.map(b=>b.x+b.w));
@@ -179,7 +184,32 @@ export function petMouth(companion){
 // A companion wearing a hat: the pet keeps its usual size and the hat sits on its head.
 export function petArt(companion,hat=null) {
   if(!hat)return itemArt(companion);
-  const body=pet(companion),spot=HAT_SPOTS[companion.id]||{x:0,y:0,z:Math.max(...body.map(b=>b.z+b.h)),scale:1};
-  const crown=hatBoxes(hat).map(b=>({...b,x:spot.x+b.x*spot.scale,y:spot.y+b.y*spot.scale,z:spot.z+b.z*spot.scale,w:b.w*spot.scale,d:b.d*spot.scale,h:b.h*spot.scale}));
+  const body=pet(companion),crown=petHatBoxes(companion,hat,body);
   return illustrate(`${companion.id}+${hat.id}`,companion,[...body,...crown],{fitBoxes:body,viewBox:'20 22 200 218'});
+}
+// Trail companions have a resting pose and two diagonal steps, with no shop display stand.
+// All poses share one viewBox so starting and pausing cannot shift or resize the miniature.
+const journeyPets=new Map();
+export function petJourneyArt(companion,hat=null){
+  if(!companion)return '';
+  const key=`${companion.id}:${hat?.id||''}`;
+  if(journeyPets.has(key))return journeyPets.get(key);
+  const body=pet(companion),boxes=[...body,...petHatBoxes(companion,hat,body)];
+  const frames=[0,-1,1].map(stride=>{
+    const pose=boxes.map(b=>{
+      if(!stride)return b.part==='pet paws'?{...b,z:1,h:Math.max(3,b.h-3)}:{...b,z:b.z-4};
+      if(b.part!=='pet paws')return b;
+      const phase=(b.x<0?-1:1)*(b.y<0?-1:1)*stride;
+      return {...b,y:b.y+phase*2.5,z:b.z+Math.max(0,phase*1.8)};
+    });
+    return visibleCuboidFaces(createCuboidScene(pose),-.85);
+  });
+  const points=frames.flatMap(faces=>faces.flatMap(f=>f.projected));
+  const x=Math.min(...points.map(p=>p[0]))-3,y=Math.min(...points.map(p=>p[1]))-3;
+  const w=Math.max(...points.map(p=>p[0]))-x+3,h=Math.max(...points.map(p=>p[1]))-y+3;
+  const viewBox=[x,y,w,h].map(n=>n.toFixed(2)).join(' ');
+  const art=frames.map((faces,index)=>`<svg class="${index?'pet-step-'+index:'pet-rest'}" viewBox="${viewBox}" aria-hidden="true">${faces.map(f=>`<polygon points="${f.projected.map(p=>p.map(n=>n.toFixed(2)).join(',')).join(' ')}" fill="${tint(f.color,f.light)}"/>`).join('')}</svg>`).join('');
+  const result=`<span class="journey-pet journey-pet-${companion.id}">${art}</span>`;
+  if(journeyPets.size>=16)journeyPets.delete(journeyPets.keys().next().value);
+  journeyPets.set(key,result);return result;
 }

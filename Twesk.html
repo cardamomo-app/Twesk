@@ -710,6 +710,25 @@ button.hashtag:hover{text-decoration:underline}
 .quest-controls{min-width:0;flex:1;align-self:center;z-index:1}.quest-controls>small:empty{display:none}.quest-controls>small{display:block;font-size:8px;color:var(--muted);white-space:nowrap}.quest-play-row{display:flex;align-items:center;gap:4px;margin:4px 0 3px}.quest-play{display:flex;align-items:center;justify-content:center;gap:5px;padding:5px 9px;min-height:27px;border:1px solid color-mix(in srgb,var(--accent) 20%,var(--line));border-radius:7px;color:var(--accent);font-size:10px;background:var(--panel);white-space:nowrap}.quest-play:hover:not(:disabled){background:var(--accent-soft)}.quest-play>.icon{width:11px;height:11px;fill:currentColor;stroke-width:1.2}.quest-play-row>.icon-button{width:23px;height:23px;color:var(--muted)}.quest-play-row>.icon-button>.icon{width:12px;height:12px}
 .quest-trail{position:relative;flex:0 0 65px;height:80px;align-self:flex-end;pointer-events:none;color:var(--body);margin:0 0 -3px -7px}.trail-ground{position:absolute;inset:auto 0 0;width:100%;height:65px;opacity:.7}.trail-path{fill:none;stroke:color-mix(in srgb,var(--gold) 40%,var(--line));stroke-width:7;stroke-linecap:round;stroke-dasharray:2 1}.journey-walker{display:block;position:absolute;width:53px;height:65px;bottom:1px;left:8px}.journey-walker>svg{width:100%;height:100%;position:absolute;inset:0}.journey-walker>svg+svg{visibility:hidden}
 .is-walking .journey-walker{animation:quest-step-bob .7s ease-in-out infinite}.is-walking .journey-walker>svg:first-child{animation:quest-gait-a .7s steps(1) infinite}.is-walking .journey-walker>svg+svg{animation:quest-gait-b .7s steps(1) infinite}.is-walking .trail-path{animation:quest-trail 2s linear infinite}
+/* A travelling companion shares the trail without changing the timer or task row. */
+.quest-trail.has-companion{flex-basis:90px}
+.quest-trail.has-companion .journey-walker{left:28px;z-index:2}
+.quest-bottom:has(.quest-trail.has-companion) .quest-controls{min-width:62px}
+.journey-pet{--pet-stride:.7s;--pet-bob:1px;position:absolute;left:0;bottom:1px;display:block;width:36px;height:41px;z-index:3}
+.journey-pet>svg{position:absolute;inset:0;width:100%;height:100%}
+.journey-pet::before{content:'';position:absolute;left:15%;right:15%;bottom:0;height:3px;border-radius:50%;background:color-mix(in srgb,var(--body) 18%,transparent)}
+.journey-pet>.pet-step-1,.journey-pet>.pet-step-2{visibility:hidden}
+.journey-pet-tortoise{--pet-stride:1.05s;--pet-bob:.5px}
+.journey-pet-owl{--pet-stride:.65s;--pet-bob:2px}
+.is-walking .journey-pet{animation:pet-trail-step var(--pet-stride) ease-in-out infinite}
+.is-walking .journey-pet>.pet-rest{visibility:hidden}
+.is-walking .journey-pet>.pet-step-1{animation:quest-gait-a var(--pet-stride) steps(1) infinite}
+.is-walking .journey-pet>.pet-step-2{animation:quest-gait-b var(--pet-stride) steps(1) infinite}
+@keyframes pet-trail-step{0%,50%,100%{transform:translateY(0)}25%,75%{transform:translateY(calc(-1 * var(--pet-bob)))}}
+@media(min-width:561px) and (max-width:1100px){.quest-trail.has-companion{flex-basis:65px}.quest-trail.has-companion .journey-walker{left:20px;width:45px}.quest-trail.has-companion .journey-pet{left:3px;width:31px;height:37px}.quest-bottom:has(.quest-trail.has-companion){gap:6px}}
+@media(max-width:560px){.quest-trail.has-companion{flex-basis:85px}.quest-trail.has-companion .journey-pet{width:34px;height:39px}}
+@media(prefers-reduced-motion:reduce){.is-walking .journey-pet,.is-walking .journey-pet>svg{animation:none!important}.is-walking .journey-pet>.pet-rest{visibility:visible}.is-walking .journey-pet>.pet-step-1,.is-walking .journey-pet>.pet-step-2{visibility:hidden}}
+[data-motion=reduced] .is-walking .journey-pet,[data-motion=reduced] .is-walking .journey-pet>svg{animation:none!important}[data-motion=reduced] .is-walking .journey-pet>.pet-rest{visibility:visible}[data-motion=reduced] .is-walking .journey-pet>.pet-step-1,[data-motion=reduced] .is-walking .journey-pet>.pet-step-2{visibility:hidden}
 .quest-session-progress{position:absolute;bottom:0;left:0;right:0;height:2px;background:transparent}.quest-session-progress>span{display:block;height:100%;background:var(--accent);opacity:.45}
 .quest-modal{width:440px}.quest-modal .modal-header h2{display:flex;align-items:center;gap:9px}.quest-modal .modal-header h2>.icon{width:20px;height:20px;color:var(--accent)}.quest-options{padding:10px 22px 22px;max-height:60vh;overflow:auto}.quest-option{display:flex;align-items:center;gap:11px;text-align:left;width:100%;padding:12px 6px;border-bottom:1px solid var(--line);border-radius:6px}.quest-option:last-child{border:0}.quest-option:hover,.quest-option.selected{background:var(--accent-soft)}.quest-option>span:first-child{color:var(--accent);display:flex}.quest-option>.gold-value{margin-left:auto;font-size:10px;flex-shrink:0}.quest-option .gold-pile{width:27px;height:24px}.quest-option strong{font-weight:450;font-size:12px;overflow-wrap:anywhere}.quest-option .icon{width:16px;height:16px}.quest-options>p{font-size:12px;color:var(--secondary);padding:10px 0}.quest-options>.task-step{padding:11px 0;border-bottom:1px solid var(--line);font-size:12px}
 .quest-return{display:flex;align-items:center;gap:9px;width:100%;margin-top:12px;padding:12px 6px;border-top:1px solid var(--line);font-size:11px;color:var(--secondary);text-align:left}.quest-return:hover{color:var(--accent)}.quest-return>.icon{width:15px;height:15px}
@@ -2941,7 +2960,7 @@ function pet(item){
     add(-17,-11,36,34,23,24,'#9985aa');add(-16,-10,58,7,12,8,'#766387');add(9,-10,58,7,12,8,'#766387');
     add(-13,12,41,11,2,13,'#ecdfc5');add(2,12,41,11,2,13,'#ecdfc5');
     add(-9,14,44,4,2,6,'#3e394c');add(5,14,44,4,2,6,'#3e394c');add(-3,14,38,6,4,7,'#d3a452');
-    add(-9,2,4,6,12,5,'#d3a452');add(3,2,4,6,12,5,'#d3a452');add(-9,10,18,18,2,17,'#c8b5c9');
+    add(-9,2,4,6,12,5,'#d3a452','pet paws');add(3,2,4,6,12,5,'#d3a452','pet paws');add(-9,10,18,18,2,17,'#c8b5c9');
   }else{
     const fox=item.id==='fox',fur=fox?'#c98c50':'#a2b2ca',dark=fox?'#755642':'#73839d',light=fox?'#f0ddbd':'#dbe4e8';
     add(-12,-14,9,24,29,23,fur);add(-15,3,29,30,23,23,fur);
@@ -2976,6 +2995,11 @@ function hatBoxes(hat) {
 }
 // Where a hat sits on each pet's head (between ears, tufts, or horns), and how large it is.
 const HAT_SPOTS={owl:{x:0,y:-1,z:60,scale:1},fox:{x:0,y:12,z:52,scale:.85},cat:{x:0,y:12,z:52,scale:.85},tortoise:{x:0,y:22,z:20,scale:.55},drake:{x:0,y:17,z:46,scale:.65}};
+function petHatBoxes(companion,hat,body){
+  if(!hat)return [];
+  const spot=HAT_SPOTS[companion.id]||{x:0,y:0,z:Math.max(...body.map(b=>b.z+b.h)),scale:1};
+  return hatBoxes(hat).map(b=>({...b,x:spot.x+b.x*spot.scale,y:spot.y+b.y*spot.scale,z:spot.z+b.z*spot.scale,w:b.w*spot.scale,d:b.d*spot.scale,h:b.h*spot.scale}));
+}
 // Recenters geometry on the display stand. Size comes from fitBoxes, so a hat added to a pet does not shrink the pet.
 function stage(item,fitBoxes){
   const minX=Math.min(...fitBoxes.map(b=>b.x)),maxX=Math.max(...fitBoxes.map(b=>b.x+b.w));
@@ -3021,12 +3045,37 @@ function petMouth(companion){
 // A companion wearing a hat: the pet keeps its usual size and the hat sits on its head.
 function petArt(companion,hat=null) {
   if(!hat)return itemArt(companion);
-  const body=pet(companion),spot=HAT_SPOTS[companion.id]||{x:0,y:0,z:Math.max(...body.map(b=>b.z+b.h)),scale:1};
-  const crown=hatBoxes(hat).map(b=>({...b,x:spot.x+b.x*spot.scale,y:spot.y+b.y*spot.scale,z:spot.z+b.z*spot.scale,w:b.w*spot.scale,d:b.d*spot.scale,h:b.h*spot.scale}));
+  const body=pet(companion),crown=petHatBoxes(companion,hat,body);
   return illustrate(`${companion.id}+${hat.id}`,companion,[...body,...crown],{fitBoxes:body,viewBox:'20 22 200 218'});
 }
+// Trail companions have a resting pose and two diagonal steps, with no shop display stand.
+// All poses share one viewBox so starting and pausing cannot shift or resize the miniature.
+const journeyPets=new Map();
+function petJourneyArt(companion,hat=null){
+  if(!companion)return '';
+  const key=`${companion.id}:${hat?.id||''}`;
+  if(journeyPets.has(key))return journeyPets.get(key);
+  const body=pet(companion),boxes=[...body,...petHatBoxes(companion,hat,body)];
+  const frames=[0,-1,1].map(stride=>{
+    const pose=boxes.map(b=>{
+      if(!stride)return b.part==='pet paws'?{...b,z:1,h:Math.max(3,b.h-3)}:{...b,z:b.z-4};
+      if(b.part!=='pet paws')return b;
+      const phase=(b.x<0?-1:1)*(b.y<0?-1:1)*stride;
+      return {...b,y:b.y+phase*2.5,z:b.z+Math.max(0,phase*1.8)};
+    });
+    return visibleCuboidFaces(createCuboidScene(pose),-.85);
+  });
+  const points=frames.flatMap(faces=>faces.flatMap(f=>f.projected));
+  const x=Math.min(...points.map(p=>p[0]))-3,y=Math.min(...points.map(p=>p[1]))-3;
+  const w=Math.max(...points.map(p=>p[0]))-x+3,h=Math.max(...points.map(p=>p[1]))-y+3;
+  const viewBox=[x,y,w,h].map(n=>n.toFixed(2)).join(' ');
+  const art=frames.map((faces,index)=>`<svg class="${index?'pet-step-'+index:'pet-rest'}" viewBox="${viewBox}" aria-hidden="true">${faces.map(f=>`<polygon points="${f.projected.map(p=>p.map(n=>n.toFixed(2)).join(',')).join(' ')}" fill="${tint(f.color,f.light)}"/>`).join('')}</svg>`).join('');
+  const result=`<span class="journey-pet journey-pet-${companion.id}">${art}</span>`;
+  if(journeyPets.size>=16)journeyPets.delete(journeyPets.keys().next().value);
+  journeyPets.set(key,result);return result;
+}
 
-Object.assign(exports,{itemArt,petMouth,petArt});
+Object.assign(exports,{itemArt,petMouth,petArt,petJourneyArt});
 },
 "monster-art.js":function(require,exports){
 const {createCuboidScene,visibleCuboidFaces}=require("cuboid-renderer.js");
@@ -4735,6 +4784,7 @@ const E=require("engine.js");
 const T=require("quest-timer.js");
 const { goldArt }=require("art.js");
 const { avatarJourneyArt }=require("avatar-model.js");
+const { petJourneyArt }=require("equipment-art.js");
 const { resolvedHabitIcon }=require("habit-icons.js");
 const { $, app, coin, esc, icon, modalShell, toast, today, view }=require("ui-core.js");
 const { closeModal, commit, openModal }=require("ui-modal.js");
@@ -4839,11 +4889,12 @@ function questHabit(h) {
 function renderQuest() {
   reconcile();
   const task = currentQuest(), equipment = Object.fromEntries(E.GEAR_SLOTS.map(slot => [slot, E.SHOP.find(i => i.id === app.state.equipped[slot]) || null]));
+  const companion = E.activePetItem(app.state), petHat = E.SHOP.find(i => i.id === app.state.petHat);
   const steps = (!isHabit(task) && task?.steps) || [], done = steps.filter(step => step.done).length;
   return `<section class="quest-card ${task ? 'has-quest' : ''} ${timer.status === 'running' ? 'is-walking' : ''} ${task && steps.length && app.openTaskSteps.has(task.id) ? 'steps-open' : ''}" data-quest-drop aria-labelledby="quest-heading">
     <header class="quest-heading"><span class="quest-symbol">${icon('compass')}</span><h3 id="quest-heading">Adventure</h3><button class="quest-choose ${task ? 'quest-manage' : ''}" data-action="quest-choose" aria-label="${task ? 'Manage adventure' : 'Choose an adventure'}" title="${task ? `Change or return this ${isHabit(task) ? 'habit' : 'task'}` : 'Choose an adventure'}">${task ? icon('more') : `Choose${icon('chevron')}`}</button></header>
     <div class="quest-task-slot">${isHabit(task) ? questHabit(task) : task ? `<div class="quest-task">${timer.status === 'running' ? '<span class="task-grip quest-grip" aria-hidden="true" style="visibility:hidden"></span>' : `<button class="task-grip quest-grip" data-task-grip data-quest-grip data-id="${task.id}" aria-label="Drag ${esc(task.title)} back to your task list" title="Drag back to your task list">${icon('grip')}</button>`}<button class="task-check" data-action="toggle-task" data-id="${task.id}" aria-label="Complete ${esc(task.title)}"></button><span class="quest-task-text"><button class="quest-title" data-action="edit-task" data-id="${task.id}" title="${esc(task.title)}">${esc(task.title)}</button>${steps.length ? questSteps(task, steps, done) : ''}</span><span class="task-reward">${coin(E.TASK_GOLD[task.tier], true)}</span></div>` : ''}</div>
-    <div class="quest-bottom">${clockFace(task)}<div class="quest-controls"><span class="sr-only" data-clock-status aria-live="polite">${statusText()}</span>${focusMeter()}<div class="quest-play-row">${playButton(task)}<button class="quest-reset" data-action="quest-reset" aria-label="Reset focus timer" title="Reset" ${task && canReset() ? '' : 'disabled'}>${icon('reset')}</button></div></div><div class="quest-trail" aria-hidden="true"><svg class="trail-ground" viewBox="0 0 90 74"><path class="trail-hill far" d="M-4 47Q10 35 24 41T52 34T94 40V76H-4Z"/><path class="trail-hill near" d="M-4 58Q18 47 38 53T94 50V76H-4Z"/><g class="trail-tree"><rect x="13" y="45" width="2" height="5" rx=".6"/><path d="M14 30 18.8 38.5H9.2ZM14 34.5 19.8 44.5H8.2Z"/></g><g class="trail-tree round"><rect x="74" y="42" width="2" height="6" rx=".6"/><circle cx="75" cy="38.5" r="5.2"/><circle cx="73.2" cy="36.6" r="1.6" class="trail-shine"/></g><path class="trail-path" d="M-5 68Q17 72 30 61T65 62T100 51"/></svg>${avatarJourneyArt(equipment.weapon, equipment.armor, app.state.appearance, equipment.helmet, equipment)}</div></div>
+    <div class="quest-bottom">${clockFace(task)}<div class="quest-controls"><span class="sr-only" data-clock-status aria-live="polite">${statusText()}</span>${focusMeter()}<div class="quest-play-row">${playButton(task)}<button class="quest-reset" data-action="quest-reset" aria-label="Reset focus timer" title="Reset" ${task && canReset() ? '' : 'disabled'}>${icon('reset')}</button></div></div><div class="quest-trail ${companion ? 'has-companion' : ''}" aria-hidden="true"><svg class="trail-ground" viewBox="0 0 90 74"><path class="trail-hill far" d="M-4 47Q10 35 24 41T52 34T94 40V76H-4Z"/><path class="trail-hill near" d="M-4 58Q18 47 38 53T94 50V76H-4Z"/><g class="trail-tree"><rect x="13" y="45" width="2" height="5" rx=".6"/><path d="M14 30 18.8 38.5H9.2ZM14 34.5 19.8 44.5H8.2Z"/></g><g class="trail-tree round"><rect x="74" y="42" width="2" height="6" rx=".6"/><circle cx="75" cy="38.5" r="5.2"/><circle cx="73.2" cy="36.6" r="1.6" class="trail-shine"/></g><path class="trail-path" d="M-5 68Q17 72 30 61T65 62T100 51"/></svg>${avatarJourneyArt(equipment.weapon, equipment.armor, app.state.appearance, equipment.helmet, equipment)}${petJourneyArt(companion, petHat)}</div></div>
     <span class="quest-session-progress" aria-hidden="true"><span data-session-progress style="width:${100 * (1 - T.remaining(timer) / (timer.minutes * 60000))}%"></span></span>
   </section>`;
 }

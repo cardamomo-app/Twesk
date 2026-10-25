@@ -1,10 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as E from '../engine.js';
-import {itemArt} from '../equipment-art.js';
+import {itemArt,petJourneyArt} from '../equipment-art.js';
 import {describeCombatEvent} from '../combat-presentation.js';
 const day='2026-10-08';
 const funded=()=>Object.assign(E.freshState(),{gold:2000});
+test('trail pets keep their resting pose, two strides, and every hat inside a shared frame',()=>{
+  assert.equal(petJourneyArt(null),'');
+  for(const pet of E.SHOP.filter(i=>i.type==='pet'))for(const hat of [null,...E.SHOP.filter(i=>i.type==='pethat')]){
+    const art=petJourneyArt(pet,hat),frames=[...art.matchAll(/<svg class="([^"]+)" viewBox="([^"]+)"[^>]*>(.*?)<\/svg>/g)];
+    assert.equal(frames.length,3);assert.deepEqual(frames.map(f=>f[1]),['pet-rest','pet-step-1','pet-step-2']);
+    assert.equal(new Set(frames.map(f=>f[2])).size,1,'each pose has the same size and anchor');
+    assert.equal(new Set(frames.map(f=>f[3])).size,3,'rest and both paw positions are distinct');
+    const [x,y,w,h]=frames[0][2].split(' ').map(Number);
+    for(const f of frames)for(const m of f[3].matchAll(/points="([^"]+)"/g))for(const point of m[1].split(' ')){
+      const [px,py]=point.split(',').map(Number);assert.ok(Number.isFinite(px)&&Number.isFinite(py));
+      assert.ok(px>=x&&px<=x+w&&py>=y&&py<=y+h,`${pet.id} ${hat?.id} stays inside its frame`);
+    }
+    if(hat)assert.notEqual(art,petJourneyArt(pet),'the equipped hat appears in each pose');
+    assert.equal(petJourneyArt(pet,hat),art,'repeated renders use the cached miniature');
+  }
+});
 
 test('legacy saves retain their gold, gear and potion stock when catalog fields migrate',()=>{
   const s=funded();E.buy(s,'twig');E.buy(s,'potion');

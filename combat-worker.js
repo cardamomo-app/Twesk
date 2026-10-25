@@ -1,4 +1,4 @@
-import { estimateOdds } from './engine.js?v=0.40.1';
+import { estimateOdds } from './engine.js?v=0.40.2';
 self.onmessage = ({data:{state,key}}) => {
   try { self.postMessage({key,chance:estimateOdds(state)}); }
   catch(error) { self.postMessage({key,error:error.message}); }

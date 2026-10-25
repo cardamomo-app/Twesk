@@ -2,7 +2,7 @@
 // Most browsers use a shared Web Audio mix; Safari plays offline-rendered WAVs through media elements.
 // Repeated sounds draw from random variants, and quick successive rewards climb
 // a pentatonic scale so a run of completed tasks sounds increasingly triumphant.
-import { audioBufferWav, createMediaSoundPlayer, trimmedBuffer } from './sfx-media.js?v=0.40.1';
+import { audioBufferWav, createMediaSoundPlayer, trimmedBuffer } from './sfx-media.js?v=0.40.2';
 let ctx, master, reverbIn, noiseBuf, clock = null, stale = false, recovering = null;
 let recording = null, offlineRendering = false;
 // Setting localStorage 'twesk.sfx-media' to '1' forces the media path in any browser, for testing.
@@ -750,30 +750,52 @@ function variantsFor(name, options) {
 // Rendering ahead of time, one clip per idle moment, so clicks find their sound already made.
 const COMBO_SOUNDS = new Set(['check', 'xp', 'reward', 'note']);
 const COMBO_STEPS = PENTATONIC.length - 2;
-const prepareQueue = [], preparedKeys = new Set();
-let preparing = false;
+const prepareQueue = [], preparationJobs = new Map();
+let preparing = false, preparationEpoch = 0;
 const idle = cb => typeof window !== 'undefined' && window.requestIdleCallback ? window.requestIdleCallback(cb, { timeout: 1500 }) : setTimeout(cb, 30);
+function queuePreparation(job) {
+  job.state = 'queued';
+  prepareQueue.push(job);
+}
+function resumePrepared() {
+  // Retry failed work on a new recovery event, rather than spinning on a broken renderer.
+  preparationEpoch++;
+  for (const job of preparationJobs.values()) if (job.state === 'failed') queuePreparation(job);
+  drainPrepared();
+}
 function drainPrepared() {
-  if (preparing || !prepareQueue.length) return;
+  if (preparing || !prepareQueue.length || isMuted()) return;
   preparing = true;
   const step = () => {
+    // Keep queued work while muted so unmuting resumes the same bank, including combat sounds.
+    if (isMuted()) { preparing = false; return; }
     const job = prepareQueue.shift();
-    if (!job || isMuted()) { preparing = false; prepareQueue.length = 0; return; }
-    mediaPlayer.prepare(job()).finally(() => idle(step));
+    if (!job) { preparing = false; return; }
+    job.state = 'rendering';
+    const epoch = preparationEpoch;
+    Promise.resolve().then(() => mediaPlayer.prepare(job.plan())).then(Boolean, () => false).then(ready => {
+      job.state = ready ? 'ready' : 'failed';
+      // A wake can invalidate an in-flight render before it settles. Retry that job too.
+      if (!ready && epoch !== preparationEpoch) queuePreparation(job);
+    }).finally(() => idle(step));
   };
   idle(step);
 }
 // Queue sounds for the media bank: [[name, options], ...]. Elsewhere (live Web Audio) it does nothing.
 export function prepareSfx(entries) {
-  if (!mediaPlayer || isMuted()) return;
+  if (!mediaPlayer) return;
   for (const [name, options = {}] of entries) {
     if (!SOUNDS[name]) continue;
     const combos = COMBO_SOUNDS.has(name) ? Array.from({ length: COMBO_STEPS }, (_, i) => i) : [null];
     for (const combo of combos) for (let variant = 0; variant < variantsFor(name, options); variant++) {
       const key = JSON.stringify([name, options, combo, variant]);
-      if (preparedKeys.has(key)) continue;
-      preparedKeys.add(key);
-      prepareQueue.push(() => recordPlan(name, options, variant, combo));
+      let job = preparationJobs.get(key);
+      if (job && job.state !== 'failed') continue;
+      if (!job) {
+        job = { plan: () => recordPlan(name, options, variant, combo) };
+        preparationJobs.set(key, job);
+      }
+      queuePreparation(job);
     }
   }
   drainPrepared();
@@ -799,7 +821,11 @@ function rebuild() {
 }
 export function unlockSfx({ refresh = false } = {}) {
   try {
-    if (mediaPlayer) { if (refresh) mediaPlayer.wake(); mixableSession(); mediaPlayer.unlock({ gesture: refresh }); return; }
+    if (mediaPlayer) {
+      if (refresh) { mediaPlayer.wake(); resumePrepared(); }
+      else drainPrepared();
+      mixableSession(); mediaPlayer.unlock({ gesture: refresh }); return;
+    }
     if (refresh) stale = !!ctx;
     if (stale || ctx?.state === 'closed' || frozen()) { stale = false; rebuild(); }
     setup();
@@ -818,7 +844,8 @@ function frozen() {
 function wake(event) {
   if (mediaPlayer) {
     const gesture = ['pointerdown', 'keydown', 'touchend'].includes(event?.type);
-    if (!gesture) mediaPlayer.wake();
+    if (!gesture) { mediaPlayer.wake(); resumePrepared(); }
+    else drainPrepared();
     mixableSession(); mediaPlayer.unlock({ gesture });
     return;
   }
@@ -834,7 +861,10 @@ if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => { if (document.hidden) clock = null; else wake(); });
   window.addEventListener('pageshow', wake);
   window.addEventListener('focus', wake);
-  navigator.mediaDevices?.addEventListener?.('devicechange', () => { if (mediaPlayer) mediaPlayer.wake(); else stale = !!ctx; });
+  navigator.mediaDevices?.addEventListener?.('devicechange', () => {
+    if (mediaPlayer) { mediaPlayer.wake(); resumePrepared(); }
+    else stale = !!ctx;
+  });
 }
 // A timer chime has no fresh click to wake Safari. Resume, then replace a refused or stuck
 // context once, within a short deadline. Share recovery across simultaneous sounds; never loop.

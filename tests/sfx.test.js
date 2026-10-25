@@ -8,8 +8,9 @@ import { audioBufferWav, createMediaSoundPlayer, trimmedBuffer } from '../sfx-me
 // Exercise the public sound API against audio-device interruptions, with no browser or speakers.
 const source = readFileSync(new URL('../sfx.js', import.meta.url), 'utf8').replace(/^import .+;$/gm, '').replace(/\bexport /g, '') + '\nthis.sfx = { configureSfx, playSfx, prepareSfx, stopSfx, unlockSfx, SOUND_NAMES };';
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-function audioHarness({ session = { type: 'auto' }, initial = 'running', rebuildState = 'running', time = performance, safari = false } = {}) {
+function audioHarness({ session = { type: 'auto' }, initial = 'running', rebuildState = 'running', time = performance, safari = false, controlledIdle = false, renderOffline = buffer => Promise.resolve(buffer) } = {}) {
   const contexts = [], starts = [], stops = [], listeners = {}, windowListeners = {}, media = [];
+  const idleTasks = [];
   const param = () => ({ value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} });
   const node = () => ({ connect() {}, disconnect() {}, gain: param(), frequency: param(), Q: param(), pan: param(), detune: param(),
     start(t) { starts.push({ context: contexts.at(-1), time: t }); }, stop(t) { stops.push(t); } });
@@ -30,7 +31,7 @@ function audioHarness({ session = { type: 'auto' }, initial = 'running', rebuild
   class OfflineAudioContext extends AudioContext {
     constructor(channels, length, sampleRate) { super(); this.offline = true; this.length = length; this.sampleRate = sampleRate; }
     resume() { throw new Error('An offline renderer must not resume a hardware output.'); }
-    startRendering() { this.state = 'closed'; return Promise.resolve({ numberOfChannels: 2, length: 16, sampleRate: this.sampleRate, getChannelData: () => new Float32Array(16).fill(.1) }); }
+    startRendering() { this.state = 'closed'; return renderOffline({ numberOfChannels: 2, length: 16, sampleRate: this.sampleRate, getChannelData: () => new Float32Array(16).fill(.1) }); }
   }
   class Audio {
     constructor() { this.src = ''; this.plays = []; this.paused = true; media.push(this); }
@@ -40,11 +41,14 @@ function audioHarness({ session = { type: 'auto' }, initial = 'running', rebuild
     load() { this.loads = (this.loads || 0) + 1; }
   }
   const document = { hidden: false, addEventListener(type, fn) { listeners[type] = fn; } };
-  const sandbox = createContext({ window: { AudioContext, ...(safari ? { Audio, OfflineAudioContext } : {}), addEventListener(type, fn) { windowListeners[type] = fn; } },
+  const sandbox = createContext({ window: { AudioContext, ...(safari ? { Audio, OfflineAudioContext } : {}), ...(controlledIdle ? { requestIdleCallback: cb => idleTasks.push(cb) } : {}), addEventListener(type, fn) { windowListeners[type] = fn; } },
     navigator: { audioSession: session, userAgent: safari ? 'AppleWebKit/605.1.15 Version/18.5 Safari/605.1.15' : '' },
     document, performance: time, setTimeout, clearTimeout, Float32Array, audioBufferWav, createMediaSoundPlayer, trimmedBuffer });
   runInContext(source, sandbox);
-  return { ...sandbox.sfx, contexts, starts, stops, listeners, windowListeners, media };
+  return { ...sandbox.sfx, contexts, starts, stops, listeners, windowListeners, media,
+    async idleStep() { const cb = idleTasks.shift(); if (cb) cb(); await wait(0); },
+    async drainIdle() { let remaining = 300; while (idleTasks.length && remaining--) { idleTasks.shift()(); await wait(0); } assert.ok(remaining > 0, 'preparation must not retry indefinitely'); },
+  };
 }
 test('all combat spell casts and impacts sound, respect mute, and stop with battle playback', () => {
   const h = audioHarness();
@@ -196,4 +200,45 @@ test('preparing renders each combo step once, ahead of time, without playing any
   assert.ok(h.media.every(a => !a.plays.some(src => src.startsWith('blob:'))), 'nothing was played');
   const live = audioHarness(); live.prepareSfx([['check']]); await wait(60);
   assert.equal(live.contexts.length, 0, 'live Web Audio has nothing to prepare');
+});
+
+test('muting pauses queued preparation and unmuting resumes it without another request', async () => {
+  const h = audioHarness({ safari: true, controlledIdle: true });
+  let muted = false; h.configureSfx({ muted: () => muted });
+  h.prepareSfx([['check']]); muted = true;
+  await h.drainIdle(); assert.equal(h.contexts.length, 0);
+  muted = false; h.unlockSfx({ refresh: true }); await h.drainIdle();
+  assert.equal(h.contexts.length, 9, 'all combo steps prepare after unmuting');
+  assert.ok(h.media.every(a => !a.plays.some(src => src.startsWith('blob:'))));
+  h.prepareSfx([['check']]); await h.drainIdle(); assert.equal(h.contexts.length, 9, 'successful work stays deduplicated');
+});
+
+test('sounds registered while already muted prepare on unmute, including combat', async () => {
+  const h = audioHarness({ safari: true, controlledIdle: true });
+  let muted = true; h.configureSfx({ muted: () => muted });
+  h.prepareSfx([['focusHeal'], ['weaponSwing', { voice: 'steel', pitch: .8 }]]);
+  await h.drainIdle(); assert.equal(h.contexts.length, 0);
+  muted = false; h.unlockSfx({ refresh: true }); await h.drainIdle();
+  assert.ok(h.contexts.length >= 2);
+});
+
+test('failed preparation retries on a new request or foreground recovery, without a retry loop', async () => {
+  let broken = true;
+  const h = audioHarness({ safari: true, controlledIdle: true, renderOffline: buffer => broken ? Promise.reject(new Error('Interrupted render')) : Promise.resolve(buffer) });
+  h.prepareSfx([['focusPause']]); await h.drainIdle();
+  assert.equal(h.contexts.length, 3);
+  broken = false; h.prepareSfx([['focusPause']]); await h.drainIdle();
+  assert.equal(h.contexts.length, 4, 'failed keys may be requested again');
+  broken = true; h.prepareSfx([['focusResume']]); await h.drainIdle(); const failed = h.contexts.length;
+  broken = false; h.windowListeners.focus({ type: 'focus' }); await h.drainIdle();
+  assert.equal(h.contexts.length, failed + 1, 'foregrounding retries failed work automatically');
+});
+
+test('foreground recovery also retries preparation that was still rendering at wake', async () => {
+  let release;
+  const h = audioHarness({ safari: true, controlledIdle: true, renderOffline: buffer => release ? Promise.resolve(buffer) : new Promise(resolve => { release = () => resolve(buffer); }) });
+  h.prepareSfx([['trailBell']]); await h.idleStep();
+  h.windowListeners.focus({ type: 'focus' }); release(); await wait(0); await h.drainIdle();
+  assert.equal(h.contexts.length, 2, 'the discarded render is replaced once');
+  h.prepareSfx([['trailBell']]); await h.drainIdle(); assert.equal(h.contexts.length, 2);
 });

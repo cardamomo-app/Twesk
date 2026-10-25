@@ -265,7 +265,9 @@ uiTest('a habit drags onto the adventure, reorders in its category, and leaves t
   await page.waitFor(() => document.querySelector('.quest-task.quest-habit'));
   await new Promise(r => setTimeout(r, 200));
   assert.equal((await page.save()).habits.find(h => h.id === first.id).logs.length, 0, 'dragging the icon does not complete the habit');
-  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('#app .task-item .task-grip')).opacity), '0', 'task grips hide until hover');
+  // With a mouse, grips hide until hover; without hover (touch, or a headless CI machine) they stay faintly visible.
+  const grip = await page.evaluate(() => ({ opacity: getComputedStyle(document.querySelector('#app .task-item .task-grip')).opacity, hover: matchMedia('(hover: hover)').matches }));
+  assert.equal(grip.opacity, grip.hover ? '0' : '0.4', 'task grips hide until hover, or stay faint without one');
   assert.equal(await page.text('.quest-habit .quest-title'), first.title);
   assert.match(await page.text('.quest-habit .xp-badge'), /^\+\d+ XP$/);
   assert.match(await page.text(`#app [data-habit-id="${first.id}"] .habit-name small`), /On your adventure/);

@@ -1,9 +1,13 @@
 // Saved hues keep project identities stable; new tags draw from unused colors first.
 export const TAG_COLORS = [
-  { hue: 8, name: 'Coral' }, { hue: 32, name: 'Amber' }, { hue: 55, name: 'Gold' },
-  { hue: 88, name: 'Lime' }, { hue: 123, name: 'Leaf' }, { hue: 155, name: 'Mint' },
-  { hue: 181, name: 'Teal' }, { hue: 209, name: 'Blue' }, { hue: 238, name: 'Indigo' },
-  { hue: 269, name: 'Violet' }, { hue: 301, name: 'Orchid' }, { hue: 332, name: 'Rose' },
+  { hue: 8, name: 'Coral', swatch: '#ee7967' },
+  { hue: 32, name: 'Orange', swatch: '#f2a344' },
+  { hue: 55, name: 'Gold', swatch: '#e6cf47' },
+  { hue: 123, name: 'Leaf', swatch: '#66b96f' },
+  { hue: 181, name: 'Teal', swatch: '#42b6b8' },
+  { hue: 209, name: 'Blue', swatch: '#559cde' },
+  { hue: 269, name: 'Violet', swatch: '#a87bdf' },
+  { hue: 332, name: 'Rose', swatch: '#e275aa' },
 ];
 export const TAG_HUES = TAG_COLORS.map(color => color.hue);
 const hueDistance = (a, b) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));

@@ -2,11 +2,13 @@
 // Most browsers use a shared Web Audio mix; Safari plays offline-rendered WAVs through media elements.
 // Repeated sounds draw from random variants, and quick successive rewards climb
 // a pentatonic scale so a run of completed tasks sounds increasingly triumphant.
-import { audioBufferWav, createMediaSoundPlayer } from './sfx-media.js?v=0.40.0';
+import { audioBufferWav, createMediaSoundPlayer, trimmedBuffer } from './sfx-media.js?v=0.40.1';
 let ctx, master, reverbIn, noiseBuf, clock = null, stale = false, recovering = null;
 let recording = null, offlineRendering = false;
-const safariMedia = typeof navigator !== 'undefined' && /AppleWebKit/i.test(navigator.userAgent || '') &&
-  (!/Chrome|Chromium|Edg|OPR|Android/i.test(navigator.userAgent || '') || /iPhone|iPad|iPod/i.test(navigator.userAgent || '')) &&
+// Setting localStorage 'twesk.sfx-media' to '1' forces the media path in any browser, for testing.
+const forceMedia = (() => { try { return typeof localStorage !== 'undefined' && localStorage.getItem('twesk.sfx-media') === '1'; } catch { return false; } })();
+const safariMedia = typeof navigator !== 'undefined' && (forceMedia || /AppleWebKit/i.test(navigator.userAgent || '') &&
+  (!/Chrome|Chromium|Edg|OPR|Android/i.test(navigator.userAgent || '') || /iPhone|iPad|iPod/i.test(navigator.userAgent || ''))) &&
   typeof window !== 'undefined' && !!(window.OfflineAudioContext || window.webkitOfflineAudioContext) && typeof window.Audio === 'function';
 const mediaPlayer = safariMedia ? createMediaSoundPlayer({ render: renderMediaPlan, muted: () => isMuted(), createAudio: () => new window.Audio() }) : null;
 const cancelled = new Map();
@@ -20,8 +22,13 @@ const C5 = 523.25;
 let combo = 0,
   lastReward = 0;
 
-const rand = (a, b) => a + Math.random() * (b - a);
-const pick = list => list[Math.floor(Math.random() * list.length)];
+// Sounds draw their variation from `random`; recording for the media bank swaps in a seeded one,
+// so each sound has a few fixed variants that can be rendered once and reused.
+let random = Math.random, forcedCombo = null;
+const rand = (a, b) => a + random() * (b - a);
+const pick = list => list[Math.floor(random() * list.length)];
+const seeded = seed => () => ((seed = (Math.imul(1664525, seed) + 1013904223) >>> 0) / 4294967296);
+const VARIANTS = 3;
 const semis = n => 2 ** (n / 12);
 
 export function configureSfx({ muted }) {
@@ -61,13 +68,13 @@ function connectMix() {
   reverb.connect(wet);
   wet.connect(master);
 }
+// The reverb's noise impulse is made once per sample rate and copied into each context that needs it.
+const impulses = new Map();
 function impulse(seconds, decay) {
-  const length = Math.floor(ctx.sampleRate * seconds),
+  const length = Math.floor(ctx.sampleRate * seconds), key = `${ctx.sampleRate}:${seconds}:${decay}`,
     buffer = ctx.createBuffer(2, length, ctx.sampleRate);
-  for (let c = 0; c < 2; c++) {
-    const data = buffer.getChannelData(c);
-    for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / length) ** decay;
-  }
+  if (!impulses.has(key)) impulses.set(key, [0, 1].map(() => Float32Array.from({ length }, (_, i) => (Math.random() * 2 - 1) * (1 - i / length) ** decay)));
+  impulses.get(key).forEach((data, c) => buffer.getChannelData(c).set(data));
   return buffer;
 }
 function noiseBuffer() {
@@ -240,6 +247,7 @@ function coinCascade(t, count, vol = 0.05) {
 }
 // Successive rewards within a few seconds step up the scale.
 function comboStep() {
+  if (forcedCombo !== null) return forcedCombo; // rendering a specific step ahead of time
   const now = performance.now();
   combo = now - lastReward < 3500 ? Math.min(combo + 1, PENTATONIC.length - 3) : 0;
   lastReward = now;
@@ -703,11 +711,14 @@ const SOUNDS = {
 // Build the same synth graph off the audio device, then hand a WAV to HTMLAudioElement.
 // Graph construction is synchronous; restore globals before asynchronous rendering starts,
 // so overlapping effects cannot steal one another's compressor, buffers, or reverb send.
+// 32 kHz keeps every partial of these effects; trimming drops the unused end of the reverb budget.
+const MEDIA_RATE = 32000;
 function renderMediaPlan(plan) {
   const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
   const duration = Math.max(.04, ...plan.map(p => p.t + p.dur + .05 + (p.verb ? 1.8 : 0)));
   if (!Number.isFinite(duration) || duration > 90) throw new Error('Invalid sound duration.');
-  const offline = new Offline(2, Math.ceil(duration * 44100), 44100);
+  // Only panned effects (combat, a few chimes) need stereo; centered ones are stored as mono, half the size.
+  const offline = new Offline(plan.some(p => p.pan) ? 2 : 1, Math.ceil(duration * MEDIA_RATE), MEDIA_RATE);
   const previous = { ctx, master, reverbIn, noiseBuf, offlineRendering };
   try {
     ctx = offline; noiseBuf = null; offlineRendering = true; connectMix();
@@ -715,8 +726,65 @@ function renderMediaPlan(plan) {
   } finally {
     ({ ctx, master, reverbIn, noiseBuf, offlineRendering } = previous);
   }
-  return offline.startRendering().then(audioBufferWav);
+  // Tails are cut once they fall below about −48 dB, well under what a short effect lets you hear.
+  return offline.startRendering().then(buffer => audioBufferWav(trimmedBuffer(buffer, { threshold: .004 })));
 }
+// The synth voices of one sound, as data. A variant fixes its randomness; `combo` fixes the
+// climbing pitch of reward sounds. Live play passes no combo, so the real streak advances.
+function recordPlan(name, options, variant, combo = null) {
+  const plan = [], previous = { random, forcedCombo };
+  try { recording = plan; random = seeded(9973 + variant * 7919); forcedCombo = combo; SOUNDS[name](.01, options); }
+  catch {} finally { recording = null; ({ random, forcedCombo } = previous); }
+  return plan;
+}
+// Variation matters for short, frequent sounds; a long celebration keeps one version, saving memory.
+const variantCounts = new Map();
+function variantsFor(name, options) {
+  const key = JSON.stringify([name, options]);
+  if (!variantCounts.has(key)) {
+    const plan = recordPlan(name, options, 0, 0);
+    variantCounts.set(key, plan.length && Math.max(...plan.map(p => p.t + p.dur)) > 1 ? 1 : VARIANTS);
+  }
+  return variantCounts.get(key);
+}
+// Rendering ahead of time, one clip per idle moment, so clicks find their sound already made.
+const COMBO_SOUNDS = new Set(['check', 'xp', 'reward', 'note']);
+const COMBO_STEPS = PENTATONIC.length - 2;
+const prepareQueue = [], preparedKeys = new Set();
+let preparing = false;
+const idle = cb => typeof window !== 'undefined' && window.requestIdleCallback ? window.requestIdleCallback(cb, { timeout: 1500 }) : setTimeout(cb, 30);
+function drainPrepared() {
+  if (preparing || !prepareQueue.length) return;
+  preparing = true;
+  const step = () => {
+    const job = prepareQueue.shift();
+    if (!job || isMuted()) { preparing = false; prepareQueue.length = 0; return; }
+    mediaPlayer.prepare(job()).finally(() => idle(step));
+  };
+  idle(step);
+}
+// Queue sounds for the media bank: [[name, options], ...]. Elsewhere (live Web Audio) it does nothing.
+export function prepareSfx(entries) {
+  if (!mediaPlayer || isMuted()) return;
+  for (const [name, options = {}] of entries) {
+    if (!SOUNDS[name]) continue;
+    const combos = COMBO_SOUNDS.has(name) ? Array.from({ length: COMBO_STEPS }, (_, i) => i) : [null];
+    for (const combo of combos) for (let variant = 0; variant < variantsFor(name, options); variant++) {
+      const key = JSON.stringify([name, options, combo, variant]);
+      if (preparedKeys.has(key)) continue;
+      preparedKeys.add(key);
+      prepareQueue.push(() => recordPlan(name, options, variant, combo));
+    }
+  }
+  drainPrepared();
+}
+// Everyday sounds outside combat; combat prepares its own set before a fight.
+const EVERYDAY = [
+  ['check'], ['xp'], ['reward'], ['note'], ['taskCreated'], ['purchase'], ['equip'], ['potion'], ['spell'], ['harm'],
+  ...[4, 10, 18, 40].map(amount => ['coins', { amount }]), ['wind', { direction: 1 }], ['wind', { direction: -1 }],
+  ['setOff'], ['focusPause'], ['focusResume'], ['focusHeal'], ['trailBell'], ['levelUp'], ['badge'], ['pop'], ['treat'],
+];
+if (mediaPlayer) setTimeout(() => prepareSfx(EVERYDAY), 1200);
 
 // Browsers pause audio when the page hides, the Mac sleeps, or another tab starts playing; WebKit can leave it "interrupted", or
 // running but silent after the output device changes. Any state other than running is resumed, and a
@@ -801,8 +869,7 @@ export function playSfx(name, options = {}) {
     lastWind = asked;
   }
   if (mediaPlayer) {
-    const plan = [];
-    try { recording = plan; SOUNDS[name](.01, options); } catch {} finally { recording = null; }
+    const plan = recordPlan(name, options, Math.floor(Math.random() * variantsFor(name, options)));
     mixableSession();
     mediaPlayer.play(plan, { ...options, maxAge: name === 'wind' ? 150 : 800 });
     return;
@@ -839,3 +906,5 @@ export function stopSfx(name = 'ui') {
   channels.get(name)?.clear();
 }
 export const SOUND_NAMES = Object.keys(SOUNDS);
+// Size of the pre-rendered bank (Safari path), or null with live Web Audio.
+export const sfxBankStats = () => mediaPlayer?.stats() ?? null;

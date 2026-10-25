@@ -1,6 +1,8 @@
 // Safari can lose a tab's live Web Audio output until the window is closed, even after reload.
 // Play locally rendered WAV effects through reusable media elements instead. No microphone,
 // network audio, continuous silent loop, or live AudioContext is needed for this output path.
+// Effects are rendered ahead of time where possible (prepare), kept small (trimmed tails), and
+// each media element keeps its last clip loaded, so replaying it needs no reload.
 // WebKit report: https://bugs.webkit.org/show_bug.cgi?id=291892
 const SILENCE = 'data:audio/wav;base64,UklGRsQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
@@ -22,15 +24,31 @@ export function audioBufferWav(buffer) {
   return new Blob([bytes], { type: 'audio/wav' });
 }
 
-export function createMediaSoundPlayer({ render, muted, createAudio, now = () => performance.now(), wallNow = () => Date.now(), voices = 12, cacheBytes = 12 * 1024 * 1024 }) {
+
+// Cut the silent end of a rendered effect (reverb tails are budgeted generously), with a short fade.
+export function trimmedBuffer(buffer, { threshold = .001, fade = .02 } = {}) {
+  const channels = Array.from({ length: buffer.numberOfChannels }, (_, c) => buffer.getChannelData(c));
+  let end = 0;
+  for (const data of channels) for (let i = data.length - 1; i > end; i--) if (Math.abs(data[i]) > threshold) { end = i; break; }
+  const fadeFrames = Math.round(fade * buffer.sampleRate), length = Math.min(buffer.length, end + 1 + fadeFrames);
+  const trimmed = channels.map(data => {
+    const out = data.slice(0, length);
+    for (let i = Math.max(0, length - fadeFrames); i < length; i++) out[i] *= (length - i) / fadeFrames;
+    return out;
+  });
+  return { numberOfChannels: trimmed.length, sampleRate: buffer.sampleRate, length, getChannelData: c => trimmed[c] };
+}
+
+export function createMediaSoundPlayer({ render, muted, createAudio, now = () => performance.now(), wallNow = () => Date.now(), voices = 12, cacheBytes = 8 * 1024 * 1024, maxClips = 160 }) {
   const pool = [], clips = new Map(), cancelled = new Map(), pending = new Set();
-  let epoch = 0, bytes = 0, refreshOnGesture = false;
+  let epoch = 0, bytes = 0;
   let lastUse = wallNow();
   const valid = request => request.epoch === epoch && request.generation === (cancelled.get(request.channel) || 0) &&
     !muted() && now() - request.asked < request.maxAge + request.delay;
+  // Least recently used clips go first; a clip that is playing or waiting to play is kept.
   function trim() {
     for (const [key, clip] of clips) {
-      if (clips.size <= 40 && bytes <= cacheBytes) break;
+      if (clips.size <= maxClips && bytes <= cacheBytes) break;
       if (!clip.url || clip.users) continue;
       URL.revokeObjectURL(clip.url); bytes -= clip.bytes; clips.delete(key);
     }
@@ -48,24 +66,17 @@ export function createMediaSoundPlayer({ render, muted, createAudio, now = () =>
     for (let i = 0; i < voices; i++) {
       const audio = createAudio(); audio.preload = 'auto'; audio.loop = false;
       audio.setAttribute?.('playsinline', '');
-      pool.push({ audio, unlocked: false, busy: false, serial: 0, started: -Infinity, clip: null, channel: null });
+      pool.push({ audio, unlocked: false, busy: false, serial: 0, started: -Infinity, clip: null, channel: null, loaded: null, stale: false });
     }
   }
-  function unlock({ gesture = false } = {}) {
+  // Safari grants playback per element during a gesture. Only elements that are not yet
+  // authorized (or lost it) are primed with silence, so a gesture never reloads the whole pool.
+  function unlock() {
     if (muted()) return;
     makePool();
-    if (gesture && refreshOnGesture) {
-      // Keep the same elements: Safari grants autoplay permission per element.
-      // Reload their output on the next real gesture, without replaying an old reward.
-      for (const slot of pool) {
-        release(slot); slot.unlocked = false; slot.audio.src = SILENCE;
-        try { slot.audio.load(); } catch {}
-      }
-      refreshOnGesture = false;
-    }
     for (const slot of pool) {
       if (slot.unlocked || slot.busy || slot.priming) continue;
-      slot.audio.src = SILENCE; slot.priming = true;
+      slot.audio.src = SILENCE; slot.loaded = null; slot.priming = true;
       const serial = ++slot.serial;
       try {
         Promise.resolve(slot.audio.play()).then(() => { if (serial === slot.serial) slot.unlocked = true; })
@@ -89,28 +100,40 @@ export function createMediaSoundPlayer({ render, muted, createAudio, now = () =>
     }).catch(error => { if (clips.get(key) === clip) clips.delete(key); throw error; }).finally(() => clearTimeout(timeout));
     return clip.ready;
   }
+  // Render a clip ahead of time without playing it, so the first real use starts at once.
+  function prepare(plan) {
+    if (!plan.length) return Promise.resolve(false);
+    return clipFor(plan).then(clip => { clip.users--; trim(); return true; }).catch(() => false);
+  }
   function start(clip, request) {
     if (!valid(request)) { clip.users--; trim(); return; }
     makePool();
-    const slot = pool.find(s => !s.busy && s.unlocked) || pool.find(s => !s.busy) || pool.reduce((a, b) => a.started <= b.started ? a : b);
+    // Prefer an idle element that already holds this clip: replaying it needs no reload.
+    const idle = pool.filter(s => !s.busy && !s.priming);
+    const slot = idle.find(s => s.unlocked && s.loaded === clip.url) || idle.filter(s => s.unlocked).sort((a, b) => a.started - b.started)[0] ||
+      idle[0] || pool.reduce((a, b) => a.started <= b.started ? a : b);
     release(slot); slot.clip = clip; slot.busy = true;
-    slot.channel = request.channel; slot.started = now(); slot.audio.src = clip.url;
-    const serial = slot.serial;
-    // Reload even an unchanged cached URL, reopening the media route after an idle/sleep gap.
-    try { slot.audio.load(); } catch {}
+    slot.channel = request.channel; slot.started = now();
+    // A new clip, or an element left idle across sleep, reloads; a warm element just rewinds.
+    if (slot.loaded !== clip.url || slot.stale) {
+      slot.audio.src = clip.url; slot.loaded = clip.url; slot.stale = false;
+      try { slot.audio.load(); } catch {}
+    }
     try { slot.audio.currentTime = 0; } catch {}
+    const serial = slot.serial;
     slot.audio.onended = () => { if (slot.serial === serial) release(slot); };
-    slot.audio.onerror = () => { if (slot.serial === serial) { slot.unlocked = false; release(slot); } };
+    slot.audio.onerror = () => { if (slot.serial === serial) { slot.unlocked = false; slot.loaded = null; release(slot); } };
     try {
       Promise.resolve(slot.audio.play()).then(() => { if (slot.serial === serial) slot.unlocked = true; })
-        .catch(() => { if (slot.serial === serial) { slot.unlocked = false; release(slot); } });
-    } catch { slot.unlocked = false; release(slot); }
+        .catch(() => { if (slot.serial === serial) { slot.unlocked = false; slot.loaded = null; release(slot); } });
+    } catch { slot.unlocked = false; slot.loaded = null; release(slot); }
     trim();
   }
   function play(plan, { channel = 'ui', delay = 0, maxAge = 800 } = {}) {
     if (muted() || !plan.length) return Promise.resolve(false);
     const wall = wallNow();
-    if (wall - lastUse > 90000 || wall < lastUse) wake();
+    // After a long rest (or a clock jump), each element reloads its clip the next time it plays.
+    if (wall - lastUse > 90000 || wall < lastUse) markStale();
     lastUse = wall;
     unlock();
     const request = { channel, delay: Math.max(0, delay * 1000), maxAge, asked: now(), epoch, generation: cancelled.get(channel) || 0 };
@@ -135,8 +158,10 @@ export function createMediaSoundPlayer({ render, muted, createAudio, now = () =>
     for (const slot of pool) if (channel === null || slot.channel === channel) release(slot);
     trim();
   }
+  function markStale() { for (const slot of pool) slot.stale = true; }
+  // Returning from sleep or a hidden window: drop what was playing, and reload elements lazily as they are used.
   function wake() {
-    stop(); refreshOnGesture = true;
+    stop(); markStale();
     // A render interrupted during sleep must not poison a cached effect forever.
     for (const [key, clip] of clips) if (!clip.url) clips.delete(key);
   }
@@ -147,5 +172,6 @@ export function createMediaSoundPlayer({ render, muted, createAudio, now = () =>
     for (const clip of clips.values()) clip.ready.then(c => URL.revokeObjectURL(c.url)).catch(() => {});
     clips.clear(); bytes = 0;
   }
-  return { unlock, play, stop, wake, dispose };
+  const stats = () => ({ clips: clips.size, bytes });
+  return { unlock, prepare, play, stop, wake, dispose, stats };
 }

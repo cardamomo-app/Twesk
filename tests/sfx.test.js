@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createContext, runInContext } from 'node:vm';
 import { WEAPON_ATTACKS, MONSTER_ATTACKS } from '../combat-attack-art.js';
-import { audioBufferWav, createMediaSoundPlayer } from '../sfx-media.js';
+import { audioBufferWav, createMediaSoundPlayer, trimmedBuffer } from '../sfx-media.js';
 
 // Exercise the public sound API against audio-device interruptions, with no browser or speakers.
-const source = readFileSync(new URL('../sfx.js', import.meta.url), 'utf8').replace(/^import .+;$/gm, '').replace(/\bexport /g, '') + '\nthis.sfx = { configureSfx, playSfx, stopSfx, unlockSfx, SOUND_NAMES };';
+const source = readFileSync(new URL('../sfx.js', import.meta.url), 'utf8').replace(/^import .+;$/gm, '').replace(/\bexport /g, '') + '\nthis.sfx = { configureSfx, playSfx, prepareSfx, stopSfx, unlockSfx, SOUND_NAMES };';
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 function audioHarness({ session = { type: 'auto' }, initial = 'running', rebuildState = 'running', time = performance, safari = false } = {}) {
   const contexts = [], starts = [], stops = [], listeners = {}, windowListeners = {}, media = [];
@@ -42,7 +42,7 @@ function audioHarness({ session = { type: 'auto' }, initial = 'running', rebuild
   const document = { hidden: false, addEventListener(type, fn) { listeners[type] = fn; } };
   const sandbox = createContext({ window: { AudioContext, ...(safari ? { Audio, OfflineAudioContext } : {}), addEventListener(type, fn) { windowListeners[type] = fn; } },
     navigator: { audioSession: session, userAgent: safari ? 'AppleWebKit/605.1.15 Version/18.5 Safari/605.1.15' : '' },
-    document, performance: time, setTimeout, clearTimeout, Float32Array, audioBufferWav, createMediaSoundPlayer });
+    document, performance: time, setTimeout, clearTimeout, Float32Array, audioBufferWav, createMediaSoundPlayer, trimmedBuffer });
   runInContext(source, sandbox);
   return { ...sandbox.sfx, contexts, starts, stops, listeners, windowListeners, media };
 }
@@ -163,11 +163,11 @@ test('Safari renders identical effects offline and uses media playback even when
   h.windowListeners.focus({ type: 'focus' }); h.listeners.pointerdown({ type: 'pointerdown' });
   h.playSfx('focusHeal'); await wait(15);
   assert.equal(h.contexts.length, before, 'a rendered effect is reusable after wake');
-  assert.ok(h.media.some(a => a.loads), 'the same authorized media elements are refreshed on the next gesture');
+  assert.ok(h.media.some(a => a.loads), 'an element reloads its clip after waking, before it plays again');
   h.stopSfx(null); assert.ok(h.media.every(a => a.paused));
-  const loads = h.media.reduce((n,a) => n + a.loads, 0);
+  const loads = h.media.reduce((n,a) => n + (a.loads || 0), 0);
   h.unlockSfx({ refresh: true }); h.playSfx('focusHeal'); await wait(15);
-  assert.ok(h.media.reduce((n,a) => n + a.loads, 0) > loads, 'unmuting can explicitly refresh output in place');
+  assert.ok(h.media.reduce((n,a) => n + (a.loads || 0), 0) > loads, 'unmuting can explicitly refresh output in place');
   assert.equal(h.contexts.length, before);
 });
 test('global mute cancels a sound waiting for a live context even if unmuted before it resumes', async () => {
@@ -176,4 +176,21 @@ test('global mute cancels a sound waiting for a live context even if unmuted bef
   h.contexts[0].resume = () => new Promise(resolve => { release = () => { h.contexts[0].state = 'running'; resolve(); }; });
   h.playSfx('trailBell', { channel: 'delight' }); h.stopSfx(null); release(); await wait(15);
   assert.equal(h.starts.length, before);
+});
+
+test('Safari reuses a few fixed variants of a randomized sound instead of rendering every play', async () => {
+  const h = audioHarness({ safari: true });
+  for (let i = 0; i < 20; i++) { h.playSfx('coins', { amount: 10 }); await wait(2); }
+  await wait(20);
+  const renders = h.contexts.filter(c => c.offline).length;
+  assert.ok(renders >= 1 && renders <= 3, `20 plays rendered ${renders} clips`);
+});
+test('preparing renders each combo step once, ahead of time, without playing anything', async () => {
+  const h = audioHarness({ safari: true });
+  h.prepareSfx([['check']]); h.prepareSfx([['check']]);
+  await wait(9 * 3 * 45);
+  assert.equal(h.contexts.filter(c => c.offline).length, 9, 'one clip per combo step; variants of a fixed sound share it');
+  assert.ok(h.media.every(a => !a.plays.some(src => src.startsWith('blob:'))), 'nothing was played');
+  const live = audioHarness(); live.prepareSfx([['check']]); await wait(60);
+  assert.equal(live.contexts.length, 0, 'live Web Audio has nothing to prepare');
 });

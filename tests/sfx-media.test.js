@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveObjectURL } from 'node:buffer';
-import { audioBufferWav, createMediaSoundPlayer } from '../sfx-media.js';
+import { audioBufferWav, createMediaSoundPlayer, trimmedBuffer } from '../sfx-media.js';
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const plan = id => [{ kind: 'tone', t: .01, dur: .1, f: 440, id }];
 function harness(t, options = {}) {
@@ -38,15 +38,40 @@ test('WAV encoding interleaves channels, clamps samples, and writes a valid PCM 
   assert.equal(view.getUint32(40, true), 12);
   assert.deepEqual(Array.from({ length: 6 }, (_, i) => view.getInt16(44 + i * 2, true)), [32767, 16384, -32768, -16384, 0, 0]);
 });
-test('media playback reuses rendered clips and the same gesture-authorized elements after wake', async t => {
+test('media playback reuses rendered clips and elements, and after wake reloads only what it plays', async t => {
   const h = harness(t); h.player.unlock({ gesture: true });
-  await h.player.play(plan('heal')); const elements = [...h.audio], loads = h.audio.map(a => a.loads);
+  await h.player.play(plan('heal')); const elements = [...h.audio];
   assert.equal(h.played.length, 1); assert.equal(h.rendered.length, 1);
+  const used = h.played[0].audio; used.onended();
+  // Replaying a warm clip rewinds its element instead of reloading it.
+  const warm = used.loads; await h.player.play(plan('heal'));
+  assert.equal(h.played.at(-1).audio, used); assert.equal(used.loads, warm, 'no reload for a warm replay');
+  used.onended();
   h.player.wake(); assert.ok(h.audio.every(a => a.paused));
+  const before = h.audio.map(a => a.loads);
   h.player.unlock({ gesture: true }); await h.player.play(plan('heal'));
-  assert.equal(h.played.length, 2); assert.equal(h.rendered.length, 1);
-  assert.deepEqual(h.audio, elements); assert.ok(h.audio.every((a,i) => a.loads > loads[i]));
+  assert.equal(h.played.length, 3); assert.equal(h.rendered.length, 1);
+  assert.deepEqual(h.audio, elements);
+  assert.equal(h.audio.filter((a, i) => a.loads > before[i]).length, 1, 'only the element that plays reloads');
   assert.ok(h.audio.every(a => a.loop === false), 'no silent background loop');
+});
+test('prepared clips render once ahead of time and play without rendering again', async t => {
+  const h = harness(t);
+  assert.equal(await h.player.prepare(plan('bank')), true);
+  assert.equal(h.rendered.length, 1); assert.equal(h.played.length, 0, 'preparing never plays');
+  await h.player.prepare(plan('bank')); assert.equal(h.rendered.length, 1, 'a prepared clip is not rendered twice');
+  await h.player.play(plan('bank')); assert.equal(h.rendered.length, 1); assert.equal(h.played.length, 1);
+  assert.equal(h.player.stats().clips, 1);
+});
+test('trimming cuts a silent tail with a short fade and keeps every channel aligned', () => {
+  const left = new Float32Array(1000), right = new Float32Array(1000);
+  left[100] = .5; right[300] = -.5;
+  const trimmed = trimmedBuffer({ numberOfChannels: 2, sampleRate: 1000, length: 1000, getChannelData: c => c ? right : left }, { fade: .02 });
+  assert.equal(trimmed.length, 321); assert.equal(trimmed.getChannelData(0).length, 321);
+  assert.equal(trimmed.getChannelData(1)[300], -.5, 'the last sound is kept before the fade begins');
+  assert.equal(trimmed.getChannelData(0)[100], .5, 'the other channel is cut at the same point');
+  const silent = trimmedBuffer({ numberOfChannels: 1, sampleRate: 1000, length: 500, getChannelData: () => new Float32Array(500) });
+  assert.ok(silent.length <= 21, 'a silent render keeps only a few frames');
 });
 test('channel cancellation removes delayed combat effects while other sounds keep playing', async t => {
   const h = harness(t);
@@ -82,13 +107,15 @@ test('a refused media play can recover on the next gesture without a reload', as
   h.block(false); h.player.unlock({ gesture: true });
   await h.player.play(plan('pause')); await wait(0); assert.equal(h.played.length, 1);
 });
-test('a long sleep with no focus or visibility event refreshes playback on the next sound', async t => {
+test('a long sleep with no focus or visibility event reloads the element on its next sound', async t => {
   let wall = 0;
   const h = harness(t, { wallNow: () => wall });
   await h.player.play(plan('minute')); const first = h.played[0].audio, loads = first.loads;
+  first.onended();
   wall = 20 * 60 * 1000;
   await h.player.play(plan('minute'));
-  assert.equal(h.played.length, 2); assert.ok(h.played.at(-1).audio.loads > loads);
+  assert.equal(h.played.length, 2); assert.equal(h.played.at(-1).audio, first, 'the same warm element is reused');
+  assert.ok(first.loads > loads, 'and reloaded once after the long rest');
   assert.equal(h.audio.length, 2, 'the existing authorized elements are retained');
 });
 test('late rendered effects expire and delayed clips stay alive under cache pressure', async t => {

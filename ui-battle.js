@@ -1,14 +1,14 @@
 // The monster card, victory odds, and animated encounters.
-import * as E from './engine.js?v=0.40.0';
-import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.40.0';
-import { combatSpellCue, describeCombatEvent } from './combat-presentation.js?v=0.40.0';
-import { combatAttackArt, combatAttackCue } from './combat-attack-art.js?v=0.40.0';
-import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.40.0';
-import { playSfx, stopSfx, unlockSfx } from './sfx.js?v=0.40.0';
-import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.40.0';
-import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.40.0';
-import { announceBadges, commit } from './ui-modal.js?v=0.40.0';
-import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.40.0';
+import * as E from './engine.js?v=0.40.1';
+import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.40.1';
+import { combatSpellCue, describeCombatEvent } from './combat-presentation.js?v=0.40.1';
+import { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile } from './combat-attack-art.js?v=0.40.1';
+import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.40.1';
+import { playSfx, prepareSfx, stopSfx, unlockSfx } from './sfx.js?v=0.40.1';
+import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.40.1';
+import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.40.1';
+import { announceBadges, commit } from './ui-modal.js?v=0.40.1';
+import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.40.1';
 export function renderMonster() {
   const number = app.state.monster.number,
     won = !!app.state.monster.defeatedOn,
@@ -16,7 +16,28 @@ export function renderMonster() {
     tonic = E.activeTonic(app.state);
   return `<section class="panel monster-panel ${won ? 'cleared' : ''}"><div class="monster-heading"><span class="section-kicker">${won ? 'A LITTLE VICTORY' : 'A CHALLENGE AWAITS'}</span><span class="chapter">#${String(number).padStart(2, '0')}</span></div><button class="monster-scene" data-action="bestiary" aria-label="Inspect ${esc(monsterName(number))} in the monster collection" title="Open monster collection">${monsterArt(number, won)}</button><h3>${monsterName(number)}</h3><p>${won ? 'Defeated. Enjoy your well-earned pause.' : 'Waiting here until you feel ready.'}</p>${won ? `<div class="victory-note">${icon('check')}Next opponent arrives tomorrow</div>` : `<div class="readiness"><span>Estimated victory chance</span><strong id="chance-value">${app.chance === null ? '…' : Math.round(app.chance * 100) + '%'}</strong></div><div class="readiness-bar"><div id="chance-bar" style="width:${(app.chance || 0) * 100}%"></div></div>${spell ? `<button class="prepared-spell" data-action="open-spells">${icon('soul')}<span>${spell.name} prepared<small>Consumed in your next fight</small></span></button>` : ''}${tonic ? `<button class="prepared-spell" data-action="open-tonics">${icon('heart')}<span>${tonic.name} active<small>Lasts for your next fight</small></span></button>` : ''}<button class="button primary fight-button" data-action="fight" ${app.state.hp === 0 ? 'disabled' : ''}>${icon('sword')}Challenge ${monsterName(number)}</button>${app.state.hp === 0 ? '<button class="text-button" data-action="recover">Recover HP to fight</button>' : '<small class="fight-hint">Your stats, gear, spells & health shape your chances.</small>'}`}${app.state.battles.some(r => r.monster === number) ? '<button class="text-button replay-button" data-action="replay-battle">' + icon('undo') + 'Replay last encounter</button>' : ''}</section>`;
 }
+// Where sounds are pre-rendered (Safari), make the next fight's set in idle moments: this weapon,
+// this monster, the companion and prepared spell, so the encounter never waits on rendering.
+let soundsPreparedFor = '';
+const POWER_SOUNDS = { crit: 'critical', venom: 'venom', sunder: 'sunder', drain: 'drain' };
+function prepareBattleSounds() {
+  const s = app.state, weapon = E.SHOP.find(i => i.id === s.equipped.weapon), spell = E.preparedSpell(s), pet = E.activePetItem(s);
+  const key = [weapon?.id, spell?.id, pet?.id, s.monster.number].join('|');
+  if (key === soundsPreparedFor) return;
+  soundsPreparedFor = key;
+  const swing = weaponAttackProfile(weapon), claw = monsterAttackProfile(s.monster.number);
+  const powers = Object.keys(weapon?.power || {}).map(p => p === 'stagger' ? (weapon.id === 'frostbite' ? 'freeze' : 'stagger') : POWER_SOUNDS[p]).filter(Boolean);
+  prepareSfx([
+    ['start'], ['weaponSwing', { voice: swing.voice, pitch: swing.pitch }], ['creatureAttack', { voice: claw.voice, pitch: claw.pitch }],
+    ...['monster', 'player'].flatMap(target => [false, true].map(heavy => ['impact', { target, heavy }])), ['finisher', { target: 'monster', heavy: true }], ['finisher', { target: 'monster', heavy: false }],
+    ['grunt', { who: 'player' }], ['grunt', { who: 'monster' }], ['block'], ['deflect'], ['heal'], ['victory'], ['defeat'],
+    ...powers.map(power => ['weaponPower', { power }]),
+    ...(pet ? [['petCall', { pet: pet.id }], ['petImpact', { pet: pet.id }]] : []),
+    ...(spell ? ['attack', 'guard'].flatMap(mode => [['spellCast', { spell: spell.id, mode }], ['spellImpact', { spell: spell.id, mode }]]) : []),
+  ]);
+}
 export function updateOdds() {
+  prepareBattleSounds();
   const key = oddsKey(app.state);
   if (key === app.chanceKey) return;
   app.chanceKey = key;

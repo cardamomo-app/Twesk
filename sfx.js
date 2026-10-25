@@ -784,7 +784,8 @@ const EVERYDAY = [
   ...[4, 10, 18, 40].map(amount => ['coins', { amount }]), ['wind', { direction: 1 }], ['wind', { direction: -1 }],
   ['setOff'], ['focusPause'], ['focusResume'], ['focusHeal'], ['trailBell'], ['levelUp'], ['badge'], ['pop'], ['treat'],
 ];
-if (mediaPlayer) setTimeout(() => prepareSfx(EVERYDAY), 1200);
+// Start once the page has loaded and settled, so the bank never competes with the first render.
+if (mediaPlayer) window.addEventListener('load', () => setTimeout(() => prepareSfx(EVERYDAY), 1200), { once: true });
 
 // Browsers pause audio when the page hides, the Mac sleeps, or another tab starts playing; WebKit can leave it "interrupted", or
 // running but silent after the output device changes. Any state other than running is resumed, and a

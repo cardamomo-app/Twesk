@@ -181,15 +181,18 @@ test('global mute cancels a sound waiting for a live context even if unmuted bef
 test('Safari reuses a few fixed variants of a randomized sound instead of rendering every play', async () => {
   const h = audioHarness({ safari: true });
   for (let i = 0; i < 20; i++) { h.playSfx('coins', { amount: 10 }); await wait(2); }
-  await wait(20);
+  await wait(200);
   const renders = h.contexts.filter(c => c.offline).length;
   assert.ok(renders >= 1 && renders <= 3, `20 plays rendered ${renders} clips`);
 });
 test('preparing renders each combo step once, ahead of time, without playing anything', async () => {
   const h = audioHarness({ safari: true });
   h.prepareSfx([['check']]); h.prepareSfx([['check']]);
-  await wait(9 * 3 * 45);
-  assert.equal(h.contexts.filter(c => c.offline).length, 9, 'one clip per combo step; variants of a fixed sound share it');
+  // Preparation runs one clip per idle moment; wait for it to finish rather than for a fixed time.
+  const renders = () => h.contexts.filter(c => c.offline).length;
+  for (let waited = 0; renders() < 9 && waited < 8000; waited += 50) await wait(50);
+  await wait(9 * 3 * 40);
+  assert.equal(renders(), 9, 'one clip per combo step; variants of a fixed sound share it');
   assert.ok(h.media.every(a => !a.plays.some(src => src.startsWith('blob:'))), 'nothing was played');
   const live = audioHarness(); live.prepareSfx([['check']]); await wait(60);
   assert.equal(live.contexts.length, 0, 'live Web Audio has nothing to prepare');

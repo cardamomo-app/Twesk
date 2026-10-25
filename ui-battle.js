@@ -1,14 +1,14 @@
 // The monster card, victory odds, and animated encounters.
-import * as E from './engine.js?v=0.39.0';
-import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.39.0';
-import { combatSpellCue, describeCombatEvent } from './combat-presentation.js?v=0.39.0';
-import { combatAttackArt, combatAttackCue } from './combat-attack-art.js?v=0.39.0';
-import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.39.0';
-import { playSfx, stopSfx, unlockSfx } from './sfx.js?v=0.39.0';
-import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.39.0';
-import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.39.0';
-import { announceBadges, commit } from './ui-modal.js?v=0.39.0';
-import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.39.0';
+import * as E from './engine.js?v=0.40.0';
+import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.40.0';
+import { combatSpellCue, describeCombatEvent } from './combat-presentation.js?v=0.40.0';
+import { combatAttackArt, combatAttackCue } from './combat-attack-art.js?v=0.40.0';
+import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.40.0';
+import { playSfx, stopSfx, unlockSfx } from './sfx.js?v=0.40.0';
+import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.40.0';
+import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.40.0';
+import { announceBadges, commit } from './ui-modal.js?v=0.40.0';
+import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.40.0';
 export function renderMonster() {
   const number = app.state.monster.number,
     won = !!app.state.monster.defeatedOn,
@@ -323,7 +323,8 @@ export const actions = {
   'battle-mute'(b, { a, id, sourceRect }) {
     app.state.settings.muted = !app.state.settings.muted;
     persist();
-    if (app.state.settings.muted) battleAudio.stop();
+    if (app.state.settings.muted) stopSfx(null);
+    else unlockSfx({ refresh: true });
     b.innerHTML = icon(app.state.settings.muted ? 'mute' : 'sound');
     b.setAttribute('aria-label', app.state.settings.muted ? 'Unmute combat' : 'Mute combat');
     b.title = app.state.settings.muted ? 'Unmute combat' : 'Mute combat';

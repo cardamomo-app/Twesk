@@ -1,7 +1,8 @@
 // Settings, backups, and full reset/restore.
-import { syncSettings } from './ui-sync.js?v=0.39.0';
-import * as E from './engine.js?v=0.39.0';
-import { PREVIOUS_SAVE_KEY, replaceSave, resetProgress, restorePreviousProgress } from './save-recovery.js?v=0.39.0';
+import { syncSettings } from './ui-sync.js?v=0.40.0';
+import { stopSfx, unlockSfx } from './sfx.js?v=0.40.0';
+import * as E from './engine.js?v=0.40.0';
+import { PREVIOUS_SAVE_KEY, replaceSave, resetProgress, restorePreviousProgress } from './save-recovery.js?v=0.40.0';
 import {
   $,
   app,
@@ -13,8 +14,8 @@ import {
   today,
   view,
   viewDefaults,
-} from './ui-core.js?v=0.39.0';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.39.0';
+} from './ui-core.js?v=0.40.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.40.0';
 function backupStatus() {
   const last = app.state.settings.lastBackup;
   if (!last) return 'No backup exported from this browser yet.';
@@ -128,6 +129,8 @@ export const actions = {
     commit(() => {
       app.state.settings.muted = !app.state.settings.muted;
     });
+    if (app.state.settings.muted) stopSfx(null);
+    else unlockSfx({ refresh: true });
   },
   settings(b, { a, id, sourceRect }) {
     openModal({ type: 'settings' });
@@ -188,7 +191,7 @@ export const actions = {
 };
 export const forms = {
   'settings-form'(data) {
-    const name = data.get('name').trim(),
+    const wasMuted = app.state.settings.muted, name = data.get('name').trim(),
       timezone = data.get('timezone').trim();
     if (!name) return;
     try {
@@ -205,6 +208,8 @@ export const forms = {
       app.state.settings.muted = !!data.get('muted');
       app.state.settings.reducedMotion = !!data.get('reduced');
     });
+    if (app.state.settings.muted) stopSfx(null);
+    else unlockSfx({ refresh: wasMuted });
     closeModal();
     toast('Made a little more yours.');
   },

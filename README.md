@@ -125,7 +125,8 @@ The full flows were also checked in the browser: capture → convert → complet
 - `engine.js`: state model and reward/combat rules, independently testable.
 - `combat-worker.js`, `ui-odds.js`: readiness calculations away from the main interface thread, cached per loadout and shared by the dashboard and shop comparisons. `estimateOdds` in the engine uses exact probabilities for early encounters and 15,000 deterministic samples of the same rules for larger ones.
 - `combat-presentation.js`: combat descriptions.
-- `sfx.js`: every sound effect, synthesized locally with Web Audio through one compressor and reverb, with random variants and a reward combo scale.
+- `sfx.js`: every sound effect, synthesized locally through a compressor and reverb, with random variants and a reward combo scale. Safari renders effects with an OfflineAudioContext and plays the resulting local WAVs through reusable HTML audio elements, bypassing WebKit’s sometimes-silent live output after sleep/reload. Other browsers retain live Web Audio with bounded interruption recovery.
+- `sfx-media.js`: Safari’s media output pool, PCM WAV encoding, bounded in-memory clip caching, per-element gesture unlocking, wake/long-idle refresh, and channel cancellation. No network audio, microphone access, or continuous silent loop. Global mute stops playing and queued effects; unmuting explicitly refreshes the output as an in-app recovery option.
 - `ui-effects.js`: celebration visuals (bursts, confetti, flying coins, count-ups, level banner) and the mute/motion-aware sound hook.
 - `art.js`: original isometric voxel scenes and equipment artwork.
 - `monster-art.js`: eight detailed voxel monster models, species metadata, and defeated variants.

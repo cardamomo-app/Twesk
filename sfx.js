@@ -1,13 +1,20 @@
-// Twesk sound effects, synthesized locally with Web Audio (no audio files).
-// One shared context runs through a compressor with a light reverb send.
+// Twesk sound effects, synthesized locally (no downloaded audio assets).
+// Most browsers use a shared Web Audio mix; Safari plays offline-rendered WAVs through media elements.
 // Repeated sounds draw from random variants, and quick successive rewards climb
 // a pentatonic scale so a run of completed tasks sounds increasingly triumphant.
+import { audioBufferWav, createMediaSoundPlayer } from './sfx-media.js?v=0.40.0';
 let ctx, master, reverbIn, noiseBuf, clock = null, stale = false, recovering = null;
+let recording = null, offlineRendering = false;
+const safariMedia = typeof navigator !== 'undefined' && /AppleWebKit/i.test(navigator.userAgent || '') &&
+  (!/Chrome|Chromium|Edg|OPR|Android/i.test(navigator.userAgent || '') || /iPhone|iPad|iPod/i.test(navigator.userAgent || '')) &&
+  typeof window !== 'undefined' && !!(window.OfflineAudioContext || window.webkitOfflineAudioContext) && typeof window.Audio === 'function';
+const mediaPlayer = safariMedia ? createMediaSoundPlayer({ render: renderMediaPlan, muted: () => isMuted(), createAudio: () => new window.Audio() }) : null;
 const cancelled = new Map();
 let lastWind = -Infinity;
 let isMuted = () => false;
 let channel = 'ui';
 const channels = new Map();
+let globalCancel = 0;
 const PENTATONIC = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24];
 const C5 = 523.25;
 let combo = 0,
@@ -20,15 +27,21 @@ const semis = n => 2 ** (n / 12);
 export function configureSfx({ muted }) {
   isMuted = muted;
 }
+function mixableSession() {
+  try { if (navigator.audioSession && navigator.audioSession.type !== 'ambient') navigator.audioSession.type = 'ambient'; } catch {}
+}
 function setup() {
   if (ctx && ctx.state !== 'closed') return;
   // Short game effects should mix with music/video instead of claiming exclusive playback.
   // AudioSession is optional; older Safari and other browsers keep their usual Web Audio behavior.
-  try { if (navigator.audioSession && navigator.audioSession.type !== 'ambient') navigator.audioSession.type = 'ambient'; } catch {}
+  mixableSession();
   ctx = new (window.AudioContext || window.webkitAudioContext)();
   const created = ctx;
   ctx.addEventListener?.('statechange', () => { if (ctx === created && ctx.state === 'running') clock = null; });
   clock = null;
+  connectMix();
+}
+function connectMix() {
   const compressor = ctx.createDynamicsCompressor();
   compressor.threshold.value = -16;
   compressor.knee.value = 12;
@@ -88,6 +101,7 @@ function output(node, { verb = 0.2, pan = 0 }) {
   return nodes;
 }
 function finish(source, nodes) {
+  if (offlineRendering) return; // The short-lived offline graph is released with its rendered buffer.
   const set = channels.get(channel) || new Set();
   channels.set(channel, set);
   set.add(source);
@@ -114,6 +128,7 @@ function tone({
   filter,
   detune = 0,
 }) {
+  if (recording) { recording.push({ kind: 'tone', t, f, f2, dur, vol, type, attack, verb, pan, filter, detune }); return; }
   const osc = ctx.createOscillator(),
     gain = ctx.createGain(),
     nodes = [osc, gain];
@@ -151,6 +166,7 @@ function noise({
   verb = 0.15,
   pan = 0,
 }) {
+  if (recording) { recording.push({ kind: 'noise', t, dur, vol, type, f, f2, q, attack, verb, pan }); return; }
   const source = ctx.createBufferSource(),
     filter = ctx.createBiquadFilter(),
     gain = ctx.createGain();
@@ -684,17 +700,38 @@ const SOUNDS = {
   },
 };
 
+// Build the same synth graph off the audio device, then hand a WAV to HTMLAudioElement.
+// Graph construction is synchronous; restore globals before asynchronous rendering starts,
+// so overlapping effects cannot steal one another's compressor, buffers, or reverb send.
+function renderMediaPlan(plan) {
+  const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  const duration = Math.max(.04, ...plan.map(p => p.t + p.dur + .05 + (p.verb ? 1.8 : 0)));
+  if (!Number.isFinite(duration) || duration > 90) throw new Error('Invalid sound duration.');
+  const offline = new Offline(2, Math.ceil(duration * 44100), 44100);
+  const previous = { ctx, master, reverbIn, noiseBuf, offlineRendering };
+  try {
+    ctx = offline; noiseBuf = null; offlineRendering = true; connectMix();
+    for (const voice of plan) (voice.kind === 'tone' ? tone : noise)(voice);
+  } finally {
+    ({ ctx, master, reverbIn, noiseBuf, offlineRendering } = previous);
+  }
+  return offline.startRendering().then(audioBufferWav);
+}
+
 // Browsers pause audio when the page hides, the Mac sleeps, or another tab starts playing; WebKit can leave it "interrupted", or
 // running but silent after the output device changes. Any state other than running is resumed, and a
 // context that is gone, stuck, or tied to an old output is rebuilt on the next tap or key press.
 function rebuild() {
   try { ctx?.close(); } catch {}
   ctx = null;
+  noiseBuf = null; clock = null;
   channels.clear();
   setup();
 }
-export function unlockSfx() {
+export function unlockSfx({ refresh = false } = {}) {
   try {
+    if (mediaPlayer) { if (refresh) mediaPlayer.wake(); mixableSession(); mediaPlayer.unlock({ gesture: refresh }); return; }
+    if (refresh) stale = !!ctx;
     if (stale || ctx?.state === 'closed' || frozen()) { stale = false; rebuild(); }
     setup();
     if (ctx.state !== 'running') ctx.resume().catch(() => {});
@@ -709,7 +746,13 @@ function frozen() {
 }
 // Gestures and returning to the app give interrupted audio an early chance to wake.
 // Scheduled sounds also recover on their own, without relying on the next gesture.
-function wake() {
+function wake(event) {
+  if (mediaPlayer) {
+    const gesture = ['pointerdown', 'keydown', 'touchend'].includes(event?.type);
+    if (!gesture) mediaPlayer.wake();
+    mixableSession(); mediaPlayer.unlock({ gesture });
+    return;
+  }
   if (!ctx) return;
   if (ctx.state === 'closed' || frozen()) stale = true;
   if (!stale && ctx.state === 'running') return;
@@ -722,7 +765,7 @@ if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => { if (document.hidden) clock = null; else wake(); });
   window.addEventListener('pageshow', wake);
   window.addEventListener('focus', wake);
-  navigator.mediaDevices?.addEventListener?.('devicechange', () => { stale = !!ctx; });
+  navigator.mediaDevices?.addEventListener?.('devicechange', () => { if (mediaPlayer) mediaPlayer.wake(); else stale = !!ctx; });
 }
 // A timer chime has no fresh click to wake Safari. Resume, then replace a refused or stuck
 // context once, within a short deadline. Share recovery across simultaneous sounds; never loop.
@@ -757,10 +800,18 @@ export function playSfx(name, options = {}) {
     if (asked - lastWind < 35) return;
     lastWind = asked;
   }
+  if (mediaPlayer) {
+    const plan = [];
+    try { recording = plan; SOUNDS[name](.01, options); } catch {} finally { recording = null; }
+    mixableSession();
+    mediaPlayer.play(plan, { ...options, maxAge: name === 'wind' ? 150 : 800 });
+    return;
+  }
+  const allGeneration = globalCancel;
   try {
     unlockSfx();
     const play = context => {
-      if (!context || context !== ctx || context.state !== 'running' || isMuted() ||
+      if (!context || context !== ctx || context.state !== 'running' || isMuted() || allGeneration !== globalCancel ||
           (cancelled.get(group) || 0) !== generation || performance.now() - asked >= (name === 'wind' ? 150 : 800)) return;
       try {
         channel = group;
@@ -772,6 +823,13 @@ export function playSfx(name, options = {}) {
   } catch {}
 }
 export function stopSfx(name = 'ui') {
+  if (name === null) {
+    globalCancel++;
+    for (const group of channels.keys()) stopSfx(group);
+    mediaPlayer?.stop();
+    return;
+  }
+  mediaPlayer?.stop(name);
   cancelled.set(name, (cancelled.get(name) || 0) + 1);
   for (const source of channels.get(name) || []) {
     try {

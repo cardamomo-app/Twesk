@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createContext, runInContext } from 'node:vm';
 import { WEAPON_ATTACKS, MONSTER_ATTACKS } from '../combat-attack-art.js';
+import { audioBufferWav, createMediaSoundPlayer } from '../sfx-media.js';
 
 // Exercise the public sound API against audio-device interruptions, with no browser or speakers.
-const source = readFileSync(new URL('../sfx.js', import.meta.url), 'utf8').replace(/\bexport /g, '') + '\nthis.sfx = { configureSfx, playSfx, stopSfx, SOUND_NAMES };';
+const source = readFileSync(new URL('../sfx.js', import.meta.url), 'utf8').replace(/^import .+;$/gm, '').replace(/\bexport /g, '') + '\nthis.sfx = { configureSfx, playSfx, stopSfx, unlockSfx, SOUND_NAMES };';
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-function audioHarness({ session = { type: 'auto' }, initial = 'running', rebuildState = 'running', time = performance } = {}) {
-  const contexts = [], starts = [], stops = [], listeners = {};
+function audioHarness({ session = { type: 'auto' }, initial = 'running', rebuildState = 'running', time = performance, safari = false } = {}) {
+  const contexts = [], starts = [], stops = [], listeners = {}, windowListeners = {}, media = [];
   const param = () => ({ value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} });
   const node = () => ({ connect() {}, disconnect() {}, gain: param(), frequency: param(), Q: param(), pan: param(), detune: param(),
     start(t) { starts.push({ context: contexts.at(-1), time: t }); }, stop(t) { stops.push(t); } });
@@ -26,11 +27,24 @@ function audioHarness({ session = { type: 'auto' }, initial = 'running', rebuild
     resume() { this.state = 'running'; return Promise.resolve(); }
     close() { this.state = 'closed'; return Promise.resolve(); }
   }
+  class OfflineAudioContext extends AudioContext {
+    constructor(channels, length, sampleRate) { super(); this.offline = true; this.length = length; this.sampleRate = sampleRate; }
+    resume() { throw new Error('An offline renderer must not resume a hardware output.'); }
+    startRendering() { this.state = 'closed'; return Promise.resolve({ numberOfChannels: 2, length: 16, sampleRate: this.sampleRate, getChannelData: () => new Float32Array(16).fill(.1) }); }
+  }
+  class Audio {
+    constructor() { this.src = ''; this.plays = []; this.paused = true; media.push(this); }
+    setAttribute() {}
+    play() { this.plays.push(this.src); this.paused = false; return Promise.resolve(); }
+    pause() { this.paused = true; }
+    load() { this.loads = (this.loads || 0) + 1; }
+  }
   const document = { hidden: false, addEventListener(type, fn) { listeners[type] = fn; } };
-  const sandbox = createContext({ window: { AudioContext, addEventListener() {} }, navigator: { audioSession: session },
-    document, performance: time, setTimeout, clearTimeout, Float32Array });
+  const sandbox = createContext({ window: { AudioContext, ...(safari ? { Audio, OfflineAudioContext } : {}), addEventListener(type, fn) { windowListeners[type] = fn; } },
+    navigator: { audioSession: session, userAgent: safari ? 'AppleWebKit/605.1.15 Version/18.5 Safari/605.1.15' : '' },
+    document, performance: time, setTimeout, clearTimeout, Float32Array, audioBufferWav, createMediaSoundPlayer });
   runInContext(source, sandbox);
-  return { ...sandbox.sfx, contexts, starts, stops, listeners };
+  return { ...sandbox.sfx, contexts, starts, stops, listeners, windowListeners, media };
 }
 test('all combat spell casts and impacts sound, respect mute, and stop with battle playback', () => {
   const h = audioHarness();
@@ -138,4 +152,28 @@ test('each companion has a call and assist sound, with battle mute and cancellat
   h.playSfx('petCall', { pet: 'drake', channel: 'battle' }); h.playSfx('petImpact', { pet: 'cat', channel: 'battle' });
   assert.equal(h.starts.length, before);
   const stops = h.stops.length; h.stopSfx('battle'); assert.ok(h.stops.length > stops);
+});
+test('Safari renders identical effects offline and uses media playback even when live audio cannot resume', async () => {
+  const session = { type: 'auto' }, h = audioHarness({ safari: true, initial: 'interrupted', session });
+  h.playSfx('focusHeal'); await wait(35);
+  assert.ok(h.contexts.length); assert.ok(h.contexts.every(c => c.offline), 'no live output to get stuck');
+  assert.equal(session.type, 'ambient', 'media effects still request mixing with other apps');
+  assert.ok(h.media.some(a => a.plays.some(src => src.startsWith('blob:'))), 'the rendered WAV uses HTML audio');
+  const before = h.contexts.length;
+  h.windowListeners.focus({ type: 'focus' }); h.listeners.pointerdown({ type: 'pointerdown' });
+  h.playSfx('focusHeal'); await wait(15);
+  assert.equal(h.contexts.length, before, 'a rendered effect is reusable after wake');
+  assert.ok(h.media.some(a => a.loads), 'the same authorized media elements are refreshed on the next gesture');
+  h.stopSfx(null); assert.ok(h.media.every(a => a.paused));
+  const loads = h.media.reduce((n,a) => n + a.loads, 0);
+  h.unlockSfx({ refresh: true }); h.playSfx('focusHeal'); await wait(15);
+  assert.ok(h.media.reduce((n,a) => n + a.loads, 0) > loads, 'unmuting can explicitly refresh output in place');
+  assert.equal(h.contexts.length, before);
+});
+test('global mute cancels a sound waiting for a live context even if unmuted before it resumes', async () => {
+  const h = audioHarness(); h.playSfx('setOff'); const before = h.starts.length;
+  h.contexts[0].state = 'suspended'; let release;
+  h.contexts[0].resume = () => new Promise(resolve => { release = () => { h.contexts[0].state = 'running'; resolve(); }; });
+  h.playSfx('trailBell', { channel: 'delight' }); h.stopSfx(null); release(); await wait(15);
+  assert.equal(h.starts.length, before);
 });

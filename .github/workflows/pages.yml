@@ -24,7 +24,14 @@ jobs:
       - name: Check application rules
         run: npm test
       - name: Check the interface in a real browser
-        run: npm run test:ui
+        run: |
+          set -o pipefail
+          npm run test:ui 2>&1 | tee ui-tests.log
+      # Raw logs need admin access; annotations are visible on the public run page.
+      - name: Summarize failed interface checks
+        if: failure()
+        run: |
+          grep -E '^✖|Error|Assertion|expected|actual|Timed out' ui-tests.log | grep -v '^ℹ' | head -40 | while IFS= read -r line; do echo "::error title=Interface check::$line"; done
       - name: Keep screenshots of failed interface checks
         if: failure()
         uses: actions/upload-artifact@v4

@@ -57,7 +57,9 @@ export async function launchBrowser() {
   const child = spawn(browserPath, [
     '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run',
     '--no-default-browser-check', '--disable-extensions', '--autoplay-policy=no-user-gesture-required',
-    '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--window-size=1280,900', 'about:blank',
+    '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--window-size=1280,900',
+    // Hosted CI machines can't give Chrome its sandbox; the tests only load this project's own pages.
+    ...(process.env.CI ? ['--no-sandbox'] : []), 'about:blank',
   ], { stdio: ['ignore', 'ignore', 'pipe'] });
   const wsUrl = await new Promise((done, fail) => {
     let text = '';

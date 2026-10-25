@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import * as E from '../../engine.js';
 import { browserPath, launchBrowser, startServer } from './browser.mjs';
 
-const skip = browserPath ? false : 'no Chromium-based browser found (set CHROME_PATH)';
+// Locally, a missing browser skips these checks; on CI it must fail instead of passing quietly.
+const skip = browserPath || process.env.CI ? false : 'no Chromium-based browser found (set CHROME_PATH)';
 let browser, server, origin;
 before(async () => {
   if (skip) return;
@@ -362,7 +363,7 @@ uiTest('a task can move back to the Vault and return with its settings, with Und
   await page.click('[data-action="task-to-vault"]');
   await page.press('j', ['Meta']);
   await page.waitFor(() => document.querySelector('.vault-modal'));
-  assert.match(await page.text('#vault-results .note-card'), /WAS A TASK/);
+  assert.match(await page.text('#vault-results .note-card .note-identity'), /Was a task/);
   await page.click('#vault-results [data-action="convert-note"]');
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).tasks.length === 3);
   s = await page.save();
@@ -384,9 +385,15 @@ uiTest('Vault shelves separate notes and journals, and reflections open straight
   await page.click('[data-filter="journal"]'); assert.equal(await page.count('.note-card'), 1);
   assert.equal(await page.text('.note-text'), 'A journal memory');
   await page.press('Escape'); await page.click('[data-action="recover"]');
-  await page.type('Time to rest and breathe before the next small adventure.');
+  // Type only once the reflection box has focus, or the words would go nowhere.
+  await page.waitFor(() => document.activeElement?.id === 'capture-text', { message: 'the reflection box has focus' });
+  const reflection = 'Time to rest and breathe before the next small adventure.';
+  await page.type(reflection);
   await page.click('#capture-form [type="submit"]');
-  const entry = (await page.save()).notes[0]; assert.equal(entry.kind, 'journal'); assert.equal(entry.status, 'kept');
+  await page.waitFor(() => !document.querySelector('#capture-form'), { message: 'the reflection was saved' });
+  const entry = (await page.save()).notes.find(n => n.text === reflection);
+  assert.ok(entry, 'the new reflection is in the Vault');
+  assert.equal(entry.kind, 'journal'); assert.equal(entry.status, 'kept');
   await page.click('[data-action="vault"]');
   assert.ok(await page.exists('[data-filter="journal"].selected'));
   assert.equal(await page.count('.note-card[data-note-kind="journal"]'), 2);

@@ -17,8 +17,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      # The interface tests talk to the browser with Node's built-in WebSocket (Node 22 or newer).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
       - name: Check application rules
         run: npm test
+      - name: Check the interface in a real browser
+        run: npm run test:ui
+      - name: Keep screenshots of failed interface checks
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: interface-failures
+          path: tests/ui/artifacts/
+          if-no-files-found: ignore
       - name: Build website and offline copy
         run: npm run build:pages
       - uses: actions/configure-pages@v5

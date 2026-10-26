@@ -1103,18 +1103,19 @@ button.hashtag:hover{text-decoration:underline}
 .topbar-weather{position:relative;display:flex;align-items:center;gap:8px;border-left:0;padding:0 0 0 17px;min-width:0;text-align:left;color:var(--text);border-radius:0}
 .topbar-weather:before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);height:24px;width:1px;background:var(--line)}
 .topbar-weather>.weather-art{width:40px;height:43px;flex-shrink:0;filter:drop-shadow(0 2px 2px #1c30400c)}
-.weather-header-content{display:flex;flex-direction:column;gap:3px;min-width:0}
-.weather-headline{display:flex;align-items:baseline;gap:8px;min-width:0;line-height:1.3}
-.weather-place{font-size:11px;font-weight:650;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.weather-temperature{font-size:19px;letter-spacing:-.8px;font-family:var(--heading);font-weight:700;white-space:nowrap}
-.weather-temperature small{font-family:var(--font);font-size:9px;font-weight:500;color:var(--secondary);letter-spacing:0;margin-left:2px}
-.weather-condition{font-size:9px;color:var(--secondary);white-space:nowrap}
-.weather-header-metrics{display:flex;align-items:center;gap:12px;color:var(--secondary);font-size:9px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.weather-header-content{display:grid;grid-template-columns:minmax(52px,max-content) max-content max-content;grid-template-rows:auto auto;column-gap:14px;row-gap:4px;align-items:baseline;min-width:0}
+.weather-place{grid-column:1;grid-row:1;font-size:11px;line-height:1.3;font-weight:650;max-width:110px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.weather-range{grid-column:1;grid-row:2;display:flex;align-items:baseline;gap:5px;color:var(--secondary);font-size:9px;line-height:1.3;white-space:nowrap;font-variant-numeric:tabular-nums}
+.weather-range-separator{color:var(--muted)}
+.weather-current{grid-column:2;grid-row:1/span 2;align-self:center;display:flex;flex-direction:column;align-items:center;gap:1px}
+.weather-temperature{display:flex;align-items:baseline;gap:1px;font-size:23px;line-height:1.15;letter-spacing:-.8px;font-family:var(--heading);font-weight:700;white-space:nowrap}
+.weather-temperature small{font-size:16px;font-weight:450;color:var(--secondary);letter-spacing:-.2px}
+.weather-condition{grid-column:3;grid-row:1;padding-left:19px;font-size:10px;line-height:1.3;color:var(--secondary);white-space:nowrap}
+.weather-header-metrics{grid-column:3;grid-row:2;display:flex;align-items:center;gap:11px;color:var(--secondary);font-size:9px;line-height:1.3;white-space:nowrap;font-variant-numeric:tabular-nums}
 .weather-header-metrics>span{display:inline-flex;align-items:center;gap:3px}
-.weather-header-metrics .weather-art{width:16px;height:18px}
-.weather-header-metrics>span>span{display:flex;gap:5px}
-.weather-low{color:var(--muted)}
-.weather-saved{font-size:8px;color:var(--gold);white-space:nowrap}
+.weather-header-metrics .weather-art{width:16px;height:16px}
+.weather-low{color:var(--secondary)}
+.weather-saved{font-size:8px;line-height:1.1;color:var(--gold);white-space:nowrap}
 .weather-empty{gap:7px;min-height:43px}
 .weather-empty>span{display:flex;flex-direction:column;gap:3px}
 .weather-empty strong{font-size:11px;font-weight:600}
@@ -1138,7 +1139,7 @@ button.hashtag:hover{text-decoration:underline}
 .weather-overview h3{font-size:19px;letter-spacing:-.4px;overflow-wrap:anywhere}
 .weather-overview p{font-size:10px;color:var(--muted);margin-top:2px}
 .weather-overview strong{font-family:var(--heading);font-size:43px;line-height:1.3;letter-spacing:-2px;font-weight:700;margin-top:5px}
-.weather-overview strong small{font-family:var(--font);font-size:14px;color:var(--secondary);font-weight:400;letter-spacing:0;margin-left:3px}
+.weather-overview strong small{font-family:inherit;font-size:28px;color:var(--secondary);font-weight:400;letter-spacing:0;margin-left:3px}
 .weather-overview>div>span{color:var(--secondary);font-size:11px}
 .weather-detail-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:13px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px}
 .weather-detail-metrics>div{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
@@ -1194,19 +1195,27 @@ button.hashtag:hover{text-decoration:underline}
  #weather-header{width:100%}
  .topbar-weather{padding-left:10px;gap:6px;width:100%;min-height:37px}
  .topbar-weather>.weather-art{width:30px;height:33px}
- .weather-headline{gap:6px}
+ .weather-header-content{width:100%;grid-template-columns:minmax(0,1fr) max-content max-content;column-gap:9px;row-gap:4px}
  .weather-place{max-width:100px;font-size:10px}
- .weather-temperature{font-size:17px}
- .weather-temperature small{font-size:8px}
- .weather-condition{font-size:8px;overflow:hidden;text-overflow:ellipsis}
+ .weather-temperature{font-size:21px}
+ .weather-temperature small{font-size:15px}
+ .weather-condition{font-size:8px;padding-left:16px}
+ .weather-range{font-size:8px;gap:4px}
  .weather-header-metrics{gap:9px;font-size:8px}
- .weather-header-metrics .weather-art{width:14px;height:16px}
+ .weather-header-metrics .weather-art{width:14px;height:14px}
  .weather-header-metrics>span{gap:2px}
- .weather-header-metrics>span>span{gap:4px}
  .weather-empty strong{font-size:10px}.weather-empty small{font-size:8px}
 }
-@media(max-width:400px){.weather-condition{display:none}.weather-place{max-width:91px}.weather-header-metrics{gap:7px}.weather-overview{gap:9px;padding-left:0;padding-right:0}.weather-overview>.weather-art{width:88px;height:98px}.weather-detail-metrics small{font-size:8px}}
+@media(max-width:400px){.weather-header-metrics{gap:7px}.weather-overview{gap:9px;padding-left:0;padding-right:0}.weather-overview>.weather-art{width:88px;height:98px}.weather-detail-metrics small{font-size:8px}}
 .weather-refresh[hidden],[data-action=weather-clear][hidden]{display:none}
+
+@media(max-width:360px){
+ .topbar{grid-template-columns:44px minmax(0,1fr);column-gap:6px;padding-left:12px;padding-right:12px}
+ .topbar-weather{padding-left:8px;gap:5px}
+ .topbar-weather>.weather-art{width:25px;height:30px}
+ .weather-header-content{column-gap:6px}
+ .weather-temperature{font-size:20px}.weather-temperature small{font-size:14px}
+}
 
   </style>
   <script>
@@ -8998,7 +9007,7 @@ function renderWeather() {
   if (!d) return `<button class="topbar-weather weather-empty" data-action="weather" aria-label="${s.place ? 'Open weather for ' + esc(s.place.name) : 'Set up local weather'}">${weatherArt('partly')}<span><strong>${s.busy ? 'Finding the weather…' : s.place ? esc(s.place.name) : 'Weather'}</strong><small>${s.busy ? 'One moment' : s.place ? 'Tap to retry' : 'Choose your location'}</small></span></button>`;
   const condition = weatherCondition(d.code, d.isDay);
   const label = `Weather in ${s.place.name}: ${condition.label}, ${temperature(d.temperature, true)}. Low ${temperature(d.low)}, high ${temperature(d.high)}. Rain chance this hour ${probability(d.rainChance)}. Dew point ${temperature(d.dewPoint, true)}. ${saved(s) ? 'Saved reading. ' : ''}${updatedLabel(s)}.`;
-  return `<button class="topbar-weather" data-action="weather" aria-label="${esc(label)}" title="${esc(label)}">${weatherArt(condition.art)}<span class="weather-header-content"><span class="weather-headline"><strong class="weather-place">${esc(s.place.name)}</strong><strong class="weather-temperature">${temperature(d.temperature)}<small>${s.unit.toUpperCase()}</small></strong><span class="weather-condition">${esc(condition.label)}</span>${saved(s) ? '<span class="weather-saved">Saved</span>' : ''}</span><span class="weather-header-metrics"><span title="Today’s low and high">${weatherArt('range')}<span><span class="weather-low">↓${temperature(d.low)}</span><span>↑${temperature(d.high)}</span></span></span><span title="Chance of rain this hour">${weatherArt('drizzle')}<span>${probability(d.rainChance)}</span></span><span title="Dew point">${weatherArt('dew')}<span>${temperature(d.dewPoint)}</span></span></span></span></button>`;
+  return `<button class="topbar-weather" data-action="weather" aria-label="${esc(label)}" title="${esc(label)}">${weatherArt(condition.art)}<span class="weather-header-content"><strong class="weather-place">${esc(s.place.name)}</strong><span class="weather-range" title="Today’s low and high"><span class="weather-low">${temperature(d.low)}</span><span class="weather-range-separator">/</span><span>${temperature(d.high)}</span></span><span class="weather-current"><strong class="weather-temperature">${temperature(d.temperature)}<small>${s.unit.toUpperCase()}</small></strong>${saved(s) ? '<span class="weather-saved">Saved</span>' : ''}</span><span class="weather-condition">${esc(condition.label)}</span><span class="weather-header-metrics"><span title="Chance of rain this hour">${weatherArt('drizzle')}<span class="weather-rain-value">${probability(d.rainChance)}</span></span><span title="Dew point">${weatherArt('dew')}<span>${temperature(d.dewPoint)}</span></span></span></span></button>`;
 }
 function reading() {
   const s = controller.snapshot(), d = s.data;

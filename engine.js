@@ -1,8 +1,8 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.41.0';
-import {validHabitIcon} from './habit-icons.js?v=0.41.0';
-import {rememberTagColors,validTagColors} from './tag-colors.js?v=0.41.0';
-export {tagHue,setTagColor} from './tag-colors.js?v=0.41.0';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.41.1';
+import {validHabitIcon} from './habit-icons.js?v=0.41.1';
+import {rememberTagColors,validTagColors} from './tag-colors.js?v=0.41.1';
+export {tagHue,setTagColor} from './tag-colors.js?v=0.41.1';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {

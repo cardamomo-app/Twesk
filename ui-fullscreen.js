@@ -1,6 +1,6 @@
 // Full screen: hides the browser's own bars (Safari keeps its toolbar even for an installed web app).
 // A topbar button and the F key go in and back; Escape also leaves, as browsers provide.
-import { $, icon } from './ui-core.js?v=0.41.0';
+import { $, icon } from './ui-core.js?v=0.41.1';
 
 const doc = document, root = doc.documentElement;
 export const fullscreenSupported = () => !!(doc.fullscreenEnabled || doc.webkitFullscreenEnabled);

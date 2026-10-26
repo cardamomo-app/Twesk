@@ -1,9 +1,9 @@
 // Celebration: reward sounds, flying coins, particle bursts, confetti, count-ups, and level banners.
 // Sounds respect Mute; motion respects Reduce motion and the system preference.
-import { goldArt } from './art.js?v=0.41.1';
-import * as E from './engine.js?v=0.41.1';
-import { configureSfx, playSfx } from './sfx.js?v=0.41.1';
-import { $, app, icon } from './ui-core.js?v=0.41.1';
+import { goldArt } from './art.js?v=0.41.2';
+import * as E from './engine.js?v=0.41.2';
+import { configureSfx, playSfx } from './sfx.js?v=0.41.2';
+import { $, app, icon } from './ui-core.js?v=0.41.2';
 
 configureSfx({ muted: () => app.state.settings.muted });
 export const sound = (name = 'reward', options) => playSfx(name, options);

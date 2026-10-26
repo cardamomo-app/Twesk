@@ -1,29 +1,30 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.40.3';
-import { flameArt } from './brand-art.js?v=0.40.3';
-import { avatarFaceArt } from './art.js?v=0.40.3';
-import { awardAchievements } from './achievements.js?v=0.40.3';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.40.3';
-import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.40.3';
-import { closeModal, openModal } from './ui-modal.js?v=0.40.3';
-import * as tasks from './ui-tasks.js?v=0.40.3';
-import * as quest from './ui-quest.js?v=0.40.3';
-import * as habits from './ui-habits.js?v=0.40.3';
-import * as vault from './ui-vault.js?v=0.40.3';
-import { vaultArt } from './vault-art.js?v=0.40.3';
-import * as character from './ui-character.js?v=0.40.3';
-import * as shop from './ui-shop.js?v=0.40.3';
-import * as battle from './ui-battle.js?v=0.40.3';
-import * as collection from './ui-collection.js?v=0.40.3';
-import * as settings from './ui-settings.js?v=0.40.3';
-import * as sync from './ui-sync.js?v=0.40.3';
-import * as history from './ui-history.js?v=0.40.3';
-import { installDelights, renderAmbience } from './ui-delights.js?v=0.40.3';
-import { installTagSuggest } from './ui-tag-suggest.js?v=0.40.3';
-import { installTaskOrder } from './ui-task-order.js?v=0.40.3';
-import * as fullscreen from './ui-fullscreen.js?v=0.40.3';
+import * as E from './engine.js?v=0.41.0';
+import { flameArt } from './brand-art.js?v=0.41.0';
+import { avatarFaceArt } from './art.js?v=0.41.0';
+import { awardAchievements } from './achievements.js?v=0.41.0';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.41.0';
+import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.41.0';
+import { closeModal, openModal } from './ui-modal.js?v=0.41.0';
+import * as tasks from './ui-tasks.js?v=0.41.0';
+import * as quest from './ui-quest.js?v=0.41.0';
+import * as habits from './ui-habits.js?v=0.41.0';
+import * as vault from './ui-vault.js?v=0.41.0';
+import { vaultArt } from './vault-art.js?v=0.41.0';
+import * as character from './ui-character.js?v=0.41.0';
+import * as shop from './ui-shop.js?v=0.41.0';
+import * as battle from './ui-battle.js?v=0.41.0';
+import * as collection from './ui-collection.js?v=0.41.0';
+import * as settings from './ui-settings.js?v=0.41.0';
+import * as sync from './ui-sync.js?v=0.41.0';
+import * as history from './ui-history.js?v=0.41.0';
+import { installDelights, renderAmbience } from './ui-delights.js?v=0.41.0';
+import { installTagSuggest } from './ui-tag-suggest.js?v=0.41.0';
+import { installTaskOrder } from './ui-task-order.js?v=0.41.0';
+import * as fullscreen from './ui-fullscreen.js?v=0.41.0';
+import * as weather from './ui-weather.js?v=0.41.0';
 
-const features = [tasks, quest, habits, vault, character, shop, battle, collection, settings, history, sync, fullscreen];
+const features = [tasks, quest, habits, vault, character, shop, battle, collection, settings, history, sync, fullscreen, weather];
 const modals = Object.assign({}, ...features.map(f => f.modals));
 const actions = Object.assign({}, ...features.map(f => f.actions));
 const forms = Object.assign({}, ...features.map(f => f.forms || {}));
@@ -71,7 +72,7 @@ function render() {
     h => h.category !== 'harm' && h.logs.some(l => l.day === day),
   ).length;
   $('#app').innerHTML = `
-    <header class="topbar"><div class="topbar-brand"><a class="wordmark" href="./" aria-label="Twesk home"><span class="logo-mark">${flameArt()}</span>twesk</a><time class="topbar-date" datetime="${day}">${esc(dateLabel())}</time></div>
+    <header class="topbar"><div class="topbar-brand"><a class="wordmark" href="./" aria-label="Twesk home"><span class="logo-mark">${flameArt()}</span>twesk</a><time class="topbar-date" datetime="${day}" aria-label="${esc(dateLabel())}"><span class="date-long" aria-hidden="true">${esc(dateLabel())}</span><span class="date-compact" aria-hidden="true"><span>${esc(new Intl.DateTimeFormat('en', { timeZone: app.state.settings.timezone, weekday: 'short' }).format(new Date()))}</span>${esc(new Intl.DateTimeFormat('en', { timeZone: app.state.settings.timezone, month: 'short', day: 'numeric' }).format(new Date()))}</span></time><div id="weather-header">${weather.renderWeather()}</div></div>
     <div class="topbar-actions"><button class="capture-button" data-action="capture" aria-label="Quick capture" title="Quick capture (⌘K)" aria-keyshortcuts="Meta+K">${icon('bolt')}<kbd>⌘ K</kbd></button><span class="toolbar-divider"></span><button class="collection-button" data-action="history" title="Progress history" aria-label="Open progress history">${icon('calendar')}</button><button class="collection-button" data-action="achievements" title="Achievements and monster collection" aria-label="Open achievements">${icon('medal')}</button>${iconButton('theme', app.state.settings.theme === 'dark' ? 'sun' : 'moon', 'Switch to ' + (app.state.settings.theme === 'dark' ? 'light' : 'dark') + ' mode')}${iconButton('mute', app.state.settings.muted ? 'mute' : 'sound', app.state.settings.muted ? 'Unmute sounds' : 'Mute sounds')}${fullscreen.fullscreenButton()}${iconButton('settings', 'settings', 'Settings and backup')}<button class="profile-dot" data-action="settings" aria-label="Your profile">${avatarFaceArt(app.state.appearance)}</button></div></header>
     <main>
     ${app.saveError ? '<div class="save-warning">' + esc(app.startupWarning || 'Browser saving is unavailable. Export a backup in Settings to keep your progress.') + '</div>' : E.backupDue(app.state, day) ? settings.backupReminder() : ''}
@@ -152,7 +153,7 @@ $('#overlay').addEventListener('keydown', event => {
   const submit = form.querySelector('button[type="submit"]');
   if (!event.repeat && !app.busy && submit && !submit.disabled) form.requestSubmit(submit);
 });
-$('#overlay').addEventListener('input', event => vault.onInput(event));
+$('#overlay').addEventListener('input', event => { vault.onInput(event); weather.onInput(event); });
 $('#overlay').addEventListener('change', event => {
   habits.onChange(event);
   collection.onChange(event);
@@ -234,6 +235,7 @@ awardAchievements(app.state, today());
 render();
 if (!app.protectSave) persist();
 sync.installSync();
+weather.installWeather();
 // Offline support for the installed app (Add to Dock / Install). Skipped in the single-file Twesk.html.
 if ('serviceWorker' in navigator && !window.__TWESK_STANDALONE__ && location.protocol.startsWith('http')) {
   const hadController = !!navigator.serviceWorker.controller;

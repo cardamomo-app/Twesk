@@ -1094,6 +1094,120 @@ button.hashtag:hover{text-decoration:underline}
 .tag-option.tag-colored.active,.tag-option.tag-colored:hover{background:color-mix(in srgb,var(--tag-color) 10%,var(--panel))}
 .vault-modal .note-text .hashtag.tag-colored,.review-modal .review-text .hashtag.tag-colored{color:var(--tag-color);background:color-mix(in srgb,var(--tag-color) 7%,var(--panel));border-radius:4px;padding:0 3px}
 
+/* A small, faceted glimpse outside, beside the date. */
+.date-compact{display:none}
+#weather-header{min-width:0}
+.topbar{gap:20px}
+.topbar-brand{gap:18px}
+.topbar-date{padding-left:18px;letter-spacing:.15px}
+.topbar-weather{position:relative;display:flex;align-items:center;gap:8px;border-left:0;padding:0 0 0 17px;min-width:0;text-align:left;color:var(--text);border-radius:0}
+.topbar-weather:before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);height:24px;width:1px;background:var(--line)}
+.topbar-weather>.weather-art{width:40px;height:43px;flex-shrink:0;filter:drop-shadow(0 2px 2px #1c30400c)}
+.weather-header-content{display:flex;flex-direction:column;gap:3px;min-width:0}
+.weather-headline{display:flex;align-items:baseline;gap:8px;min-width:0;line-height:1.3}
+.weather-place{font-size:11px;font-weight:650;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.weather-temperature{font-size:19px;letter-spacing:-.8px;font-family:var(--heading);font-weight:700;white-space:nowrap}
+.weather-temperature small{font-family:var(--font);font-size:9px;font-weight:500;color:var(--secondary);letter-spacing:0;margin-left:2px}
+.weather-condition{font-size:9px;color:var(--secondary);white-space:nowrap}
+.weather-header-metrics{display:flex;align-items:center;gap:12px;color:var(--secondary);font-size:9px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.weather-header-metrics>span{display:inline-flex;align-items:center;gap:3px}
+.weather-header-metrics .weather-art{width:16px;height:18px}
+.weather-header-metrics>span>span{display:flex;gap:5px}
+.weather-low{color:var(--muted)}
+.weather-saved{font-size:8px;color:var(--gold);white-space:nowrap}
+.weather-empty{gap:7px;min-height:43px}
+.weather-empty>span{display:flex;flex-direction:column;gap:3px}
+.weather-empty strong{font-size:11px;font-weight:600}
+.weather-empty small{font-size:9px;color:var(--muted)}
+.topbar-weather:hover .weather-place,.weather-empty:hover strong{color:var(--accent)}
+.weather-modal{width:440px}
+.weather-body{padding-top:15px}
+.weather-controls{display:flex;align-items:center;justify-content:space-between;min-height:28px}
+.weather-units{display:flex;gap:3px;border-radius:8px;background:var(--surface);padding:3px}
+.weather-units button{font-size:10px;color:var(--secondary);min-width:33px;min-height:25px;border-radius:5px}
+.weather-units .selected{color:var(--text);background:var(--panel);box-shadow:0 1px 4px #1410200a;font-weight:600}
+.weather-refresh{display:flex;align-items:center;gap:5px;font-size:10px}
+.weather-refresh .icon{width:13px;height:13px}
+.weather-welcome{display:flex;align-items:center;flex-direction:column;padding:12px 0 22px;text-align:center}
+.weather-welcome>.weather-art{width:84px;height:85px;margin-bottom:6px}
+.weather-welcome h3{font-size:17px;letter-spacing:-.3px}
+.weather-welcome p{font-size:11px;color:var(--secondary);margin-top:7px}
+.weather-overview{display:flex;align-items:center;gap:18px;padding:15px 7px 21px}
+.weather-overview>.weather-art{width:108px;height:112px;flex-shrink:0;filter:drop-shadow(0 5px 4px #202a4010)}
+.weather-overview>div{min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.weather-overview h3{font-size:19px;letter-spacing:-.4px;overflow-wrap:anywhere}
+.weather-overview p{font-size:10px;color:var(--muted);margin-top:2px}
+.weather-overview strong{font-family:var(--heading);font-size:43px;line-height:1.3;letter-spacing:-2px;font-weight:700;margin-top:5px}
+.weather-overview strong small{font-family:var(--font);font-size:14px;color:var(--secondary);font-weight:400;letter-spacing:0;margin-left:3px}
+.weather-overview>div>span{color:var(--secondary);font-size:11px}
+.weather-detail-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:13px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.weather-detail-metrics>div{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.weather-detail-metrics>div+div{border-left:1px solid var(--line)}
+.weather-detail-metrics .weather-art{width:29px;height:31px}
+.weather-detail-metrics small{color:var(--secondary);font-size:9px;text-align:center}
+.weather-detail-metrics strong{font-size:14px;font-weight:650;font-variant-numeric:tabular-nums}
+.weather-detail-metrics strong span{color:var(--muted);font-weight:400;margin:0 2px}
+.weather-updated{font-size:9px;color:var(--muted);text-align:center;padding:11px 0 17px}
+.weather-message{font-size:11px;line-height:1.7;color:var(--secondary);padding:10px 12px;background:var(--surface);border-radius:8px;margin-bottom:13px}
+.weather-message[hidden]{display:none}
+.weather-location{border-top:1px solid var(--line);padding-top:17px}
+.weather-locate{width:100%;font-size:11px;min-height:38px;justify-content:center}
+.weather-locate .icon{width:15px;height:15px}
+#weather-search-form{margin-top:17px}
+#weather-search-form label{display:block;margin-bottom:7px;font-size:10px;color:var(--secondary)}
+.weather-search-row{display:flex;gap:7px}
+.weather-search-row input{padding:10px 12px;font-size:11px;min-height:38px;flex:1}
+.weather-search-row .button{width:39px;min-width:39px;justify-content:center;padding:0}
+.weather-search-row .icon{width:15px;height:15px}
+.weather-search-results>p{font-size:11px;color:var(--secondary);padding:13px 1px}
+.weather-search-results>button{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 9px;border-bottom:1px solid var(--line);border-radius:6px;width:100%;text-align:left}
+.weather-search-results>button:hover{background:var(--surface)}
+.weather-search-results>button>span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.weather-search-results strong{font-size:12px;font-weight:600;overflow-wrap:anywhere}
+.weather-search-results small{font-size:10px;color:var(--muted)}
+.weather-search-results .icon{width:14px;height:14px;color:var(--muted)}
+.weather-credits{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:20px;font-size:8px;color:var(--muted);text-align:center;line-height:1.8}
+.weather-credits a{color:inherit;text-underline-offset:2px}
+.weather-credits .text-button{font-size:9px}
+@media(max-width:1120px){
+ .topbar{display:grid;grid-template-columns:max-content minmax(0,1fr);height:auto;min-height:100px;gap:10px 18px;padding-top:12px;padding-bottom:12px}
+ .topbar-brand{display:contents}
+ .topbar .wordmark{grid-column:1;grid-row:1;justify-self:start}
+ .topbar-actions{grid-column:2;grid-row:1;justify-self:end;align-self:center}
+ .topbar-date{grid-column:1;grid-row:2;padding:0;border:0;max-width:none;font-size:9px;white-space:nowrap;text-align:left}
+ #weather-header{grid-column:2;grid-row:2;justify-self:start}
+ .topbar-weather{padding-left:16px}
+}
+@media(max-width:650px){
+ .topbar{grid-template-columns:56px minmax(0,1fr);gap:8px 10px;min-height:96px;padding:12px 18px}
+ .topbar .wordmark{grid-column:1/-1;grid-row:1;justify-self:start;font-size:23px;gap:7px}
+ .topbar .logo-mark{width:32px;height:32px}
+ .topbar-actions{grid-column:1/-1;grid-row:1;gap:3px}
+ .topbar-actions>.icon-button{width:28px}
+ .topbar-actions>.toolbar-divider,.topbar-actions>.profile-dot,.topbar-actions>[data-action=mute],.topbar-actions>[data-action=fullscreen]{display:none}
+ .topbar .capture-button{font-size:0;border:0;padding:0;width:28px;height:28px;flex-shrink:0;gap:0;justify-content:center;background:var(--surface)}
+ .capture-button kbd{display:none}
+ .topbar .collection-button{width:27px}
+ .date-long{display:none}
+ .date-compact{display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--secondary);letter-spacing:0;line-height:1.4}
+ .date-compact>span{font-size:9px;color:var(--muted)}
+ #weather-header{width:100%}
+ .topbar-weather{padding-left:10px;gap:6px;width:100%;min-height:37px}
+ .topbar-weather>.weather-art{width:30px;height:33px}
+ .weather-headline{gap:6px}
+ .weather-place{max-width:100px;font-size:10px}
+ .weather-temperature{font-size:17px}
+ .weather-temperature small{font-size:8px}
+ .weather-condition{font-size:8px;overflow:hidden;text-overflow:ellipsis}
+ .weather-header-metrics{gap:9px;font-size:8px}
+ .weather-header-metrics .weather-art{width:14px;height:16px}
+ .weather-header-metrics>span{gap:2px}
+ .weather-header-metrics>span>span{gap:4px}
+ .weather-empty strong{font-size:10px}.weather-empty small{font-size:8px}
+}
+@media(max-width:400px){.weather-condition{display:none}.weather-place{max-width:91px}.weather-header-metrics{gap:7px}.weather-overview{gap:9px;padding-left:0;padding-right:0}.weather-overview>.weather-art{width:88px;height:98px}.weather-detail-metrics small{font-size:8px}}
+.weather-refresh[hidden],[data-action=weather-clear][hidden]{display:none}
+
   </style>
   <script>
 var supabase=(function(e){function t(e,t){var n={};for(var r in e)Object.prototype.hasOwnProperty.call(e,r)&&t.indexOf(r)<0&&(n[r]=e[r]);if(e!=null&&typeof Object.getOwnPropertySymbols==`function`)for(var i=0,r=Object.getOwnPropertySymbols(e);i<r.length;i++)t.indexOf(r[i])<0&&Object.prototype.propertyIsEnumerable.call(e,r[i])&&(n[r[i]]=e[r[i]]);return n}function n(e,t,n,r){function i(e){return e instanceof n?e:new n(function(t){t(e)})}return new(n||=Promise)(function(n,a){function o(e){try{c(r.next(e))}catch(e){a(e)}}function s(e){try{c(r.throw(e))}catch(e){a(e)}}function c(e){e.done?n(e.value):i(e.value).then(o,s)}c((r=r.apply(e,t||[])).next())})}let r=e=>e?(...t)=>e(...t):(...e)=>fetch(...e);var i=class extends Error{constructor(e,t=`FunctionsError`,n){super(e),this.name=t,this.context=n}toJSON(){return{name:this.name,message:this.message,context:this.context}}},a=class extends i{constructor(e){super(`Failed to send a request to the Edge Function`,`FunctionsFetchError`,e)}},o=class extends i{constructor(e){super(`Relay Error invoking the Edge Function`,`FunctionsRelayError`,e)}},s=class extends i{constructor(e){super(`Edge Function returned a non-2xx status code`,`FunctionsHttpError`,e)}},c;(function(e){e.Any=`any`,e.ApNortheast1=`ap-northeast-1`,e.ApNortheast2=`ap-northeast-2`,e.ApSouth1=`ap-south-1`,e.ApSoutheast1=`ap-southeast-1`,e.ApSoutheast2=`ap-southeast-2`,e.CaCentral1=`ca-central-1`,e.EuCentral1=`eu-central-1`,e.EuWest1=`eu-west-1`,e.EuWest2=`eu-west-2`,e.EuWest3=`eu-west-3`,e.SaEast1=`sa-east-1`,e.UsEast1=`us-east-1`,e.UsWest1=`us-west-1`,e.UsWest2=`us-west-2`})(c||={});var l=class{constructor(e,{headers:t={},customFetch:n,region:i=c.Any}={}){this.url=e,this.headers=t,this.region=i,this.fetch=r(n)}setAuth(e){this.headers.Authorization=`Bearer ${e}`}invoke(e){return n(this,arguments,void 0,function*(e,t={}){var n;let r,i,c;try{let{headers:n,method:l,body:u,signal:d,timeout:f}=t,p={},{region:m}=t;m||=this.region;let h=new URL(`${this.url}/${e}`);m&&m!==`any`&&(p[`x-region`]=m,h.searchParams.set(`forceFunctionRegion`,m));let g,ee=!!n&&Object.keys(n).some(e=>e.toLowerCase()===`content-type`);u&&!ee?typeof Blob<`u`&&u instanceof Blob||u instanceof ArrayBuffer?(p[`Content-Type`]=u.type||`application/octet-stream`,g=u):typeof u==`string`?(p[`Content-Type`]=`text/plain`,g=u):typeof FormData<`u`&&u instanceof FormData?g=u:(p[`Content-Type`]=`application/json`,g=JSON.stringify(u)):g=u&&typeof u!=`string`&&!(typeof Blob<`u`&&u instanceof Blob)&&!(u instanceof ArrayBuffer)&&!(typeof FormData<`u`&&u instanceof FormData)?JSON.stringify(u):u;let te=d;f&&(i=new AbortController,r=setTimeout(()=>i.abort(),f),d?(te=i.signal,c=()=>i.abort(),d.addEventListener(`abort`,c)):te=i.signal);let _=yield this.fetch(h.toString(),{method:l||`POST`,headers:Object.assign(Object.assign(Object.assign({},p),this.headers),n),body:g,signal:te}).catch(e=>{throw new a(e)}),ne=_.headers.get(`x-relay-error`);if(ne&&ne===`true`)throw new o(_);if(!_.ok)throw new s(_);let re=(_.headers.get(`Content-Type`)??`text/plain`).split(`;`)[0].trim().toLowerCase(),ie;return ie=re===`application/json`?yield _.json():re===`application/octet-stream`||re===`application/pdf`?yield _.blob():re===`text/event-stream`?_:re===`multipart/form-data`?yield _.formData():yield _.text(),{data:ie,error:null,response:_}}catch(e){return{data:null,error:e,response:e instanceof s||e instanceof o?e.context:void 0}}finally{r&&clearTimeout(r),c&&((n=t.signal)==null||n.removeEventListener(`abort`,c))}})}},u=class extends Error{constructor(e){super(e.message),this.name=`PostgrestError`,this.details=e.details,this.hint=e.hint,this.code=e.code}toJSON(){return{name:this.name,message:this.message,details:this.details,hint:this.hint,code:this.code}}};let d=e=>Math.min(1e3*2**e,3e4),f=[520,503],p=[`GET`,`HEAD`,`OPTIONS`];function m(e){"@babel/helpers - typeof";return m=typeof Symbol==`function`&&typeof Symbol.iterator==`symbol`?function(e){return typeof e}:function(e){return e&&typeof Symbol==`function`&&e.constructor===Symbol&&e!==Symbol.prototype?`symbol`:typeof e},m(e)}function h(e,t){if(m(e)!=`object`||!e)return e;var n=e[Symbol.toPrimitive];if(n!==void 0){var r=n.call(e,t||`default`);if(m(r)!=`object`)return r;throw TypeError(`@@toPrimitive must return a primitive value.`)}return(t===`string`?String:Number)(e)}function g(e){var t=h(e,`string`);return m(t)==`symbol`?t:t+``}function ee(e,t,n){return(t=g(t))in e?Object.defineProperty(e,t,{value:n,enumerable:!0,configurable:!0,writable:!0}):e[t]=n,e}function te(e,t){var n=Object.keys(e);if(Object.getOwnPropertySymbols){var r=Object.getOwnPropertySymbols(e);t&&(r=r.filter(function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable})),n.push.apply(n,r)}return n}function _(e){for(var t=1;t<arguments.length;t++){var n=arguments[t]==null?{}:arguments[t];t%2?te(Object(n),!0).forEach(function(t){ee(e,t,n[t])}):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(n)):te(Object(n)).forEach(function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(n,t))})}return e}function ne(e,t){return new Promise(n=>{if(t?.aborted){n();return}let r=setTimeout(()=>{t?.removeEventListener(`abort`,i),n()},e);function i(){clearTimeout(r),n()}t?.addEventListener(`abort`,i)})}function re(e,t,n,r){return!(!r||n>=3||!p.includes(e)||!f.includes(t))}async function ie(e,t,n,r){let i=0;for(;;){let a=_({},n.headers);i>0&&(a[`X-Retry-Count`]=String(i));let o;try{o=await e(t,{method:n.method,headers:a,body:n.body,signal:n.signal})}catch(e){if(e?.name===`AbortError`||e?.code===`ABORT_ERR`||e?.name===`TimeoutError`&&n.signal?.aborted||!p.includes(n.method))throw e;if(r&&i<3){let e=d(i);i++,await ne(e,n.signal);continue}throw e}if(re(n.method,o.status,i,r)){let e=o.headers?.get(`Retry-After`)??null,t=e===null?d(i):Math.max(0,parseInt(e,10)||0)*1e3;await o.text(),i++,await ne(t,n.signal);continue}return o}}var ae=class{constructor(e){this.shouldThrowOnError=!1,this.retryEnabled=!0,this.method=e.method,this.url=e.url,this.headers=new Headers(e.headers),this.schema=e.schema,this.body=e.body,this.shouldThrowOnError=e.shouldThrowOnError??!1,this.signal=e.signal,this.isMaybeSingle=e.isMaybeSingle??!1,this.shouldStripNulls=e.shouldStripNulls??!1,this.urlLengthLimit=e.urlLengthLimit??8e3,this.retryEnabled=e.retry??!0,e.fetch?this.fetch=e.fetch:this.fetch=fetch}throwOnError(){return this.shouldThrowOnError=!0,this}stripNulls(){if(this.headers.get(`Accept`)===`text/csv`)throw Error(`stripNulls() cannot be used with csv()`);return this.shouldStripNulls=!0,this}setHeader(e,t){return this.headers=new Headers(this.headers),this.headers.set(e,t),this}retry(e){return this.retryEnabled=e,this}then(e,t){var n=this;if(this.schema===void 0||([`GET`,`HEAD`].includes(this.method)?this.headers.set(`Accept-Profile`,this.schema):this.headers.set(`Content-Profile`,this.schema)),this.method!==`GET`&&this.method!==`HEAD`&&this.headers.set(`Content-Type`,`application/json`),this.shouldStripNulls){let e=this.headers.get(`Accept`);e===`application/vnd.pgrst.object+json`?this.headers.set(`Accept`,`application/vnd.pgrst.object+json;nulls=stripped`):(!e||e===`application/json`)&&this.headers.set(`Accept`,`application/vnd.pgrst.array+json;nulls=stripped`)}let r=this.fetch,i=(async()=>{let e={};n.headers.forEach((t,n)=>{e[n]=t});let t=await ie(r,n.url.toString(),{method:n.method,headers:e,body:JSON.stringify(n.body,(e,t)=>typeof t==`bigint`?t.toString():t),signal:n.signal},n.retryEnabled);return await n.processResponse(t)})();return this.shouldThrowOnError||(i=i.catch(e=>{let t=``,n=``,r=``,i=e?.cause;if(i){let n=i?.message??``,r=i?.code??``;t=`${e?.name??`FetchError`}: ${e?.message}`,t+=`\n\nCaused by: ${i?.name??`Error`}: ${n}`,r&&(t+=` (${r})`),i?.stack&&(t+=`\n${i.stack}`)}else t=e?.stack??``;let a=this.url.toString().length;return e?.name===`AbortError`||e?.code===`ABORT_ERR`?(r=``,n=`Request was aborted (timeout or manual cancellation)`,a>this.urlLengthLimit&&(n+=`. Note: Your request URL is ${a} characters, which may exceed server limits. If selecting many fields, consider using views. If filtering with large arrays (e.g., .in('id', [many IDs])), consider using an RPC function to pass values server-side.`)):(i?.name===`HeadersOverflowError`||i?.code===`UND_ERR_HEADERS_OVERFLOW`)&&(r=``,n=`HTTP headers exceeded server limits (typically 16KB)`,a>this.urlLengthLimit&&(n+=`. Your request URL is ${a} characters. If selecting many fields, consider using views. If filtering with large arrays (e.g., .in('id', [200+ IDs])), consider using an RPC function instead.`)),{success:!1,error:{message:`${e?.name??`FetchError`}: ${e?.message}`,details:t,hint:n,code:r},data:null,count:null,status:0,statusText:``}})),i.then(e,t)}async processResponse(e){var t=this;let n=null,r=null,i=null,a=e.status,o=e.statusText;if(e.ok){if(t.method!==`HEAD`){let i=await e.text();if(i!==``)if(t.headers.get(`Accept`)===`text/csv`)r=i;else if(t.headers.get(`Accept`)&&t.headers.get(`Accept`)?.includes(`application/vnd.pgrst.plan+text`))r=i;else try{r=JSON.parse(i)}catch{if(n={message:i},r=null,t.shouldThrowOnError)throw new u({message:i,details:``,hint:``,code:``})}}let s=t.headers.get(`Prefer`)?.match(/count=(exact|planned|estimated)/),c=e.headers.get(`content-range`)?.split(`/`);if(s&&c&&c.length>1&&(i=parseInt(c[1])),t.isMaybeSingle&&Array.isArray(r))if(r.length>1){if(n={code:`PGRST116`,details:`Results contain ${r.length} rows, application/vnd.pgrst.object+json requires 1 row`,hint:null,message:`JSON object requested, multiple (or no) rows returned`},r=null,i=null,a=406,o=`Not Acceptable`,t.shouldThrowOnError)throw new u(_(_({},n),{},{hint:n.hint??``}))}else r=r.length===1?r[0]:null}else{let i=await e.text();try{n=JSON.parse(i),Array.isArray(n)&&e.status===404&&(r=[],n=null,a=200,o=`OK`)}catch{e.status===404&&i===``?(a=204,o=`No Content`):n={message:i}}if(n&&t.shouldThrowOnError)throw new u(n)}return{success:n===null,error:n,data:r,count:i,status:a,statusText:o}}returns(){return this}overrideTypes(){return this}},oe=class extends ae{throwOnError(){return super.throwOnError()}select(e){let t=!1,n=(e??`*`).split(``).map(e=>/\s/.test(e)&&!t?``:(e===`"`&&(t=!t),e)).join(``);return this.url.searchParams.set(`select`,n),this.headers.append(`Prefer`,`return=representation`),this}order(e,{ascending:t=!0,nullsFirst:n,foreignTable:r,referencedTable:i=r}={}){let a=i?`${i}.order`:`order`,o=this.url.searchParams.get(a);return this.url.searchParams.set(a,`${o?`${o},`:``}${e}.${t?`asc`:`desc`}${n===void 0?``:n?`.nullsfirst`:`.nullslast`}`),this}limit(e,{foreignTable:t,referencedTable:n=t}={}){let r=n===void 0?`limit`:`${n}.limit`;return this.url.searchParams.set(r,`${e}`),this}range(e,t,{foreignTable:n,referencedTable:r=n}={}){let i=r===void 0?`offset`:`${r}.offset`,a=r===void 0?`limit`:`${r}.limit`;return this.url.searchParams.set(i,`${e}`),this.url.searchParams.set(a,`${t-e+1}`),this}abortSignal(e){return this.signal=e,this}single(){return this.headers.set(`Accept`,`application/vnd.pgrst.object+json`),this}maybeSingle(){return this.isMaybeSingle=!0,this}csv(){return this.headers.set(`Accept`,`text/csv`),this}geojson(){return this.headers.set(`Accept`,`application/geo+json`),this}explain({analyze:e=!1,verbose:t=!1,settings:n=!1,buffers:r=!1,wal:i=!1,format:a=`text`}={}){let o=[e?`analyze`:null,t?`verbose`:null,n?`settings`:null,r?`buffers`:null,i?`wal`:null].filter(Boolean).join(`|`),s=this.headers.get(`Accept`)??`application/json`;return this.headers.set(`Accept`,`application/vnd.pgrst.plan+${a}; for="${s}"; options=${o};`),this}rollback(){return this.headers.append(`Prefer`,`tx=rollback`),this}returns(){return this}maxAffected(e){return this.headers.append(`Prefer`,`handling=strict`),this.headers.append(`Prefer`,`max-affected=${e}`),this}};let se=RegExp(`[,()]`);var ce=class extends oe{throwOnError(){return super.throwOnError()}eq(e,t){return this.url.searchParams.append(e,`eq.${t}`),this}neq(e,t){return this.url.searchParams.append(e,`neq.${t}`),this}gt(e,t){return this.url.searchParams.append(e,`gt.${t}`),this}gte(e,t){return this.url.searchParams.append(e,`gte.${t}`),this}lt(e,t){return this.url.searchParams.append(e,`lt.${t}`),this}lte(e,t){return this.url.searchParams.append(e,`lte.${t}`),this}like(e,t){return this.url.searchParams.append(e,`like.${t}`),this}likeAllOf(e,t){return this.url.searchParams.append(e,`like(all).{${t.join(`,`)}}`),this}likeAnyOf(e,t){return this.url.searchParams.append(e,`like(any).{${t.join(`,`)}}`),this}ilike(e,t){return this.url.searchParams.append(e,`ilike.${t}`),this}ilikeAllOf(e,t){return this.url.searchParams.append(e,`ilike(all).{${t.join(`,`)}}`),this}ilikeAnyOf(e,t){return this.url.searchParams.append(e,`ilike(any).{${t.join(`,`)}}`),this}regexMatch(e,t){return this.url.searchParams.append(e,`match.${t}`),this}regexIMatch(e,t){return this.url.searchParams.append(e,`imatch.${t}`),this}is(e,t){return this.url.searchParams.append(e,`is.${t}`),this}isDistinct(e,t){return this.url.searchParams.append(e,`isdistinct.${t}`),this}in(e,t){let n=Array.from(new Set(t)).map(e=>typeof e==`string`&&se.test(e)?`"${e}"`:`${e}`).join(`,`);return this.url.searchParams.append(e,`in.(${n})`),this}notIn(e,t){let n=Array.from(new Set(t)).map(e=>typeof e==`string`&&se.test(e)?`"${e}"`:`${e}`).join(`,`);return this.url.searchParams.append(e,`not.in.(${n})`),this}contains(e,t){return typeof t==`string`?this.url.searchParams.append(e,`cs.${t}`):Array.isArray(t)?this.url.searchParams.append(e,`cs.{${t.join(`,`)}}`):this.url.searchParams.append(e,`cs.${JSON.stringify(t)}`),this}containedBy(e,t){return typeof t==`string`?this.url.searchParams.append(e,`cd.${t}`):Array.isArray(t)?this.url.searchParams.append(e,`cd.{${t.join(`,`)}}`):this.url.searchParams.append(e,`cd.${JSON.stringify(t)}`),this}rangeGt(e,t){return this.url.searchParams.append(e,`sr.${t}`),this}rangeGte(e,t){return this.url.searchParams.append(e,`nxl.${t}`),this}rangeLt(e,t){return this.url.searchParams.append(e,`sl.${t}`),this}rangeLte(e,t){return this.url.searchParams.append(e,`nxr.${t}`),this}rangeAdjacent(e,t){return this.url.searchParams.append(e,`adj.${t}`),this}overlaps(e,t){return typeof t==`string`?this.url.searchParams.append(e,`ov.${t}`):this.url.searchParams.append(e,`ov.{${t.join(`,`)}}`),this}textSearch(e,t,{config:n,type:r}={}){let i=``;r===`plain`?i=`pl`:r===`phrase`?i=`ph`:r===`websearch`&&(i=`w`);let a=n===void 0?``:`(${n})`;return this.url.searchParams.append(e,`${i}fts${a}.${t}`),this}match(e){return Object.entries(e).filter(([e,t])=>t!==void 0).forEach(([e,t])=>{this.url.searchParams.append(e,`eq.${t}`)}),this}not(e,t,n){return this.url.searchParams.append(e,`not.${t}.${n}`),this}or(e,{foreignTable:t,referencedTable:n=t}={}){let r=n?`${n}.or`:`or`;return this.url.searchParams.append(r,`(${e})`),this}filter(e,t,n){return this.url.searchParams.append(e,`${t}.${n}`),this}},le=class{constructor(e,{headers:t={},schema:n,fetch:r,urlLengthLimit:i=8e3,retry:a}){this.url=e,this.headers=new Headers(t),this.schema=n,this.fetch=r,this.urlLengthLimit=i,this.retry=a}cloneRequestState(){return{url:new URL(this.url.toString()),headers:new Headers(this.headers)}}select(e,t){let{head:n=!1,count:r}=t??{},i=n?`HEAD`:`GET`,a=!1,o=(e??`*`).split(``).map(e=>/\s/.test(e)&&!a?``:(e===`"`&&(a=!a),e)).join(``),{url:s,headers:c}=this.cloneRequestState();return s.searchParams.set(`select`,o),r&&c.append(`Prefer`,`count=${r}`),new ce({method:i,url:s,headers:c,schema:this.schema,fetch:this.fetch,urlLengthLimit:this.urlLengthLimit,retry:this.retry})}insert(e,{count:t,defaultToNull:n=!0}={}){let{url:r,headers:i}=this.cloneRequestState();if(t&&i.append(`Prefer`,`count=${t}`),n||i.append(`Prefer`,`missing=default`),Array.isArray(e)){let t=e.reduce((e,t)=>e.concat(Object.keys(t)),[]);if(t.length>0){let e=[...new Set(t)].map(e=>`"${e}"`);r.searchParams.set(`columns`,e.join(`,`))}}return new ce({method:`POST`,url:r,headers:i,schema:this.schema,body:e,fetch:this.fetch??fetch,urlLengthLimit:this.urlLengthLimit,retry:this.retry})}upsert(e,{onConflict:t,ignoreDuplicates:n=!1,count:r,defaultToNull:i=!0}={}){let{url:a,headers:o}=this.cloneRequestState();if(o.append(`Prefer`,`resolution=${n?`ignore`:`merge`}-duplicates`),t!==void 0&&a.searchParams.set(`on_conflict`,t),r&&o.append(`Prefer`,`count=${r}`),i||o.append(`Prefer`,`missing=default`),Array.isArray(e)){let t=e.reduce((e,t)=>e.concat(Object.keys(t)),[]);if(t.length>0){let e=[...new Set(t)].map(e=>`"${e}"`);a.searchParams.set(`columns`,e.join(`,`))}}return new ce({method:`POST`,url:a,headers:o,schema:this.schema,body:e,fetch:this.fetch??fetch,urlLengthLimit:this.urlLengthLimit,retry:this.retry})}update(e,{count:t}={}){let{url:n,headers:r}=this.cloneRequestState();return t&&r.append(`Prefer`,`count=${t}`),new ce({method:`PATCH`,url:n,headers:r,schema:this.schema,body:e,fetch:this.fetch??fetch,urlLengthLimit:this.urlLengthLimit,retry:this.retry})}delete({count:e}={}){let{url:t,headers:n}=this.cloneRequestState();return e&&n.append(`Prefer`,`count=${e}`),new ce({method:`DELETE`,url:t,headers:n,schema:this.schema,fetch:this.fetch??fetch,urlLengthLimit:this.urlLengthLimit,retry:this.retry})}};function ue(e,t){try{let t=JSON.parse(e);if(t&&typeof t==`object`&&!Array.isArray(t))return new u({message:String(t.message??e),details:t.details??``,hint:t.hint??``,code:t.code??``})}catch{}return new u({message:e||t,details:``,hint:``,code:``})}function de(e,t,n){let r=e;return{success:!1,error:new u({message:`${r?.name??`FetchError`}: ${r?.message}`,details:``,hint:``,code:``}),data:null,count:null,status:t,statusText:n}}var fe=class e{constructor(e,{headers:t={},schema:n,fetch:r,timeout:i,urlLengthLimit:a=8e3,retry:o}={}){this.url=e,this.headers=new Headers(t),this.schemaName=n,this.urlLengthLimit=a;let s=r??globalThis.fetch;i!==void 0&&i>0?this.fetch=(e,t)=>{let n=new AbortController,r=setTimeout(()=>n.abort(),i),a=t?.signal;if(a){if(a.aborted)return clearTimeout(r),s(e,t);let i=()=>{clearTimeout(r),n.abort()};return a.addEventListener(`abort`,i,{once:!0}),s(e,_(_({},t),{},{signal:n.signal})).finally(()=>{clearTimeout(r),a.removeEventListener(`abort`,i)})}return s(e,_(_({},t),{},{signal:n.signal})).finally(()=>clearTimeout(r))}:this.fetch=s,this.retry=o}from(e){if(!e||typeof e!=`string`||e.trim()===``)throw Error(`Invalid relation name: relation must be a non-empty string.`);return new le(new URL(`${this.url}/${e}`),{headers:new Headers(this.headers),schema:this.schemaName,fetch:this.fetch,urlLengthLimit:this.urlLengthLimit,retry:this.retry})}schema(t){return new e(this.url,{headers:this.headers,schema:t,fetch:this.fetch,urlLengthLimit:this.urlLengthLimit,retry:this.retry})}async getOpenApiSpec(){var e=this;let t=new Headers(e.headers);t.set(`Accept`,`application/openapi+json`),e.schemaName&&t.set(`Accept-Profile`,e.schemaName);let n={};t.forEach((e,t)=>{n[t]=e});let r=e.fetch??globalThis.fetch,i;try{i=await ie(r,`${e.url}/`,{method:`GET`,headers:n},e.retry??!0)}catch(e){return de(e,0,``)}let a;try{a=await i.text()}catch(e){return de(e,i.status,i.statusText)}if(i.ok)try{return{success:!0,error:null,data:JSON.parse(a),count:null,status:i.status,statusText:i.statusText}}catch{}return{success:!1,error:ue(a,i.statusText),data:null,count:null,status:i.status,statusText:i.statusText}}rpc(e,t={},{head:n=!1,get:r=!1,count:i}={}){let a,o=new URL(`${this.url}/rpc/${e}`),s,c=e=>typeof e==`object`&&!!e&&(!Array.isArray(e)||e.some(c)),l=n&&Object.values(t).some(c);l?(a=`POST`,s=t):n||r?(a=n?`HEAD`:`GET`,Object.entries(t).filter(([e,t])=>t!==void 0).map(([e,t])=>[e,Array.isArray(t)?`{${t.join(`,`)}}`:`${t}`]).forEach(([e,t])=>{o.searchParams.append(e,t)})):(a=`POST`,s=t);let u=new Headers(this.headers);return l?u.set(`Prefer`,i?`count=${i},return=minimal`:`return=minimal`):i&&u.set(`Prefer`,`count=${i}`),new ce({method:a,url:o,headers:u,schema:this.schemaName,body:s,fetch:this.fetch??fetch,urlLengthLimit:this.urlLengthLimit,retry:this.retry})}},pe=class{constructor(){}static detectEnvironment(){if(typeof WebSocket<`u`)return{type:`native`,wsConstructor:WebSocket};let e=globalThis;if(typeof globalThis<`u`&&e.WebSocket!==void 0)return{type:`native`,wsConstructor:e.WebSocket};let t=typeof global<`u`?global:void 0;if(t&&t.WebSocket!==void 0)return{type:`native`,wsConstructor:t.WebSocket};if(typeof globalThis<`u`&&e.WebSocketPair!==void 0&&globalThis.WebSocket===void 0)return{type:`cloudflare`,error:`Cloudflare Workers detected. WebSocket clients are not supported in Cloudflare Workers.`,workaround:`Use Cloudflare Workers WebSocket API for server-side WebSocket handling, or deploy to a different runtime.`};if(typeof globalThis<`u`&&e.EdgeRuntime||typeof navigator<`u`&&navigator.userAgent?.includes(`Vercel-Edge`))return{type:`unsupported`,error:`Edge runtime detected (Vercel Edge/Netlify Edge). WebSockets are not supported in edge functions.`,workaround:`Use serverless functions or a different deployment target for WebSocket functionality.`};let n=globalThis.process;if(n){let e=n.versions;if(e&&e.node)return{type:`unsupported`,error:`Node.js detected but native WebSocket not found.`,workaround:`Ensure you are running Node.js 22+ or provide a WebSocket implementation via the transport option.`}}return{type:`unsupported`,error:`Unknown JavaScript runtime without WebSocket support.`,workaround:`Ensure you're running in a supported environment (browser, Node.js, Deno) or provide a custom WebSocket implementation.`}}static getWebSocketConstructor(){let e=this.detectEnvironment();if(e.wsConstructor)return e.wsConstructor;let t=e.error||`WebSocket not supported in this environment.`;throw e.workaround&&(t+=`\n\nSuggested solution: ${e.workaround}`),Error(t)}static isWebSocketSupported(){try{return this.detectEnvironment().type===`native`}catch{return!1}}};let v={closed:`closed`,errored:`errored`,joined:`joined`,joining:`joining`,leaving:`leaving`},me={close:`phx_close`,error:`phx_error`,join:`phx_join`,reply:`phx_reply`,leave:`phx_leave`,access_token:`access_token`},he={connecting:`connecting`,open:`open`,closing:`closing`,closed:`closed`};var ge=class{constructor(e){this.HEADER_LENGTH=1,this.USER_BROADCAST_PUSH_META_LENGTH=6,this.KINDS={userBroadcastPush:3,userBroadcast:4},this.BINARY_ENCODING=0,this.JSON_ENCODING=1,this.BROADCAST_EVENT=`broadcast`,this.allowedMetadataKeys=[],this.allowedMetadataKeys=e??[]}encode(e,t){if(e.event===this.BROADCAST_EVENT&&!(e.payload instanceof ArrayBuffer)&&typeof e.payload.event==`string`)return t(this._binaryEncodeUserBroadcastPush(e));let n=[e.join_ref,e.ref,e.topic,e.event,e.payload];return t(JSON.stringify(n))}_binaryEncodeUserBroadcastPush(e){return this._isArrayBuffer(e.payload?.payload)?this._encodeBinaryUserBroadcastPush(e):this._encodeJsonUserBroadcastPush(e)}_encodeBinaryUserBroadcastPush(e){let t=e.payload?.payload??new ArrayBuffer(0);return this._encodeUserBroadcastPush(e,this.BINARY_ENCODING,t)}_encodeJsonUserBroadcastPush(e){let t=e.payload?.payload??{},n=new TextEncoder().encode(JSON.stringify(t)).buffer;return this._encodeUserBroadcastPush(e,this.JSON_ENCODING,n)}_encodeUserBroadcastPush(e,t,n){let r=new TextEncoder,i=r.encode(e.topic),a=r.encode(e.ref??``),o=r.encode(e.join_ref??``),s=r.encode(e.payload.event),c=this.allowedMetadataKeys?this._pick(e.payload,this.allowedMetadataKeys):{},l=r.encode(Object.keys(c).length===0?``:JSON.stringify(c));if(o.length>255)throw Error(`joinRef length ${o.length} exceeds maximum of 255`);if(a.length>255)throw Error(`ref length ${a.length} exceeds maximum of 255`);if(i.length>255)throw Error(`topic length ${i.length} exceeds maximum of 255`);if(s.length>255)throw Error(`userEvent length ${s.length} exceeds maximum of 255`);if(l.length>255)throw Error(`metadata length ${l.length} exceeds maximum of 255`);let u=this.USER_BROADCAST_PUSH_META_LENGTH+o.length+a.length+i.length+s.length+l.length,d=new ArrayBuffer(this.HEADER_LENGTH+u),f=new DataView(d),p=new Uint8Array(d),m=0;f.setUint8(m++,this.KINDS.userBroadcastPush),f.setUint8(m++,o.length),f.setUint8(m++,a.length),f.setUint8(m++,i.length),f.setUint8(m++,s.length),f.setUint8(m++,l.length),f.setUint8(m++,t),p.set(o,m),m+=o.length,p.set(a,m),m+=a.length,p.set(i,m),m+=i.length,p.set(s,m),m+=s.length,p.set(l,m),m+=l.length;var h=new Uint8Array(d.byteLength+n.byteLength);return h.set(new Uint8Array(d),0),h.set(new Uint8Array(n),d.byteLength),h.buffer}decode(e,t){if(this._isArrayBuffer(e))return t(this._binaryDecode(e));if(typeof e==`string`){let[n,r,i,a,o]=JSON.parse(e);return t({join_ref:n,ref:r,topic:i,event:a,payload:o})}return t({})}_binaryDecode(e){let t=new DataView(e),n=t.getUint8(0),r=new TextDecoder;switch(n){case this.KINDS.userBroadcast:return this._decodeUserBroadcast(e,t,r)}}_decodeUserBroadcast(e,t,n){let r=t.getUint8(1),i=t.getUint8(2),a=t.getUint8(3),o=t.getUint8(4),s=this.HEADER_LENGTH+4,c=n.decode(e.slice(s,s+r));s+=r;let l=n.decode(e.slice(s,s+i));s+=i;let u=n.decode(e.slice(s,s+a));s+=a;let d=e.slice(s,e.byteLength),f=o===this.JSON_ENCODING?JSON.parse(n.decode(d)):d,p={type:this.BROADCAST_EVENT,event:l,payload:f};return a>0&&(p.meta=JSON.parse(u)),{join_ref:null,ref:null,topic:c,event:this.BROADCAST_EVENT,payload:p}}_isArrayBuffer(e){return e instanceof ArrayBuffer||e?.constructor?.name===`ArrayBuffer`}_pick(e,t){return!e||typeof e!=`object`?{}:Object.fromEntries(Object.entries(e).filter(([e])=>t.includes(e)))}},y;(function(e){e.abstime=`abstime`,e.bool=`bool`,e.date=`date`,e.daterange=`daterange`,e.float4=`float4`,e.float8=`float8`,e.int2=`int2`,e.int4=`int4`,e.int4range=`int4range`,e.int8=`int8`,e.int8range=`int8range`,e.json=`json`,e.jsonb=`jsonb`,e.money=`money`,e.numeric=`numeric`,e.oid=`oid`,e.reltime=`reltime`,e.text=`text`,e.time=`time`,e.timestamp=`timestamp`,e.timestamptz=`timestamptz`,e.timetz=`timetz`,e.tsrange=`tsrange`,e.tstzrange=`tstzrange`})(y||={});let _e=(e,t,n={})=>{let r=n.skipTypes??[];return t?Object.keys(t).reduce((n,i)=>(n[i]=ve(i,e,t,r),n),{}):{}},ve=(e,t,n,r)=>{let i=t.find(t=>t.name===e)?.type,a=n[e];return i&&!r.includes(i)?ye(i,a):be(a)},ye=(e,t)=>{if(e.charAt(0)===`_`)return we(t,e.slice(1,e.length));switch(e){case y.bool:return xe(t);case y.float4:case y.float8:case y.int2:case y.int4:case y.int8:case y.numeric:case y.oid:return Se(t);case y.json:case y.jsonb:return Ce(t);case y.timestamp:return Te(t);case y.abstime:case y.date:case y.daterange:case y.int4range:case y.int8range:case y.money:case y.reltime:case y.text:case y.time:case y.timestamptz:case y.timetz:case y.tsrange:case y.tstzrange:return be(t);default:return be(t)}},be=e=>e,xe=e=>{switch(e){case`t`:return!0;case`f`:return!1;default:return e}},Se=e=>{if(typeof e==`string`){let t=parseFloat(e);if(!Number.isNaN(t))return t}return e},Ce=e=>{if(typeof e==`string`)try{return JSON.parse(e)}catch{return e}return e},we=(e,t)=>{if(typeof e!=`string`)return e;let n=e.length-1,r=e[n];if(e[0]===`{`&&r===`}`){let r,i=e.slice(1,n);try{r=JSON.parse(`[`+i+`]`)}catch{r=i?i.split(`,`):[]}return r.map(e=>ye(t,e))}return e},Te=e=>typeof e==`string`?e.replace(` `,`T`):e,Ee=e=>{let t=new URL(e);return t.protocol=t.protocol.replace(/^ws/i,`http`),t.pathname=t.pathname.replace(/\/+$/,``).replace(/\/socket\/websocket$/i,``).replace(/\/socket$/i,``).replace(/\/websocket$/i,``),t.pathname===``||t.pathname===`/`?t.pathname=`/api/broadcast`:t.pathname+=`/api/broadcast`,t.href};var b=e=>typeof e==`function`?e:function(){return e},De=typeof self<`u`?self:null,Oe=typeof window<`u`?window:null,x=De||Oe||globalThis,ke=`2.0.0`,Ae=1e4,je=1e3,Me=100,S={connecting:0,open:1,closing:2,closed:3},C={closed:`closed`,errored:`errored`,joined:`joined`,joining:`joining`,leaving:`leaving`},w={close:`phx_close`,error:`phx_error`,join:`phx_join`,reply:`phx_reply`,leave:`phx_leave`},Ne={longpoll:`longpoll`,websocket:`websocket`},Pe={complete:4},Fe=`base64url.bearer.phx.`,Ie=class{constructor(e,t,n,r){this.channel=e,this.event=t,this.payload=n||function(){return{}},this.receivedResp=null,this.timeout=r,this.timeoutTimer=null,this.recHooks=[],this.sent=!1,this.ref=void 0}resend(e){this.timeout=e,this.reset(),this.send()}send(){this.hasReceived(`timeout`)||(this.startTimeout(),this.sent=!0,this.channel.socket.push({topic:this.channel.topic,event:this.event,payload:this.payload(),ref:this.ref,join_ref:this.channel.joinRef()}))}receive(e,t){return this.hasReceived(e)&&t(this.receivedResp.response),this.recHooks.push({status:e,callback:t}),this}reset(){this.cancelRefEvent(),this.ref=null,this.refEvent=null,this.receivedResp=null,this.sent=!1}destroy(){this.cancelRefEvent(),this.cancelTimeout()}matchReceive({status:e,response:t,_ref:n}){this.recHooks.filter(t=>t.status===e).forEach(e=>e.callback(t))}cancelRefEvent(){this.refEvent&&this.channel.off(this.refEvent)}cancelTimeout(){clearTimeout(this.timeoutTimer),this.timeoutTimer=null}startTimeout(){this.timeoutTimer&&this.cancelTimeout(),this.ref=this.channel.socket.makeRef(),this.refEvent=this.channel.replyEventName(this.ref),this.channel.on(this.refEvent,e=>{this.cancelRefEvent(),this.cancelTimeout(),this.receivedResp=e,this.matchReceive(e)}),this.timeoutTimer=setTimeout(()=>{this.trigger(`timeout`,{})},this.timeout)}hasReceived(e){return this.receivedResp&&this.receivedResp.status===e}trigger(e,t){this.channel.trigger(this.refEvent,{status:e,response:t})}},Le=class{constructor(e,t){this.callback=e,this.timerCalc=t,this.timer=void 0,this.tries=0}reset(){this.tries=0,clearTimeout(this.timer)}scheduleTimeout(){clearTimeout(this.timer),this.timer=setTimeout(()=>{this.tries+=1,this.callback()},this.timerCalc(this.tries+1))}},Re=class{constructor(e,t,n){this.state=C.closed,this.topic=e,this.params=b(t||{}),this.socket=n,this.bindings=[],this.bindingRef=0,this.timeout=this.socket.timeout,this.joinedOnce=!1,this.joinPush=new Ie(this,w.join,this.params,this.timeout),this.pushBuffer=[],this.stateChangeRefs=[],this.rejoinTimer=new Le(()=>{this.socket.isConnected()&&this.rejoin()},this.socket.rejoinAfterMs),this.stateChangeRefs.push(this.socket.onError(()=>this.rejoinTimer.reset())),this.stateChangeRefs.push(this.socket.onOpen(()=>{this.rejoinTimer.reset(),this.isErrored()&&this.rejoin()})),this.joinPush.receive(`ok`,()=>{this.state=C.joined,this.rejoinTimer.reset(),this.pushBuffer.forEach(e=>e.send()),this.pushBuffer=[]}),this.joinPush.receive(`error`,e=>{this.state=C.errored,this.socket.hasLogger()&&this.socket.log(`channel`,`error ${this.topic}`,e),this.socket.isConnected()&&this.rejoinTimer.scheduleTimeout()}),this.onClose(()=>{this.rejoinTimer.reset(),this.socket.hasLogger()&&this.socket.log(`channel`,`close ${this.topic}`),this.state=C.closed,this.socket.remove(this)}),this.onError(e=>{this.socket.hasLogger()&&this.socket.log(`channel`,`error ${this.topic}`,e),this.isJoining()&&this.joinPush.reset(),this.state=C.errored,this.socket.isConnected()&&this.rejoinTimer.scheduleTimeout()}),this.joinPush.receive(`timeout`,()=>{this.socket.hasLogger()&&this.socket.log(`channel`,`timeout ${this.topic}`,this.joinPush.timeout),new Ie(this,w.leave,b({}),this.timeout).send(),this.state=C.errored,this.joinPush.reset(),this.socket.isConnected()&&this.rejoinTimer.scheduleTimeout()}),this.on(w.reply,(e,t)=>{this.trigger(this.replyEventName(t),e)})}join(e=this.timeout){if(this.joinedOnce)throw Error(`tried to join multiple times. 'join' can only be called a single time per channel instance`);return this.timeout=e,this.joinedOnce=!0,this.rejoin(),this.joinPush}teardown(){this.pushBuffer.forEach(e=>e.destroy()),this.pushBuffer=[],this.rejoinTimer.reset(),this.joinPush.destroy(),this.state=C.closed,this.bindings=[]}onClose(e){this.on(w.close,e)}onError(e){return this.on(w.error,t=>e(t))}on(e,t){let n=this.bindingRef++;return this.bindings.push({event:e,ref:n,callback:t}),n}off(e,t){this.bindings=this.bindings.filter(n=>!(n.event===e&&(t===void 0||t===n.ref)))}canPush(){return this.socket.isConnected()&&this.isJoined()}push(e,t,n=this.timeout){if(t||={},!this.joinedOnce)throw Error(`tried to push '${e}' to '${this.topic}' before joining. Use channel.join() before pushing events`);let r=new Ie(this,e,function(){return t},n);return this.canPush()?r.send():(r.startTimeout(),this.pushBuffer.push(r)),r}leave(e=this.timeout){this.rejoinTimer.reset(),this.joinPush.cancelTimeout(),this.state=C.leaving;let t=()=>{this.socket.hasLogger()&&this.socket.log(`channel`,`leave ${this.topic}`),this.trigger(w.close,`leave`)},n=new Ie(this,w.leave,b({}),e);return n.receive(`ok`,()=>t()).receive(`timeout`,()=>t()),n.send(),this.canPush()||n.trigger(`ok`,{}),n}onMessage(e,t,n){return t}filterBindings(e,t,n){return!0}isMember(e,t,n,r){return this.topic===e?r&&r!==this.joinRef()?(this.socket.hasLogger()&&this.socket.log(`channel`,`dropping outdated message`,{topic:e,event:t,payload:n,joinRef:r}),!1):!0:!1}joinRef(){return this.joinPush.ref}rejoin(e=this.timeout){this.isLeaving()||(this.socket.leaveOpenTopic(this.topic),this.state=C.joining,this.joinPush.resend(e))}trigger(e,t,n,r){let i=this.onMessage(e,t,n,r);if(t&&!i)throw Error(`channel onMessage callbacks must return the payload, modified or unmodified`);let a=this.bindings.filter(r=>r.event===e&&this.filterBindings(r,t,n));for(let e=0;e<a.length;e++)a[e].callback(i,n,r||this.joinRef())}replyEventName(e){return`chan_reply_${e}`}isClosed(){return this.state===C.closed}isErrored(){return this.state===C.errored}isJoined(){return this.state===C.joined}isJoining(){return this.state===C.joining}isLeaving(){return this.state===C.leaving}},ze=class{static request(e,t,n,r,i,a,o){if(x.XDomainRequest){let n=new x.XDomainRequest;return this.xdomainRequest(n,e,t,r,i,a,o)}else if(x.XMLHttpRequest){let s=new x.XMLHttpRequest;return this.xhrRequest(s,e,t,n,r,i,a,o)}else if(x.fetch&&x.AbortController)return this.fetchRequest(e,t,n,r,i,a,o);else throw Error(`No suitable XMLHttpRequest implementation found`)}static fetchRequest(e,t,n,r,i,a,o){let s={method:e,headers:n,body:r},c=null;return i&&(c=new AbortController,setTimeout(()=>c.abort(),i),s.signal=c.signal),x.fetch(t,s).then(e=>e.text()).then(e=>this.parseJSON(e)).then(e=>o&&o(e)).catch(e=>{e.name===`AbortError`&&a?a():o&&o(null)}),c}static xdomainRequest(e,t,n,r,i,a,o){return e.timeout=i,e.open(t,n),e.onload=()=>{let t=this.parseJSON(e.responseText);o&&o(t)},a&&(e.ontimeout=a),e.onprogress=()=>{},e.send(r),e}static xhrRequest(e,t,n,r,i,a,o,s){e.open(t,n,!0),e.timeout=a;for(let[t,n]of Object.entries(r))e.setRequestHeader(t,n);return e.onerror=()=>s&&s(null),e.onreadystatechange=()=>{e.readyState===Pe.complete&&s&&s(this.parseJSON(e.responseText))},o&&(e.ontimeout=o),e.send(i),e}static parseJSON(e){if(!e||e===``)return null;try{return JSON.parse(e)}catch{return console&&console.log(`failed to parse JSON response`,e),null}}static serialize(e,t){let n=[];for(var r in e){if(!Object.prototype.hasOwnProperty.call(e,r))continue;let i=t?`${t}[${r}]`:r,a=e[r];typeof a==`object`?n.push(this.serialize(a,i)):n.push(encodeURIComponent(i)+`=`+encodeURIComponent(a))}return n.join(`&`)}static appendParams(e,t){return Object.keys(t).length===0?e:`${e}${e.match(/\?/)?`&`:`?`}${this.serialize(t)}`}},Be=e=>{let t=``,n=new Uint8Array(e),r=n.byteLength;for(let e=0;e<r;e++)t+=String.fromCharCode(n[e]);return btoa(t)},Ve=class{constructor(e,t){t&&t.length===2&&t[1].startsWith(Fe)&&(this.authToken=atob(t[1].slice(Fe.length))),this.endPoint=null,this.token=null,this.skipHeartbeat=!0,this.reqs=new Set,this.awaitingBatchAck=!1,this.currentBatch=null,this.currentBatchTimer=null,this.batchBuffer=[],this.onopen=function(){},this.onerror=function(){},this.onmessage=function(){},this.onclose=function(){},this.pollEndpoint=this.normalizeEndpoint(e),this.readyState=S.connecting,setTimeout(()=>this.poll(),0)}normalizeEndpoint(e){return e.replace(`ws://`,`http://`).replace(`wss://`,`https://`).replace(RegExp(`(.*)/`+Ne.websocket),`$1/`+Ne.longpoll)}endpointURL(){return ze.appendParams(this.pollEndpoint,{token:this.token})}closeAndRetry(e,t,n){this.close(e,t,n),this.readyState=S.connecting}ontimeout(){this.onerror(`timeout`),this.closeAndRetry(1005,`timeout`,!1)}isActive(){return this.readyState===S.open||this.readyState===S.connecting}poll(){let e={Accept:`application/json`};this.authToken&&(e[`X-Phoenix-AuthToken`]=this.authToken),this.ajax(`GET`,e,null,()=>this.ontimeout(),e=>{if(e){var{status:t,token:n,messages:r}=e;if(t===410&&this.token!==null){this.onerror(410),this.closeAndRetry(3410,`session_gone`,!1);return}this.token=n}else t=0;switch(t){case 200:r.forEach(e=>{setTimeout(()=>this.onmessage({data:e}),0)}),this.poll();break;case 204:this.poll();break;case 410:this.readyState=S.open,this.onopen({}),this.poll();break;case 403:this.onerror(403),this.close(1008,`forbidden`,!1);break;case 0:case 500:this.onerror(500),this.closeAndRetry(1011,`internal server error`,500);break;default:throw Error(`unhandled poll status ${t}`)}})}send(e){typeof e!=`string`&&(e=Be(e)),this.currentBatch?this.currentBatch.push(e):this.awaitingBatchAck?this.batchBuffer.push(e):(this.currentBatch=[e],this.currentBatchTimer=setTimeout(()=>{this.batchSend(this.currentBatch),this.currentBatch=null},0))}batchSend(e,t=0){this.awaitingBatchAck=!0;let n=t+Me,r=e.slice(t,n);this.ajax(`POST`,{"Content-Type":`application/x-ndjson`},r.join(`
@@ -1143,8 +1257,9 @@ const { installDelights, renderAmbience }=require("ui-delights.js");
 const { installTagSuggest }=require("ui-tag-suggest.js");
 const { installTaskOrder }=require("ui-task-order.js");
 const fullscreen=require("ui-fullscreen.js");
+const weather=require("ui-weather.js");
 
-const features = [tasks, quest, habits, vault, character, shop, battle, collection, settings, history, sync, fullscreen];
+const features = [tasks, quest, habits, vault, character, shop, battle, collection, settings, history, sync, fullscreen, weather];
 const modals = Object.assign({}, ...features.map(f => f.modals));
 const actions = Object.assign({}, ...features.map(f => f.actions));
 const forms = Object.assign({}, ...features.map(f => f.forms || {}));
@@ -1192,7 +1307,7 @@ function render() {
     h => h.category !== 'harm' && h.logs.some(l => l.day === day),
   ).length;
   $('#app').innerHTML = `
-    <header class="topbar"><div class="topbar-brand"><a class="wordmark" href="" aria-label="Twesk home"><span class="logo-mark">${flameArt()}</span>twesk</a><time class="topbar-date" datetime="${day}">${esc(dateLabel())}</time></div>
+    <header class="topbar"><div class="topbar-brand"><a class="wordmark" href="" aria-label="Twesk home"><span class="logo-mark">${flameArt()}</span>twesk</a><time class="topbar-date" datetime="${day}" aria-label="${esc(dateLabel())}"><span class="date-long" aria-hidden="true">${esc(dateLabel())}</span><span class="date-compact" aria-hidden="true"><span>${esc(new Intl.DateTimeFormat('en', { timeZone: app.state.settings.timezone, weekday: 'short' }).format(new Date()))}</span>${esc(new Intl.DateTimeFormat('en', { timeZone: app.state.settings.timezone, month: 'short', day: 'numeric' }).format(new Date()))}</span></time><div id="weather-header">${weather.renderWeather()}</div></div>
     <div class="topbar-actions"><button class="capture-button" data-action="capture" aria-label="Quick capture" title="Quick capture (⌘K)" aria-keyshortcuts="Meta+K">${icon('bolt')}<kbd>⌘ K</kbd></button><span class="toolbar-divider"></span><button class="collection-button" data-action="history" title="Progress history" aria-label="Open progress history">${icon('calendar')}</button><button class="collection-button" data-action="achievements" title="Achievements and monster collection" aria-label="Open achievements">${icon('medal')}</button>${iconButton('theme', app.state.settings.theme === 'dark' ? 'sun' : 'moon', 'Switch to ' + (app.state.settings.theme === 'dark' ? 'light' : 'dark') + ' mode')}${iconButton('mute', app.state.settings.muted ? 'mute' : 'sound', app.state.settings.muted ? 'Unmute sounds' : 'Mute sounds')}${fullscreen.fullscreenButton()}${iconButton('settings', 'settings', 'Settings and backup')}<button class="profile-dot" data-action="settings" aria-label="Your profile">${avatarFaceArt(app.state.appearance)}</button></div></header>
     <main>
     ${app.saveError ? '<div class="save-warning">' + esc(app.startupWarning || 'Browser saving is unavailable. Export a backup in Settings to keep your progress.') + '</div>' : E.backupDue(app.state, day) ? settings.backupReminder() : ''}
@@ -1273,7 +1388,7 @@ $('#overlay').addEventListener('keydown', event => {
   const submit = form.querySelector('button[type="submit"]');
   if (!event.repeat && !app.busy && submit && !submit.disabled) form.requestSubmit(submit);
 });
-$('#overlay').addEventListener('input', event => vault.onInput(event));
+$('#overlay').addEventListener('input', event => { vault.onInput(event); weather.onInput(event); });
 $('#overlay').addEventListener('change', event => {
   habits.onChange(event);
   collection.onChange(event);
@@ -1355,6 +1470,7 @@ awardAchievements(app.state, today());
 render();
 if (!app.protectSave) persist();
 sync.installSync();
+weather.installWeather();
 // Offline support for the installed app (Add to Dock / Install). Skipped in the single-file Twesk.html.
 if ('serviceWorker' in navigator && !window.__TWESK_STANDALONE__ && location.protocol.startsWith('http')) {
   const hadController = !!navigator.serviceWorker.controller;
@@ -8858,6 +8974,278 @@ function installFullscreen() {
 }
 
 Object.assign(exports,{fullscreenSupported,fullscreenButton,toggleFullscreen,actions,installFullscreen});
+},
+"ui-weather.js":function(require,exports){
+const { $, app, esc, icon, modalShell, view }=require("ui-core.js");
+const { createWeatherController, searchWeatherPlaces, weatherCondition, weatherTemperature }=require("weather.js");
+const { weatherArt }=require("weather-art.js");
+const { openModal }=require("ui-modal.js");
+
+const locateIcon = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>';
+let storage; try { storage = localStorage; } catch {}
+const controller = createWeatherController({ storage, geolocation: navigator.geolocation, permissions: navigator.permissions, onChange: updateWeather });
+let query = '', results = [], searchBusy = false, searchError = '', searchVersion = 0;
+const temperature = (n, suffix = false) => weatherTemperature(n, controller.snapshot().unit, suffix);
+const probability = n => n === null ? '—' : `${Math.round(n)}%`;
+const saved = s => !!s.data && (s.stale || navigator.onLine === false);
+function updatedLabel(s) {
+  if (!s.data) return '';
+  const minutes = Math.max(0, Math.floor((Date.now() - s.data.measuredAt) / 60000));
+  return minutes < 1 ? 'Updated just now' : minutes < 60 ? `Updated ${minutes} min ago` : minutes < 1440 ? `Updated ${Math.floor(minutes / 60)}h ago` : `Updated ${Math.floor(minutes / 1440)}d ago`;
+}
+function renderWeather() {
+  const s = controller.snapshot(), d = s.data;
+  if (!d) return `<button class="topbar-weather weather-empty" data-action="weather" aria-label="${s.place ? 'Open weather for ' + esc(s.place.name) : 'Set up local weather'}">${weatherArt('partly')}<span><strong>${s.busy ? 'Finding the weather…' : s.place ? esc(s.place.name) : 'Weather'}</strong><small>${s.busy ? 'One moment' : s.place ? 'Tap to retry' : 'Choose your location'}</small></span></button>`;
+  const condition = weatherCondition(d.code, d.isDay);
+  const label = `Weather in ${s.place.name}: ${condition.label}, ${temperature(d.temperature, true)}. Low ${temperature(d.low)}, high ${temperature(d.high)}. Rain chance this hour ${probability(d.rainChance)}. Dew point ${temperature(d.dewPoint, true)}. ${saved(s) ? 'Saved reading. ' : ''}${updatedLabel(s)}.`;
+  return `<button class="topbar-weather" data-action="weather" aria-label="${esc(label)}" title="${esc(label)}">${weatherArt(condition.art)}<span class="weather-header-content"><span class="weather-headline"><strong class="weather-place">${esc(s.place.name)}</strong><strong class="weather-temperature">${temperature(d.temperature)}<small>${s.unit.toUpperCase()}</small></strong><span class="weather-condition">${esc(condition.label)}</span>${saved(s) ? '<span class="weather-saved">Saved</span>' : ''}</span><span class="weather-header-metrics"><span title="Today’s low and high">${weatherArt('range')}<span><span class="weather-low">↓${temperature(d.low)}</span><span>↑${temperature(d.high)}</span></span></span><span title="Chance of rain this hour">${weatherArt('drizzle')}<span>${probability(d.rainChance)}</span></span><span title="Dew point">${weatherArt('dew')}<span>${temperature(d.dewPoint)}</span></span></span></span></button>`;
+}
+function reading() {
+  const s = controller.snapshot(), d = s.data;
+  if (!d) return `<div class="weather-welcome">${weatherArt('partly')}<h3>${s.place ? esc(s.place.name) : 'Your weather, here'}</h3><p>${s.busy ? 'Getting the latest conditions…' : 'Use your current location, or search for a city.'}</p></div>`;
+  const condition = weatherCondition(d.code, d.isDay);
+  return `<div class="weather-overview">${weatherArt(condition.art)}<div><h3>${esc(s.place.name)}</h3><p>${esc([s.place.region, s.place.country].filter((v, i, a) => v && v !== s.place.name && a.indexOf(v) === i).join(', '))}</p><strong>${temperature(d.temperature)}<small>${s.unit.toUpperCase()}</small></strong><span>${esc(condition.label)}</span></div></div><div class="weather-detail-metrics"><div>${weatherArt('range')}<small>Today’s low / high</small><strong>${temperature(d.low)} <span>/</span> ${temperature(d.high)}</strong></div><div>${weatherArt('drizzle')}<small>Rain · this hour</small><strong>${probability(d.rainChance)}</strong></div><div>${weatherArt('dew')}<small>Dew point</small><strong>${temperature(d.dewPoint)}</strong></div></div><p class="weather-updated">${saved(s) ? 'Saved reading · ' : ''}${updatedLabel(s)}</p>`;
+}
+function message() {
+  const s = controller.snapshot();
+  return s.error || (navigator.onLine === false ? 'You’re offline. Weather will update when you reconnect.' : '');
+}
+function updateWeather() {
+  const slot = $('#weather-header');
+  if (slot) {
+    const template = document.createElement('template');
+    template.innerHTML = renderWeather();
+    const next = template.content.firstElementChild, current = slot.firstElementChild;
+    if (!current) slot.append(next);
+    else {
+      // Keep the button itself: dialog close must restore focus to the same control.
+      for (const attribute of ['class', 'aria-label', 'title']) {
+        if (next.hasAttribute(attribute)) current.setAttribute(attribute, next.getAttribute(attribute));
+        else current.removeAttribute(attribute);
+      }
+      current.replaceChildren(...next.childNodes);
+    }
+  }
+  // Polling never redraws a location search or steals its input focus.
+  const details = $('#weather-reading');
+  if (details) details.innerHTML = reading();
+  const status = $('#weather-message');
+  if (status) { status.textContent = message(); status.hidden = !message(); }
+  for (const b of document.querySelectorAll('[data-action="weather-locate"], [data-action="weather-refresh"]')) b.disabled = controller.snapshot().busy;
+  for (const b of document.querySelectorAll('[data-action="weather-refresh"], [data-action="weather-clear"]')) b.hidden = !controller.snapshot().place;
+}
+function searchResults() {
+  return searchBusy ? '<p>Finding places…</p>' : searchError ? `<p>${esc(searchError)}</p>` : results.map((place, index) => `<button data-action="weather-choose" data-index="${index}"><span><strong>${esc(place.name)}</strong><small>${esc([place.region, place.country].filter(Boolean).join(', '))}</small></span>${icon('arrow')}</button>`).join('');
+}
+function updateSearch() {
+  if (app.modal?.type !== 'weather') return;
+  const area = $('.weather-search-results'), button = $('#weather-search-form button');
+  if (area) area.innerHTML = searchResults();
+  if (button) button.disabled = searchBusy;
+}
+function onInput(event) {
+  if (event.target.id !== 'weather-search') return;
+  query = event.target.value;
+  searchVersion++; searchBusy = false; searchError = ''; results = [];
+  updateSearch();
+}
+const modals = {
+  weather() {
+    const s = controller.snapshot();
+    return modalShell('Weather', `<div class="form-body weather-body"><div class="weather-controls"><div class="weather-units" role="group" aria-label="Temperature unit">${['c', 'f'].map(unit => `<button data-action="weather-unit" data-unit="${unit}" aria-pressed="${s.unit === unit}" class="${s.unit === unit ? 'selected' : ''}">°${unit.toUpperCase()}</button>`).join('')}</div><button class="text-button weather-refresh" data-action="weather-refresh" ${s.place ? '' : 'hidden'} ${s.busy ? 'disabled' : ''}>${icon('repeat')}Refresh</button></div><div id="weather-reading">${reading()}</div><p class="weather-message" id="weather-message" role="status" ${message() ? '' : 'hidden'}>${esc(message())}</p><div class="weather-location"><button class="button secondary weather-locate" data-action="weather-locate" ${s.busy ? 'disabled' : ''}>${locateIcon}Use my location</button><form id="weather-search-form"><label for="weather-search">Or choose a city</label><div class="weather-search-row"><input id="weather-search" name="place" type="search" autocomplete="off" minlength="2" maxlength="120" required placeholder="City or postcode" value="${esc(query)}"><button class="button secondary" type="submit" aria-label="Search for a city" ${searchBusy ? 'disabled' : ''}>${icon('search')}</button></div></form><div class="weather-search-results" aria-live="polite">${searchResults()}</div></div><footer class="weather-credits"><span>Weather by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · Places by <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a> / <a href="https://www.bigdatacloud.com/" target="_blank" rel="noopener noreferrer">BigDataCloud</a></span><button class="text-button" data-action="weather-clear" ${s.place ? '' : 'hidden'}>Clear location</button></footer></div>`, 'weather-modal');
+  },
+};
+const actions = {
+  weather() { query = ''; results = []; searchError = ''; searchBusy = false; searchVersion++; openModal({ type: 'weather' }); controller.refresh(); },
+  'weather-locate'() { controller.locate(); },
+  'weather-refresh'() { controller.refresh({ force: true, locate: true }); },
+  'weather-unit'(b) { controller.setUnit(b.dataset.unit); view.renderModal(); $(`[data-action="weather-unit"][data-unit="${b.dataset.unit}"]`)?.focus(); },
+  'weather-choose'(b) { const place = results[Number(b.dataset.index)]; if (!place) return; query = ''; results = []; searchVersion++; controller.choose(place); view.renderModal(); },
+  'weather-clear'() { controller.clear(); results = []; query = ''; searchVersion++; view.renderModal(); },
+};
+const forms = {
+  async 'weather-search-form'(data) {
+    query = String(data.get('place') || '').trim();
+    const version = ++searchVersion; searchBusy = true; searchError = ''; results = []; updateSearch();
+    try { const places = await searchWeatherPlaces(query); if (version === searchVersion) { results = places; if (!places.length) searchError = 'No places found. Try a nearby city or a different spelling.'; } }
+    catch { if (version === searchVersion) searchError = 'City search is unavailable. Try again when you’re online.'; }
+    finally { if (version === searchVersion) { searchBusy = false; updateSearch(); } }
+  },
+};
+function installWeather() {
+  controller.refresh();
+  setInterval(() => { if (!document.hidden) { updateWeather(); controller.refresh(); } }, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { updateWeather(); controller.refresh(); } });
+  window.addEventListener('focus', () => { updateWeather(); controller.refresh(); });
+  window.addEventListener('online', () => controller.refresh({ force: true }));
+  window.addEventListener('offline', updateWeather);
+}
+
+Object.assign(exports,{renderWeather,onInput,modals,actions,forms,installWeather});
+},
+"weather.js":function(require,exports){
+// Weather is a device preference, separate from progress, backups, and cloud sync.
+const WEATHER_KEY = 'twesk.weather.v1';
+const WEATHER_INTERVAL = 15 * 60 * 1000;
+const clean = value => typeof value === 'string' ? value.trim().slice(0, 120) : '';
+const number = (value, min, max) => typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max;
+function weatherPlace(value) {
+  if (!value || !number(value.latitude, -90, 90) || !number(value.longitude, -180, 180) || !clean(value.name)) return null;
+  return { latitude: Math.round(value.latitude * 100) / 100, longitude: Math.round(value.longitude * 100) / 100,
+    name: clean(value.name), region: clean(value.region), country: clean(value.country), mode: value.mode === 'device' ? 'device' : 'city' };
+}
+function weatherCondition(code, isDay = true) {
+  if (code === 0) return { art: isDay ? 'sun' : 'moon', label: isDay ? 'Clear sky' : 'Clear night' };
+  if (code === 1 || code === 2) return { art: isDay ? 'partly' : 'partly-night', label: code === 1 ? 'Mostly clear' : 'Partly cloudy' };
+  if (code === 3) return { art: 'cloud', label: 'Overcast' };
+  if ([45, 48].includes(code)) return { art: 'fog', label: 'Fog' };
+  if ([51, 53, 55, 56, 57].includes(code)) return { art: 'drizzle', label: code >= 56 ? 'Freezing drizzle' : 'Drizzle' };
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return { art: 'rain', label: [66, 67].includes(code) ? 'Freezing rain' : code >= 80 ? 'Rain showers' : 'Rain' };
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return { art: 'snow', label: code >= 85 ? 'Snow showers' : 'Snow' };
+  if ([95, 96, 99].includes(code)) return { art: 'storm', label: code === 95 ? 'Thunderstorm' : 'Thunder & hail' };
+  return { art: 'cloud', label: 'Weather' };
+}
+function weatherTemperature(value, unit = 'c', suffix = false) {
+  return number(value, -150, 100) ? `${Math.round(unit === 'f' ? value * 9 / 5 + 32 : value)}°${suffix ? unit.toUpperCase() : ''}` : '—';
+}
+function forecastUrl(place) {
+  const url = new URL('https://api.open-meteo.com/v1/forecast');
+  url.search = new URLSearchParams({ latitude: place.latitude, longitude: place.longitude,
+    current: 'temperature_2m,weather_code,is_day,dew_point_2m,precipitation_probability',
+    daily: 'temperature_2m_min,temperature_2m_max', timezone: 'auto', forecast_days: '1', timeformat: 'unixtime' });
+  return url.href;
+}
+function parseForecast(data, now = Date.now()) {
+  const c = data?.current, d = data?.daily;
+  if (!number(c?.temperature_2m, -100, 80) || !number(c?.time, (now - 6 * 60 * 60 * 1000) / 1000, (now + 60 * 60 * 1000) / 1000)) throw new Error('Weather readings are unavailable. Try again in a little while.');
+  const optional = (value, min, max) => number(value, min, max) ? value : null;
+  return { temperature: c.temperature_2m, code: optional(c.weather_code, 0, 99), isDay: c.is_day !== 0,
+    dewPoint: optional(c.dew_point_2m, -130, 80), rainChance: optional(c.precipitation_probability, 0, 100),
+    low: optional(d?.temperature_2m_min?.[0], -100, 80), high: optional(d?.temperature_2m_max?.[0], -100, 80),
+    measuredAt: c.time * 1000, fetchedAt: now };
+}
+function cachedReading(value, now) {
+  if (!value || !number(value.temperature, -100, 80) || !number(value.fetchedAt, now - 7 * 86400000, now + 60000) || !number(value.measuredAt, now - 7 * 86400000, now + 3600000)) return null;
+  const optional = (n, min, max) => number(n, min, max) ? n : null;
+  return { temperature: value.temperature, code: optional(value.code, 0, 99), isDay: value.isDay !== false,
+    dewPoint: optional(value.dewPoint, -130, 80), rainChance: optional(value.rainChance, 0, 100),
+    low: optional(value.low, -100, 80), high: optional(value.high, -100, 80), measuredAt: value.measuredAt, fetchedAt: value.fetchedAt };
+}
+async function jsonRequest(fetcher, url) {
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetcher(url, { signal: controller.signal, credentials: 'omit', cache: 'no-store' });
+    if (!response.ok) throw new Error('Weather is unavailable. Try again in a little while.');
+    return await response.json();
+  } finally { clearTimeout(timer); }
+}
+async function searchWeatherPlaces(query, fetcher = globalThis.fetch) {
+  const term = clean(query);
+  if (term.length < 2) return [];
+  const url = new URL('https://geocoding-api.open-meteo.com/v1/search');
+  url.search = new URLSearchParams({ name: term, count: '5', language: 'en', format: 'json' });
+  const data = await jsonRequest(fetcher, url.href);
+  return (Array.isArray(data.results) ? data.results : []).map(p => weatherPlace({ ...p, region: p.admin1, mode: 'city' })).filter(Boolean).slice(0, 5);
+}
+function createWeatherController({ storage, fetcher = globalThis.fetch, geolocation, permissions, now = Date.now, onChange = () => {} } = {}) {
+  let stored;
+  try { stored = JSON.parse(storage?.getItem(WEATHER_KEY) || 'null'); } catch {}
+  const place = weatherPlace(stored?.place);
+  const state = { place, unit: stored?.unit === 'f' ? 'f' : 'c', data: place ? cachedReading(stored?.data, now()) : null, busy: false, error: '' };
+  let generation = 0, refreshing = null, lastAttempt = state.data?.fetchedAt ?? -Infinity;
+  const snapshot = () => ({ ...state, stale: !!state.data && (now() - Math.min(state.data.fetchedAt, state.data.measuredAt) >= WEATHER_INTERVAL * 2 || !!state.error) });
+  const emit = () => onChange(snapshot());
+  function save() { try { storage?.setItem(WEATHER_KEY, JSON.stringify({ place: state.place, unit: state.unit, data: state.data })); } catch {} }
+  function position() {
+    return new Promise((resolve, reject) => {
+      if (!geolocation) return reject(new Error('Location is unavailable here. You can search for your city instead.'));
+      geolocation.getCurrentPosition(resolve, error => reject(new Error(error.code === 1 ? 'Location access is off. Allow it in your browser, or search for a city below.' : 'Couldn’t find your location. Try again, or search for a city below.')),
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60 * 1000 });
+    });
+  }
+  async function load({ device = false, selected = state.place } = {}) {
+    const id = ++generation;
+    state.busy = true; state.error = ''; lastAttempt = now(); emit();
+    try {
+      let coords;
+      if (device) {
+        const result = await position();
+        if (id !== generation) return;
+        coords = result.coords;
+        const same = state.place?.mode === 'device' && Math.abs(state.place.latitude - coords.latitude) < .02 && Math.abs(state.place.longitude - coords.longitude) < .02;
+        selected = weatherPlace({ latitude: coords.latitude, longitude: coords.longitude, name: same ? state.place.name : 'Your location',
+          region: same ? state.place.region : '', country: same ? state.place.country : '', mode: 'device' });
+      }
+      if (!selected) throw new Error('Choose a location to see the weather.');
+      if (state.place?.latitude !== selected.latitude || state.place?.longitude !== selected.longitude) state.data = null;
+      state.place = selected; save(); emit();
+      // Reverse geocoding is only called with a fresh browser location, never stored or searched coordinates.
+      const reverseUrl = coords ? `https://api.bigdatacloud.net/data/reverse-geocode-client?${new URLSearchParams({ latitude: coords.latitude, longitude: coords.longitude, localityLanguage: 'en' })}` : null;
+      const [data, label] = await Promise.all([
+        jsonRequest(fetcher, forecastUrl(selected)).then(data => parseForecast(data, now())),
+        reverseUrl ? jsonRequest(fetcher, reverseUrl).catch(() => null) : null,
+      ]);
+      if (id !== generation) return;
+      if (label && clean(label.city || label.locality)) state.place = weatherPlace({ ...selected, name: label.city || label.locality, region: label.principalSubdivision, country: label.countryName });
+      state.data = data; save();
+    } catch (error) {
+      if (id === generation) {
+        const locationError = device && (error.message?.includes('location') || error.message?.startsWith('Location'));
+        state.error = locationError ? error.message : state.data ? 'Weather is unavailable. Showing your last reading; try again shortly.' : 'Couldn’t load weather. Check your connection and try again.';
+      }
+    } finally { if (id === generation) { state.busy = false; emit(); } }
+  }
+  function refresh({ force = false, locate = false } = {}) {
+    if (!state.place || state.busy || refreshing || (!force && now() - lastAttempt < WEATHER_INTERVAL)) return refreshing || Promise.resolve();
+    const id = generation;
+    refreshing = (async () => {
+      let device = state.place.mode === 'device' && locate;
+      if (state.place.mode === 'device' && !locate) {
+        try { device = (await permissions?.query({ name: 'geolocation' }))?.state === 'granted'; } catch {}
+      }
+      if (id === generation) await load({ device });
+    })().finally(() => { refreshing = null; });
+    return refreshing;
+  }
+  return { snapshot, refresh,
+    locate: () => load({ device: true }),
+    choose: value => { const selected = weatherPlace(value); return selected ? load({ selected: { ...selected, mode: 'city' } }) : Promise.resolve(); },
+    setUnit(unit) { if (unit === 'c' || unit === 'f') { state.unit = unit; save(); emit(); } },
+    clear() { generation++; lastAttempt = -Infinity; state.place = null; state.data = null; state.busy = false; state.error = ''; save(); emit(); },
+  };
+}
+
+Object.assign(exports,{WEATHER_KEY,WEATHER_INTERVAL,weatherPlace,weatherCondition,weatherTemperature,forecastUrl,parseForecast,searchWeatherPlaces,createWeatherController});
+},
+"weather-art.js":function(require,exports){
+// Original small faceted weather objects. No fonts, external images, or SVG IDs.
+const cache = new Map();
+const sun = '<path d="M36 7v5m0 26v5M18 25h5m26 0h5M23 12l4 4m18 18 4 4M23 38l4-4m18-18 4-4" fill="none" stroke="#dfac51" stroke-width="3"/><path d="m36 13 10 6v13l-10 6-10-6V19Z" fill="#efb94f"/><path d="m36 13 10 6-10 6-10-6Z" fill="#ffe18a"/><path d="m36 25 10-6v13l-10 6Z" fill="#dba047"/>';
+const moon = '<path d="m34 7 8 5-7 6v12l11 7-8 6-15-9V16Z" fill="#bac5e2"/><path d="m34 7 8 5-7 6-8-4Z" fill="#e7eafa"/><path d="m35 30 11 7-8 6-15-9 7-4Z" fill="#95a4c8"/><path d="M48 12h4v4h-4Zm-4 37h3v3h-3Z" fill="#d5bd7e"/>';
+const cloud = '<path d="M10 34h7V25h10v-8h14v8h10v9h6v15H10Z" fill="#dce6ed"/><path d="m10 34 5-4h7v-9h10v-8h14l-5 4H27v8H17v9Z" fill="#f7fafb"/><path d="m41 17 5-4v8h10l-5 4H41Zm10 17 5-4h6v15l-5 4V34Z" fill="#a8becf"/><path d="M17 41h34v8H17Z" fill="#c5d6e2"/>';
+const drop = (x, y, color = '#78b5d9') => `<path d="m${x} ${y} 4 7-4 4-4-4Z" fill="${color}"/><path d="m${x} ${y} 4 7-4 4Z" fill="#4a92be"/>`;
+const flakes = '<path d="M20 52v9m-4-6 8 4m-8 0 8-4m18-3v9m-4-6 8 4m-8 0 8-4" fill="none" stroke="#8eb8d5" stroke-width="2"/>';
+function weatherArt(kind = 'cloud') {
+  if (cache.has(kind)) return cache.get(kind);
+  let art;
+  if (kind === 'sun') art = sun;
+  else if (kind === 'moon') art = moon;
+  else if (kind === 'partly' || kind === 'partly-night') art = `<g transform="translate(6 -3) scale(.82)">${kind === 'partly' ? sun : moon}</g><g transform="translate(-1 9) scale(.9)">${cloud}</g>`;
+  else if (kind === 'dew') art = '<path d="m8 43 19-14 27 4-20 18Z" fill="#9abb97"/><path d="m8 43 26 8 20-18-23 9Z" fill="#6f9b7e"/><path d="m31 8 14 23-4 11-10 6-11-6-4-11Z" fill="#92cbd9"/><path d="m31 8 14 23-4 11-10 6V26Z" fill="#5da6bd"/><path d="m24 27-3 7 3 5" fill="none" stroke="#d6f0ef" stroke-width="3"/>';
+  else if (kind === 'range') art = '<path d="m27 7 10 5v28l7 5v10l-12 7-13-7V45l8-5Z" fill="#b8ccd7"/><path d="m27 7 10 5-7 4-3-2Z" fill="#edf4f5"/><path d="m37 12-7 4v29l-6 4v7l8 5 12-6V45l-7-5Z" fill="#8faeba"/><path d="M27 28h5v20h-5Zm-2 18h12v8H25Z" fill="#da9980"/>';
+  else {
+    art = cloud;
+    if (kind === 'rain' || kind === 'drizzle') art = `<g transform="translate(1 -5)">${cloud}</g>` + [18, 32, 46].map((x, i) => drop(x, 46 + i % 2 * 3, kind === 'drizzle' ? '#a4c8da' : '#78b5d9')).join('');
+    if (kind === 'snow') art = `<g transform="translate(1 -5)">${cloud}</g>` + flakes;
+    if (kind === 'storm') art = `<g transform="translate(1 -6)">${cloud}</g><path d="m34 34-12 16h10l-5 14 19-22H35l5-8Z" fill="#e6b653"/><path d="m34 34-12 16h10l-5 14 12-18H29Z" fill="#ffe092"/>`;
+    if (kind === 'fog') art = `<g transform="translate(0 -5)">${cloud}</g><path d="M10 51h35m-26 7h36" fill="none" stroke="#a5b7c4" stroke-width="3"/>`;
+  }
+  const svg = `<svg class="weather-art weather-art-${kind}" viewBox="0 0 64 68" fill="none" aria-hidden="true">${art}</svg>`;
+  cache.set(kind, svg);
+  return svg;
+}
+
+Object.assign(exports,{weatherArt});
 }};
 const cache=Object.create(null);function require(id){if(cache[id])return cache[id];const exports=cache[id]={};modules[id](require,exports);return exports;}require("app.js");
 })();

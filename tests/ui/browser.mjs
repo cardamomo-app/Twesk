@@ -206,7 +206,8 @@ async function openPage({ send, listeners }, { origin, width = 1280, height = 90
     async press(key, modifiers = []) {
       const mods = modifiers.reduce((n, m) => n | MODIFIERS[m], 0);
       const info = KEYS[key] || { code: `Key${key.toUpperCase()}`, keyCode: key.toUpperCase().charCodeAt(0) };
-      const text = !KEYS[key] && !mods ? key : undefined;
+      // Plain Enter needs its character event for native form submission; shortcuts stay key-only.
+      const text = !mods ? (key === 'Enter' ? '\r' : !KEYS[key] ? key : undefined) : undefined;
       await cmd('Input.dispatchKeyEvent', { type: text ? 'keyDown' : 'rawKeyDown', key, code: info.code, windowsVirtualKeyCode: info.keyCode, modifiers: mods, text });
       await cmd('Input.dispatchKeyEvent', { type: 'keyUp', key, code: info.code, windowsVirtualKeyCode: info.keyCode, modifiers: mods });
     },

@@ -83,10 +83,13 @@ export async function launchBrowser() {
       message.error ? reject(new Error(message.error.message)) : resolve(message.result);
     } else for (const listener of listeners) listener(message);
   };
+  // A command the browser never answers (a page stuck in a loop, say) fails after 30 s, naming itself,
+  // instead of hanging the whole run.
   const send = (method, params = {}, sessionId) =>
     new Promise((resolve, reject) => {
       const id = nextId++;
-      pending.set(id, { resolve, reject });
+      const timer = setTimeout(() => { pending.delete(id); reject(new Error(`Browser did not answer ${method} within 30 s`)); }, 30000);
+      pending.set(id, { resolve: value => { clearTimeout(timer); resolve(value); }, reject: error => { clearTimeout(timer); reject(error); } });
       socket.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }));
     });
   return {

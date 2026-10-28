@@ -15,6 +15,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # A stuck browser check fails the run instead of holding it for hours.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
       # The interface tests talk to the browser with Node's built-in WebSocket (Node 22 or newer).

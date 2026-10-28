@@ -1125,7 +1125,7 @@ button.hashtag:hover{text-decoration:underline}
 .weather-empty small:empty{display:none}
 
 /* The weather dialog: a reading, three measurements, then where the weather comes from. */
-.weather-modal{width:440px}
+.weather-modal{width:560px}
 .weather-body{position:relative;padding-top:20px}
 .weather-units{position:absolute;top:20px;right:25px;z-index:1;display:flex;gap:2px;border-radius:8px;background:var(--surface);padding:3px}
 .weather-units button{font-size:10px;color:var(--secondary);min-width:32px;min-height:24px;border-radius:5px}
@@ -1139,9 +1139,9 @@ button.hashtag:hover{text-decoration:underline}
 .weather-overview-text{min-width:0;padding-right:76px}
 .weather-overview h3{font-size:18px;line-height:1.25;letter-spacing:-.3px;overflow-wrap:anywhere}
 .weather-overview p{font-size:10px;line-height:1.4;color:var(--muted);margin-top:2px}
-.weather-now{display:flex;align-items:baseline;gap:10px;margin-top:10px}
-.weather-now strong{font-family:var(--heading);font-size:42px;line-height:1;letter-spacing:-1.5px;font-weight:700;font-variant-numeric:tabular-nums}
-.weather-now span{font-size:12px;color:var(--secondary)}
+.weather-now{display:flex;flex-direction:column;align-items:flex-start;gap:9px;margin-top:13px}
+.weather-now .weather-temperature{--weather-height:40px}
+.weather-now>span{font-size:12px;color:var(--secondary)}
 .weather-detail-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--surface);border:1px solid var(--line);border-radius:12px}
 .weather-detail-metrics>div{display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 6px;min-width:0}
 .weather-detail-metrics>div+div{border-left:1px solid var(--line)}
@@ -1150,6 +1150,40 @@ button.hashtag:hover{text-decoration:underline}
 .weather-detail-metrics small{font-size:9px;line-height:1.2;color:var(--muted);white-space:nowrap}
 .weather-detail-metrics strong{font-size:14px;line-height:1.2;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
 .weather-detail-metrics strong span{color:var(--muted);font-weight:400;margin:0 3px}
+/* One shared scroll keeps the two hourly rows on the same time grid. */
+.weather-hourly{margin-top:21px;border-top:1px solid var(--line);padding-top:15px}
+.weather-hourly-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.weather-hourly-heading h3{font-size:12px;font-weight:600;letter-spacing:-.1px}
+.weather-hourly-heading>div{display:flex;gap:2px}
+.weather-hourly-heading .icon-button{width:25px;height:25px}
+.weather-hourly-heading .icon{width:13px;height:13px}
+.weather-hours-back{transform:rotate(90deg)}
+.weather-hours-next{transform:rotate(-90deg)}
+.weather-hourly-scroll{overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent;border-radius:6px;padding-bottom:5px}
+.weather-hourly-grid{position:relative;display:grid;grid-template-columns:repeat(var(--hours),52px);width:max-content;min-width:100%}
+.weather-hourly-row-title{grid-column:1/-1;position:sticky;left:0;justify-self:start;width:max-content;display:flex;align-items:baseline;gap:8px;font-size:10px;font-weight:550;color:var(--secondary);margin:0 0 11px 4px}
+.weather-hourly-row-title small{font-size:9px;color:var(--muted);font-weight:400}
+.weather-hour{display:flex;flex-direction:column;align-items:center;gap:8px;font-variant-numeric:tabular-nums;padding:7px 2px;border-radius:8px}
+.weather-hour.is-current{background:var(--surface)}
+.weather-hour time{font-size:9px;color:var(--muted);line-height:1.25;text-align:center;min-height:12px}
+.weather-hour time small{display:block;font-size:7px}
+.weather-hour.is-current time{color:var(--accent);font-weight:600}
+.weather-hour-temperature>.weather-art{width:32px;height:28px}
+.weather-hour strong{font-size:12px;font-weight:550;color:var(--text);line-height:1.2}
+.weather-hour-icon-missing{display:grid;place-items:center;width:32px;height:28px;color:var(--muted)}
+.weather-hourly-curve{grid-column:1/-1;display:block;width:100%;height:26px;margin:3px 0 12px;overflow:visible}
+.weather-hourly-curve path{fill:none;stroke:var(--gold);stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round;opacity:.65}
+.weather-rain-row-title{margin-bottom:8px}
+.weather-hour-rain{gap:5px;padding-top:8px;padding-bottom:7px}
+.weather-hour-rain strong{color:var(--mind);font-size:11px}
+.weather-hour-rain-bar{display:grid;place-items:center;width:24px;height:32px}
+.weather-hour-rain-bar>svg{width:24px;height:32px;overflow:visible}
+.weather-rain-zero{stroke:var(--line);stroke-width:2}
+.weather-rain-unknown{color:var(--muted);font-size:12px}
+.weather-hour-rain-amount{font-size:10px;line-height:1.2;color:var(--secondary);white-space:nowrap}
+.weather-hour-rain-amount small{font-size:8px;color:var(--muted)}
+.weather-hourly-note{font-size:9px;color:var(--muted);line-height:1.5;margin:9px 2px 0}
+.weather-hourly-unavailable{font-size:10px;color:var(--muted);margin:17px 2px}
 .weather-status{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:20px;margin:11px 2px 16px}
 .weather-updated{font-size:10px;color:var(--muted)}
 .weather-saved-note{color:var(--gold)}
@@ -1215,7 +1249,7 @@ button.hashtag:hover{text-decoration:underline}
  .weather-overview{gap:14px}
  .weather-overview>.weather-art{width:80px;height:84px}
  .weather-overview-text{padding-right:70px}
- .weather-now strong{font-size:36px}
+ .weather-now .weather-temperature{--weather-height:34px}
 }
 @media(max-width:400px){
  .topbar-today .topbar-date{font-size:10px}
@@ -9027,7 +9061,7 @@ Object.assign(exports,{fullscreenSupported,fullscreenButton,toggleFullscreen,act
 },
 "ui-weather.js":function(require,exports){
 const { $, app, esc, icon, modalShell, view }=require("ui-core.js");
-const { createWeatherController, searchWeatherPlaces, weatherCondition, weatherTemperature }=require("weather.js");
+const { createWeatherController, searchWeatherPlaces, weatherCondition, weatherTemperature, weatherDayHours }=require("weather.js");
 const { weatherArt, headerWeatherArt, temperatureArt }=require("weather-art.js");
 const { openModal }=require("ui-modal.js");
 
@@ -9051,13 +9085,55 @@ function renderWeather() {
   const label = `Weather in ${s.place.name}: ${condition.label}, ${temperature(d.temperature, true)}. Low ${temperature(d.low)}, high ${temperature(d.high)}. Rain chance this hour ${probability(d.rainChance)}. Dew point ${temperature(d.dewPoint, true)}. ${saved(s) ? 'Saved reading. ' : ''}${updatedLabel(s)}.`;
   return `<button class="topbar-weather" data-action="weather" aria-label="${esc(label)}" title="${esc(label)}">${headerWeatherArt(condition.art)}<span class="weather-location-summary"><strong class="weather-place">${esc(s.place.name)}</strong><span class="weather-range" aria-label="Low ${temperature(d.low)}, high ${temperature(d.high)}"><span title="Today’s low">${temperature(d.low)}</span><span class="weather-range-separator" aria-hidden="true">/</span><span title="Today’s high">${temperature(d.high)}</span>${saved(s) ? '<span class="weather-saved">Saved</span>' : ''}</span></span><strong class="weather-temperature"><span class="sr-only">${temperature(d.temperature, true)}</span>${temperatureArt(temperature(d.temperature), s.unit.toUpperCase())}</strong></button>`;
 }
+function rainAmount(value) {
+  return value === null ? '—' : value > 0 && value < .1 ? '<0.1' : String(Math.round(value * 10) / 10);
+}
+function hourlyRainBar(value, maximum) {
+  if (value === null) return '<span class="weather-rain-unknown" aria-hidden="true">—</span>';
+  if (value === 0) return '<svg viewBox="0 0 24 32" aria-hidden="true"><path d="M5 30h14" class="weather-rain-zero"/></svg>';
+  const y = 29 - Math.max(3, value / maximum * 25);
+  return `<svg viewBox="0 0 24 32" aria-hidden="true"><path d="M5 ${y}h11V29H5Z" fill="#a8cadd"/><path d="m5 ${y} 4-3h11l-4 3Z" fill="#d7e9f2"/><path d="m16 ${y} 4-3V26l-4 3Z" fill="#76a3be"/></svg>`;
+}
+function hourlyForecast(s) {
+  const hours = weatherDayHours(s.data), timezone = s.data.timezone;
+  if (!hours.length) return `<p class="weather-hourly-unavailable">${s.busy ? 'Updating hourly forecast…' : 'Hourly forecast is unavailable. Try Refresh.'}</p>`;
+  const clock = new Intl.DateTimeFormat('en', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  const fullClock = new Intl.DateTimeFormat('en', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZoneName: 'short' });
+  const now = Date.now(), current = hours.findIndex(h => h.time <= now && h.time + 3600000 > now);
+  const key = `${s.place.latitude},${s.place.longitude}:${hours[0].time}`;
+  const labels = hours.map(h => clock.format(h.time));
+  const timeLabel = (h, i) => `${labels[i]}${labels.indexOf(labels[i]) !== labels.lastIndexOf(labels[i]) ? `<small>${esc(fullClock.format(h.time).replace(labels[i], '').trim())}</small>` : ''}`;
+  const title = h => `${fullClock.format(h.time)}–${fullClock.format(h.time + 3600000)}`;
+  const temps = hours.map(h => h.temperature).filter(n => n !== null), low = Math.min(...temps), high = Math.max(...temps);
+  let connect = false;
+  const plot = hours.map((h, i) => {
+    if (h.temperature === null) { connect = false; return ''; }
+    const y = high === low ? 12 : 21 - (h.temperature - low) / (high - low) * 18;
+    const command = `${connect ? 'L' : 'M'}${i * 52 + 26},${y.toFixed(2)}`; connect = true; return command;
+  }).join('');
+  const maxRain = Math.max(.1, ...hours.map(h => h.rain ?? 0));
+  return `<section class="weather-hourly" aria-labelledby="weather-hourly-title"><div class="weather-hourly-heading"><h3 id="weather-hourly-title">Today by the hour</h3><div><button class="icon-button" data-action="weather-hours" data-direction="-1" aria-label="Earlier hours">${icon('chevron', 'weather-hours-back')}</button><button class="icon-button" data-action="weather-hours" data-direction="1" aria-label="Later hours">${icon('chevron', 'weather-hours-next')}</button></div></div><div class="weather-hourly-scroll" tabindex="0" role="region" aria-label="Hourly weather for ${esc(s.place.name)}. Scroll for all hours; times are local to the city." data-key="${key}"><div class="weather-hourly-grid" style="--hours:${hours.length}"><div class="weather-hourly-row-title">Temperature <small>°${s.unit.toUpperCase()}</small></div>${hours.map((h, i) => {
+    const condition = weatherCondition(h.code, h.isDay !== false);
+    return `<div class="weather-hour weather-hour-temperature ${i === current ? 'is-current' : ''}" title="${esc(title(h))}: ${esc(temperature(h.temperature, true))}, ${esc(condition.label)}"><time datetime="${new Date(h.time).toISOString()}">${i === current ? 'Now' : timeLabel(h, i)}</time>${h.code === null ? '<span class="weather-hour-icon-missing" aria-hidden="true">—</span>' : headerWeatherArt(condition.art)}<strong>${temperature(h.temperature)}</strong></div>`;
+  }).join('')}<svg class="weather-hourly-curve" viewBox="0 0 ${hours.length * 52} 26" aria-hidden="true"><path d="${plot}"/></svg><div class="weather-hourly-row-title weather-rain-row-title">Rain <small title="Precipitation probability and rainfall total for each hour">Chance · mm/h</small></div>${hours.map((h, i) => `<div class="weather-hour weather-hour-rain ${i === current ? 'is-current' : ''}" title="${esc(title(h))}: ${probability(h.rainChance)} chance of precipitation; ${esc(rainAmount(h.rain))} mm of rain"><span class="sr-only">${esc(title(h))}, </span><strong>${probability(h.rainChance)}</strong><span class="weather-hour-rain-bar">${hourlyRainBar(h.rain, maxRain)}</span><span class="weather-hour-rain-amount">${esc(rainAmount(h.rain))}<small> mm</small></span></div>`).join('')}</div></div><p class="weather-hourly-note">Local time in ${esc(s.place.name)} · Rainfall includes showers.</p></section>`;
+}
+let hourlyScroll = null;
+function rememberHourlyScroll() {
+  const scroller = $('.weather-hourly-scroll');
+  if (scroller) hourlyScroll = { key: scroller.dataset.key, left: scroller.scrollLeft };
+}
+function positionHourlyScroll() {
+  const scroller = $('.weather-hourly-scroll');
+  if (!scroller) return;
+  scroller.scrollLeft = hourlyScroll?.key === scroller.dataset.key ? hourlyScroll.left : Math.max(0, (scroller.querySelector('.weather-hour-temperature.is-current')?.offsetLeft || 0) - 52);
+}
 function reading() {
   const s = controller.snapshot(), d = s.data;
   if (!d) return `<div class="weather-welcome">${weatherArt('partly')}<h3>${s.place ? esc(s.place.name) : 'Your weather, here'}</h3><p>${s.busy ? 'Getting the latest conditions…' : 'Use your current location, or search for a city.'}</p></div>`;
   const condition = weatherCondition(d.code, d.isDay), region = [s.place.region, s.place.country].filter((v, i, a) => v && v !== s.place.name && a.indexOf(v) === i).join(', ');
   const metric = (art, name, value) => `<div>${weatherArt(art)}<span><small>${name}</small><strong>${value}</strong></span></div>`;
-  return `<div class="weather-overview">${weatherArt(condition.art)}<div class="weather-overview-text"><h3>${esc(s.place.name)}</h3>${region ? `<p>${esc(region)}</p>` : ''}<div class="weather-now"><strong>${temperature(d.temperature)}</strong><span>${esc(condition.label)}</span></div></div></div>
-    <div class="weather-detail-metrics">${metric('range', 'Low / high', `${temperature(d.low)}<span>/</span>${temperature(d.high)}`)}${metric('drizzle', 'Rain this hour', probability(d.rainChance))}${metric('dew', 'Dew point', temperature(d.dewPoint))}</div>`;
+  return `<div class="weather-overview">${weatherArt(condition.art)}<div class="weather-overview-text"><h3>${esc(s.place.name)}</h3>${region ? `<p>${esc(region)}</p>` : ''}<div class="weather-now"><strong class="weather-temperature"><span class="sr-only">${temperature(d.temperature, true)}</span>${temperatureArt(temperature(d.temperature), s.unit.toUpperCase())}</strong><span>${esc(condition.label)}</span></div></div></div>
+    <div class="weather-detail-metrics">${metric('range', 'Low / high', `${temperature(d.low)}<span>/</span>${temperature(d.high)}`)}${metric('drizzle', 'Rain this hour', probability(d.rainChance))}${metric('dew', 'Dew point', temperature(d.dewPoint))}</div>${hourlyForecast(s)}`;
 }
 const updatedNote = () => { const s = controller.snapshot(); return s.data ? `${saved(s) ? '<span class="weather-saved-note">Saved reading</span> · ' : ''}${updatedLabel(s)}` : ''; };
 function message() {
@@ -9082,7 +9158,7 @@ function updateWeather() {
   }
   // Polling never redraws a location search or steals its input focus.
   const details = $('#weather-reading');
-  if (details) details.innerHTML = reading();
+  if (details) { const keepFocus = details.querySelector('.weather-hourly-scroll') === document.activeElement; rememberHourlyScroll(); details.innerHTML = reading(); positionHourlyScroll(); if (keepFocus) details.querySelector('.weather-hourly-scroll')?.focus({ preventScroll: true }); }
   const updated = $('#weather-updated');
   if (updated) updated.innerHTML = updatedNote();
   const status = $('#weather-message');
@@ -9107,6 +9183,7 @@ function onInput(event) {
 }
 const modals = {
   weather() {
+    rememberHourlyScroll(); queueMicrotask(positionHourlyScroll);
     const s = controller.snapshot();
     // With a place set, finding another one folds away; without one, it is the whole point of the dialog.
     const open = !s.place || !!query || results.length || searchBusy || !!searchError;
@@ -9114,7 +9191,8 @@ const modals = {
   },
 };
 const actions = {
-  weather() { query = ''; results = []; searchError = ''; searchBusy = false; searchVersion++; openModal({ type: 'weather' }); controller.refresh(); },
+  weather() { hourlyScroll = null; query = ''; results = []; searchError = ''; searchBusy = false; searchVersion++; openModal({ type: 'weather' }); controller.refresh(); },
+  'weather-hours'(b) { const scroller = $('.weather-hourly-scroll'); scroller?.scrollBy({ left: Number(b.dataset.direction) * scroller.clientWidth * .75, behavior: app.state.settings.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); },
   'weather-locate'() { controller.locate(); },
   'weather-refresh'() { controller.refresh({ force: true, locate: true }); },
   'weather-unit'(b) { controller.setUnit(b.dataset.unit); view.renderModal(); $(`[data-action="weather-unit"][data-unit="${b.dataset.unit}"]`)?.focus(); },
@@ -9170,8 +9248,46 @@ function forecastUrl(place) {
   const url = new URL('https://api.open-meteo.com/v1/forecast');
   url.search = new URLSearchParams({ latitude: place.latitude, longitude: place.longitude,
     current: 'temperature_2m,weather_code,is_day,dew_point_2m,precipitation_probability',
-    daily: 'temperature_2m_min,temperature_2m_max', timezone: 'auto', forecast_days: '1', timeformat: 'unixtime' });
+    hourly: 'temperature_2m,precipitation_probability,rain,showers,weather_code,is_day',
+    daily: 'temperature_2m_min,temperature_2m_max', timezone: 'auto', forecast_days: '2', timeformat: 'unixtime' });
   return url.href;
+}
+function weatherTimezone(value) {
+  if (typeof value === 'string' && value.length <= 80) {
+    try { new Intl.DateTimeFormat('en', { timeZone: value }).format(0); return value; } catch {}
+  }
+  return 'UTC';
+}
+function validatedHours(rows, now) {
+  const result = [], seen = new Set();
+  for (const row of (Array.isArray(rows) ? rows : []).slice(0, 72)) {
+    if (!number(row?.time, now - 7 * 86400000, now + 3 * 86400000) || seen.has(row.time)) continue;
+    seen.add(row.time);
+    const optional = (n, min, max) => number(n, min, max) ? n : null;
+    result.push({ time: row.time, temperature: optional(row.temperature, -100, 80),
+      rainChance: optional(row.rainChance, 0, 100), rain: optional(row.rain, 0, 1000),
+      code: optional(row.code, 0, 99), isDay: row.isDay === 1 || row.isDay === true ? true : row.isDay === 0 || row.isDay === false ? false : null });
+  }
+  return result.sort((a, b) => a.time - b.time);
+}
+function forecastHours(hourly, now) {
+  if (!Array.isArray(hourly?.time)) return [];
+  return validatedHours(hourly.time.slice(0, 72).map((time, i) => {
+    // Open-Meteo rain and probability describe the PRECEDING hour. Shift them to
+    // the matching start-of-hour column; tomorrow's midnight completes 23–24h.
+    const next = hourly.time[i + 1] === time + 3600 ? i + 1 : -1;
+    const rain = hourly.rain?.[next], showers = hourly.showers?.[next];
+    return { time: typeof time === 'number' ? time * 1000 : null, temperature: hourly.temperature_2m?.[i],
+      rainChance: hourly.precipitation_probability?.[next],
+      rain: number(rain, 0, 1000) && number(showers, 0, 1000) ? rain + showers : null,
+      code: hourly.weather_code?.[i], isDay: hourly.is_day?.[i] };
+  }), now);
+}
+function weatherDayHours(data, now = Date.now()) {
+  const timezone = weatherTimezone(data?.timezone);
+  const date = new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' });
+  const today = date.format(now);
+  return (data?.hourly || []).filter(row => date.format(row.time) === today);
 }
 function parseForecast(data, now = Date.now()) {
   const c = data?.current, d = data?.daily;
@@ -9180,14 +9296,15 @@ function parseForecast(data, now = Date.now()) {
   return { temperature: c.temperature_2m, code: optional(c.weather_code, 0, 99), isDay: c.is_day !== 0,
     dewPoint: optional(c.dew_point_2m, -130, 80), rainChance: optional(c.precipitation_probability, 0, 100),
     low: optional(d?.temperature_2m_min?.[0], -100, 80), high: optional(d?.temperature_2m_max?.[0], -100, 80),
-    measuredAt: c.time * 1000, fetchedAt: now };
+    measuredAt: c.time * 1000, fetchedAt: now, timezone: weatherTimezone(data.timezone), hourly: forecastHours(data.hourly, now) };
 }
 function cachedReading(value, now) {
   if (!value || !number(value.temperature, -100, 80) || !number(value.fetchedAt, now - 7 * 86400000, now + 60000) || !number(value.measuredAt, now - 7 * 86400000, now + 3600000)) return null;
   const optional = (n, min, max) => number(n, min, max) ? n : null;
   return { temperature: value.temperature, code: optional(value.code, 0, 99), isDay: value.isDay !== false,
     dewPoint: optional(value.dewPoint, -130, 80), rainChance: optional(value.rainChance, 0, 100),
-    low: optional(value.low, -100, 80), high: optional(value.high, -100, 80), measuredAt: value.measuredAt, fetchedAt: value.fetchedAt };
+    low: optional(value.low, -100, 80), high: optional(value.high, -100, 80), measuredAt: value.measuredAt, fetchedAt: value.fetchedAt,
+    timezone: weatherTimezone(value.timezone), hourly: validatedHours(value.hourly, now) };
 }
 async function jsonRequest(fetcher, url) {
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 10000);
@@ -9210,7 +9327,7 @@ function createWeatherController({ storage, fetcher = globalThis.fetch, geolocat
   try { stored = JSON.parse(storage?.getItem(WEATHER_KEY) || 'null'); } catch {}
   const place = weatherPlace(stored?.place);
   const state = { place, unit: stored?.unit === 'f' ? 'f' : 'c', data: place ? cachedReading(stored?.data, now()) : null, busy: false, error: '' };
-  let generation = 0, refreshing = null, lastAttempt = state.data?.fetchedAt ?? -Infinity;
+  let generation = 0, refreshing = null, lastAttempt = state.data && Array.isArray(stored?.data?.hourly) ? state.data.fetchedAt : -Infinity;
   const snapshot = () => ({ ...state, stale: !!state.data && (now() - Math.min(state.data.fetchedAt, state.data.measuredAt) >= WEATHER_INTERVAL * 2 || !!state.error) });
   const emit = () => onChange(snapshot());
   function save() { try { storage?.setItem(WEATHER_KEY, JSON.stringify({ place: state.place, unit: state.unit, data: state.data })); } catch {} }
@@ -9273,7 +9390,7 @@ function createWeatherController({ storage, fetcher = globalThis.fetch, geolocat
   };
 }
 
-Object.assign(exports,{WEATHER_KEY,WEATHER_INTERVAL,weatherPlace,weatherCondition,weatherTemperature,forecastUrl,parseForecast,searchWeatherPlaces,createWeatherController});
+Object.assign(exports,{WEATHER_KEY,WEATHER_INTERVAL,weatherPlace,weatherCondition,weatherTemperature,forecastUrl,weatherDayHours,parseForecast,searchWeatherPlaces,createWeatherController});
 },
 "weather-art.js":function(require,exports){
 // Original small faceted weather objects. No fonts, external images, or SVG IDs.

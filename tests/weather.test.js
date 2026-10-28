@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { WEATHER_KEY, WEATHER_INTERVAL, createWeatherController, forecastUrl, parseForecast, searchWeatherPlaces, weatherCondition, weatherPlace, weatherTemperature } from '../weather.js';
+import { WEATHER_KEY, WEATHER_INTERVAL, createWeatherController, forecastUrl, parseForecast, searchWeatherPlaces, weatherCondition, weatherPlace, weatherTemperature, weatherDayHours } from '../weather.js';
 import { weatherArt } from '../weather-art.js';
 
 const time = Date.UTC(2026, 9, 26, 12);
@@ -27,7 +27,8 @@ test('forecast parsing preserves real zero readings and keeps missing measuremen
   assert.equal(weatherTemperature(reading.dewPoint), '—'); assert.equal(weatherTemperature(0, 'f', true), '32°F');
   for (const invalid of [null, { current: { temperature_2m: null } }, forecast(time - 7 * 3600000), forecast(time, Infinity)]) assert.throws(() => parseForecast(invalid, time));
   const url = new URL(forecastUrl(city));
-  assert.equal(url.searchParams.get('timezone'), 'auto'); assert.equal(url.searchParams.get('forecast_days'), '1');
+  assert.equal(url.searchParams.get('timezone'), 'auto'); assert.equal(url.searchParams.get('forecast_days'), '2');
+  assert.ok(url.searchParams.get('hourly').includes('rain,showers'));
   assert.ok(url.searchParams.get('current').includes('dew_point_2m')); assert.ok(url.searchParams.get('current').includes('precipitation_probability'));
 });
 test('WMO weather codes have distinct day, night, rain, snow, fog, and storm art', () => {
@@ -119,4 +120,55 @@ test('city search encodes input, validates coordinates, and limits returned resu
   const found = await searchWeatherPlaces('São Paulo & coast', async url => { requested = new URL(url); return response({ results: [{ name: 'São Paulo', latitude: -23.55, longitude: -46.63, admin1: 'São Paulo', country: 'Brazil' }, { name: 'Bad', latitude: null, longitude: 0 }] }); });
   assert.equal(requested.searchParams.get('name'), 'São Paulo & coast'); assert.equal(found.length, 1); assert.equal(found[0].mode, 'city');
   assert.deepEqual(await searchWeatherPlaces('a', () => { throw new Error('Must not fetch'); }), []);
+});
+
+function hourlyForecast(at = time, start = Date.UTC(2026, 9, 26), timezone = 'UTC') {
+  const data = forecast(at); data.timezone = timezone;
+  data.hourly = { time: Array.from({ length: 50 }, (_, i) => start / 1000 + i * 3600),
+    temperature_2m: Array(50).fill(20), precipitation_probability: Array(50).fill(40),
+    rain: Array(50).fill(2), showers: Array(50).fill(.5), weather_code: Array(50).fill(61), is_day: Array(50).fill(1) };
+  return data;
+}
+test('hourly rain includes showers and belongs to the hour ahead, including 23–24h', () => {
+  const data = hourlyForecast();
+  data.hourly.rain[1] = 0; data.hourly.showers[1] = 0; data.hourly.precipitation_probability[1] = 0;
+  data.hourly.rain[3] = null; data.hourly.temperature_2m[2] = null;
+  const reading = parseForecast(data, time), hours = weatherDayHours(reading, time);
+  assert.equal(hours.length, 24); assert.equal(hours[0].rain, 0); assert.equal(hours[0].rainChance, 0);
+  assert.equal(hours[1].rain, 2.5); assert.equal(hours[2].rain, null); assert.equal(hours[2].temperature, null);
+  assert.equal(hours[23].rain, 2.5, 'tomorrow’s midnight supplies the last hour of today');
+  assert.equal(reading.hourly.at(-1).rain, null, 'no next sample means unknown, never an invented zero');
+  data.hourly.time[1] += 1800;
+  assert.equal(parseForecast(data, time).hourly[0].rain, null, 'misaligned samples are not attached to another hour');
+});
+test('today is selected in the weather city’s timezone, including 23- and 25-hour DST days', () => {
+  const foreign = parseForecast(hourlyForecast(time, Date.UTC(2026, 9, 26), 'America/Los_Angeles'), time);
+  const day = weatherDayHours(foreign, time);
+  assert.equal(day.length, 24); assert.equal(day[0].time, Date.UTC(2026, 9, 26, 7));
+  for (const [at, start, length] of [
+    [Date.UTC(2026, 2, 8, 16), Date.UTC(2026, 2, 8, 5), 23],
+    [Date.UTC(2026, 10, 1, 16), Date.UTC(2026, 10, 1, 4), 25],
+  ]) {
+    const data = parseForecast(hourlyForecast(at, start, 'America/New_York'), at);
+    const hours = weatherDayHours(data, at);
+    assert.equal(hours.length, length);
+    assert.equal(new Set(hours.map(h => h.time)).size, length, 'repeated local hours retain distinct instants');
+  }
+});
+test('hourly cache values are validated and old weather caches refresh once to gain hourly data', async () => {
+  const data = parseForecast(hourlyForecast(), time);
+  data.hourly[0].temperature = '20'; data.hourly[0].rain = -1; data.hourly[0].rainChance = 101;
+  data.hourly.push({ time: 'bad' }, { ...data.hourly[1] }); data.timezone = 'Not/A_Zone';
+  const h = harness({ saved: { place: city, unit: 'c', data } });
+  assert.equal(h.controller.snapshot().data.timezone, 'UTC');
+  assert.equal(h.controller.snapshot().data.hourly.length, 50);
+  assert.equal(h.controller.snapshot().data.hourly[0].temperature, null);
+  assert.equal(h.controller.snapshot().data.hourly[0].rain, null);
+  assert.equal(h.controller.snapshot().data.hourly[0].rainChance, null);
+  delete data.hourly;
+  const legacy = harness({ saved: { place: city, data }, fetcher: async () => response(hourlyForecast()) });
+  await legacy.controller.refresh();
+  assert.equal(legacy.controller.snapshot().data.hourly.length, 50);
+  const reloaded = harness({ saved: JSON.parse(legacy.values.get(WEATHER_KEY)) });
+  await reloaded.controller.refresh(); assert.equal(reloaded.requests.length, 0);
 });

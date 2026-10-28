@@ -1,10 +1,10 @@
 // The adventurer: dashboard card, rotatable model, appearance studio.
-import * as E from './engine.js?v=0.41.8';
+import * as E from './engine.js?v=0.42.0';
 import { APPEARANCE, APPEARANCE_LABELS, appearanceOption } from './appearance.js';
-import { avatarArt, itemArt, petArt } from './art.js?v=0.41.8';
-import { $, $$, app, coin, esc, icon, modalShell, view } from './ui-core.js?v=0.41.8';
-import { commit, openModal } from './ui-modal.js?v=0.41.8';
-import { burst, sound } from './ui-effects.js?v=0.41.8';
+import { avatarArt, itemArt, petArt } from './art.js?v=0.42.0';
+import { $, $$, app, coin, esc, icon, modalShell, view } from './ui-core.js?v=0.42.0';
+import { commit, openModal } from './ui-modal.js?v=0.42.0';
+import { burst, sound } from './ui-effects.js?v=0.42.0';
 export function petCompanion() {
   const pet = E.SHOP.find(i => i.id === app.state.activePet);
   const hat = E.SHOP.find(i => i.id === app.state.petHat);

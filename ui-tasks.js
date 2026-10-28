@@ -1,9 +1,9 @@
 // Task list, project filter, task dialog, and task actions.
-import * as E from './engine.js?v=0.41.8';
-import { $, app, coin, esc, icon, iconButton, modalShell, tagStyle, toast, today, view } from './ui-core.js?v=0.41.8';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.41.8';
-import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.41.8';
-import { TAG_COLORS } from './tag-colors.js?v=0.41.8';
+import * as E from './engine.js?v=0.42.0';
+import { $, app, coin, esc, icon, iconButton, modalShell, tagStyle, toast, today, view } from './ui-core.js?v=0.42.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.42.0';
+import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.42.0';
+import { TAG_COLORS } from './tag-colors.js?v=0.42.0';
 
 const NO_TAG = '__untagged__';
 const inProject = t => !app.taskProject || (app.taskProject === NO_TAG ? E.tags(t.title).length === 0 : E.tags(t.title).includes(app.taskProject));

@@ -26,8 +26,46 @@ export function forecastUrl(place) {
   const url = new URL('https://api.open-meteo.com/v1/forecast');
   url.search = new URLSearchParams({ latitude: place.latitude, longitude: place.longitude,
     current: 'temperature_2m,weather_code,is_day,dew_point_2m,precipitation_probability',
-    daily: 'temperature_2m_min,temperature_2m_max', timezone: 'auto', forecast_days: '1', timeformat: 'unixtime' });
+    hourly: 'temperature_2m,precipitation_probability,rain,showers,weather_code,is_day',
+    daily: 'temperature_2m_min,temperature_2m_max', timezone: 'auto', forecast_days: '2', timeformat: 'unixtime' });
   return url.href;
+}
+function weatherTimezone(value) {
+  if (typeof value === 'string' && value.length <= 80) {
+    try { new Intl.DateTimeFormat('en', { timeZone: value }).format(0); return value; } catch {}
+  }
+  return 'UTC';
+}
+function validatedHours(rows, now) {
+  const result = [], seen = new Set();
+  for (const row of (Array.isArray(rows) ? rows : []).slice(0, 72)) {
+    if (!number(row?.time, now - 7 * 86400000, now + 3 * 86400000) || seen.has(row.time)) continue;
+    seen.add(row.time);
+    const optional = (n, min, max) => number(n, min, max) ? n : null;
+    result.push({ time: row.time, temperature: optional(row.temperature, -100, 80),
+      rainChance: optional(row.rainChance, 0, 100), rain: optional(row.rain, 0, 1000),
+      code: optional(row.code, 0, 99), isDay: row.isDay === 1 || row.isDay === true ? true : row.isDay === 0 || row.isDay === false ? false : null });
+  }
+  return result.sort((a, b) => a.time - b.time);
+}
+function forecastHours(hourly, now) {
+  if (!Array.isArray(hourly?.time)) return [];
+  return validatedHours(hourly.time.slice(0, 72).map((time, i) => {
+    // Open-Meteo rain and probability describe the PRECEDING hour. Shift them to
+    // the matching start-of-hour column; tomorrow's midnight completes 23–24h.
+    const next = hourly.time[i + 1] === time + 3600 ? i + 1 : -1;
+    const rain = hourly.rain?.[next], showers = hourly.showers?.[next];
+    return { time: typeof time === 'number' ? time * 1000 : null, temperature: hourly.temperature_2m?.[i],
+      rainChance: hourly.precipitation_probability?.[next],
+      rain: number(rain, 0, 1000) && number(showers, 0, 1000) ? rain + showers : null,
+      code: hourly.weather_code?.[i], isDay: hourly.is_day?.[i] };
+  }), now);
+}
+export function weatherDayHours(data, now = Date.now()) {
+  const timezone = weatherTimezone(data?.timezone);
+  const date = new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' });
+  const today = date.format(now);
+  return (data?.hourly || []).filter(row => date.format(row.time) === today);
 }
 export function parseForecast(data, now = Date.now()) {
   const c = data?.current, d = data?.daily;
@@ -36,14 +74,15 @@ export function parseForecast(data, now = Date.now()) {
   return { temperature: c.temperature_2m, code: optional(c.weather_code, 0, 99), isDay: c.is_day !== 0,
     dewPoint: optional(c.dew_point_2m, -130, 80), rainChance: optional(c.precipitation_probability, 0, 100),
     low: optional(d?.temperature_2m_min?.[0], -100, 80), high: optional(d?.temperature_2m_max?.[0], -100, 80),
-    measuredAt: c.time * 1000, fetchedAt: now };
+    measuredAt: c.time * 1000, fetchedAt: now, timezone: weatherTimezone(data.timezone), hourly: forecastHours(data.hourly, now) };
 }
 function cachedReading(value, now) {
   if (!value || !number(value.temperature, -100, 80) || !number(value.fetchedAt, now - 7 * 86400000, now + 60000) || !number(value.measuredAt, now - 7 * 86400000, now + 3600000)) return null;
   const optional = (n, min, max) => number(n, min, max) ? n : null;
   return { temperature: value.temperature, code: optional(value.code, 0, 99), isDay: value.isDay !== false,
     dewPoint: optional(value.dewPoint, -130, 80), rainChance: optional(value.rainChance, 0, 100),
-    low: optional(value.low, -100, 80), high: optional(value.high, -100, 80), measuredAt: value.measuredAt, fetchedAt: value.fetchedAt };
+    low: optional(value.low, -100, 80), high: optional(value.high, -100, 80), measuredAt: value.measuredAt, fetchedAt: value.fetchedAt,
+    timezone: weatherTimezone(value.timezone), hourly: validatedHours(value.hourly, now) };
 }
 async function jsonRequest(fetcher, url) {
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 10000);
@@ -66,7 +105,7 @@ export function createWeatherController({ storage, fetcher = globalThis.fetch, g
   try { stored = JSON.parse(storage?.getItem(WEATHER_KEY) || 'null'); } catch {}
   const place = weatherPlace(stored?.place);
   const state = { place, unit: stored?.unit === 'f' ? 'f' : 'c', data: place ? cachedReading(stored?.data, now()) : null, busy: false, error: '' };
-  let generation = 0, refreshing = null, lastAttempt = state.data?.fetchedAt ?? -Infinity;
+  let generation = 0, refreshing = null, lastAttempt = state.data && Array.isArray(stored?.data?.hourly) ? state.data.fetchedAt : -Infinity;
   const snapshot = () => ({ ...state, stale: !!state.data && (now() - Math.min(state.data.fetchedAt, state.data.measuredAt) >= WEATHER_INTERVAL * 2 || !!state.error) });
   const emit = () => onChange(snapshot());
   function save() { try { storage?.setItem(WEATHER_KEY, JSON.stringify({ place: state.place, unit: state.unit, data: state.data })); } catch {} }

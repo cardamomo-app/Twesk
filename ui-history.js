@@ -1,8 +1,8 @@
 // Progress history: a month calendar of habits, tasks, and stat growth, with day details.
-import * as E from './engine.js?v=0.41.7';
-import { monsterName } from './art.js?v=0.41.7';
-import { $, app, coin, esc, icon, modalShell, today, view } from './ui-core.js?v=0.41.7';
-import { openModal } from './ui-modal.js?v=0.41.7';
+import * as E from './engine.js?v=0.41.8';
+import { monsterName } from './art.js?v=0.41.8';
+import { $, app, coin, esc, icon, modalShell, today, view } from './ui-core.js?v=0.41.8';
+import { openModal } from './ui-modal.js?v=0.41.8';
 
 const shift = (day, n) => {
   const d = new Date(`${day}T12:00:00Z`);

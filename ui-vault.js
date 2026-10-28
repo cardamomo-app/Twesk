@@ -1,11 +1,11 @@
 // The Vault: notes, journal entries, quick capture, and recovery reflections.
-import * as E from './engine.js?v=0.41.7';
-import { $, app, coin, esc, icon, modalShell, tagStyle, toast, today, view } from './ui-core.js?v=0.41.7';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.41.7';
-import { isJournalExport, notesToText } from './notes-export.js?v=0.41.7';
-import { rewardEffect, sound } from './ui-effects.js?v=0.41.7';
-import { vaultArt } from './vault-art.js?v=0.41.7';
-import { VAULT_SECTIONS, inVaultSection, needsReview, vaultTone } from './vault-model.js?v=0.41.7';
+import * as E from './engine.js?v=0.41.8';
+import { $, app, coin, esc, icon, modalShell, tagStyle, toast, today, view } from './ui-core.js?v=0.41.8';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.41.8';
+import { isJournalExport, notesToText } from './notes-export.js?v=0.41.8';
+import { rewardEffect, sound } from './ui-effects.js?v=0.41.8';
+import { vaultArt } from './vault-art.js?v=0.41.8';
+import { VAULT_SECTIONS, inVaultSection, needsReview, vaultTone } from './vault-model.js?v=0.41.8';
 const noteDate = n =>
   new Intl.DateTimeFormat('en', {
     month: 'short',

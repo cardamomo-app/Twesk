@@ -1105,18 +1105,17 @@ button.hashtag:hover{text-decoration:underline}
 .topbar-weather:focus-visible{outline-offset:4px}
 .topbar-weather>.weather-art{width:44px;height:var(--weather-height);overflow:visible}
 .weather-location-summary{display:flex;flex-direction:column;justify-content:space-between;min-width:0;height:var(--weather-height)}
-.weather-place{font-size:12px;line-height:1;text-box:trim-start cap alphabetic;font-weight:550;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
-.weather-range{display:flex;align-items:baseline;gap:5px;font-size:10px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--secondary)}
+.weather-place{transform:translateY(2px);font-size:12px;line-height:1;text-box:trim-start cap alphabetic;font-weight:550;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.weather-range{transform:translateY(-2px);display:flex;align-items:baseline;gap:5px;font-size:10px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--secondary)}
 .weather-range>span{display:block;text-box:trim-both cap alphabetic}
 .weather-range-separator{color:var(--muted);opacity:.6}
 /* Bevels carry the voxel character without a surrounding badge or a font download. */
-.weather-temperature{display:block;line-height:1;--temperature-face:var(--secondary);--temperature-side:color-mix(in srgb,var(--secondary) 80%,var(--text));--temperature-depth:color-mix(in srgb,var(--secondary) 65%,var(--text));--temperature-bevel:color-mix(in srgb,var(--secondary) 55%,var(--panel))}
+.weather-temperature{display:block;line-height:1;--temperature-face:#fff;--temperature-side:#767583;--temperature-depth:#62616f;--temperature-bevel:#767583}
 .weather-temperature-art{display:block;width:auto;height:var(--weather-height);overflow:visible}
-.temperature-face{fill:var(--temperature-face)}
+.temperature-face{fill:var(--temperature-face);stroke:var(--temperature-bevel);stroke-width:.8;stroke-linejoin:bevel}
 .temperature-side{fill:var(--temperature-side)}
 .temperature-depth{fill:var(--temperature-depth)}
 .temperature-bevel{fill:none;stroke:var(--temperature-bevel);stroke-width:.6;stroke-linejoin:bevel}
-:root[data-theme=dark] .weather-temperature{--temperature-side:color-mix(in srgb,var(--secondary) 70%,var(--panel));--temperature-depth:color-mix(in srgb,var(--secondary) 50%,var(--panel));--temperature-bevel:color-mix(in srgb,var(--secondary) 65%,var(--text))}
 .weather-saved{font-size:8px;color:var(--gold)}
 .weather-empty{grid-template-columns:44px minmax(0,1fr);align-items:center}
 .weather-empty .weather-location-summary{height:auto;gap:3px}

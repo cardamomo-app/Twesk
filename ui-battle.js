@@ -1,14 +1,14 @@
 // The monster card, victory odds, and animated encounters.
-import * as E from './engine.js?v=0.41.4';
-import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.41.4';
-import { combatSpellCue, describeCombatEvent } from './combat-presentation.js?v=0.41.4';
-import { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile } from './combat-attack-art.js?v=0.41.4';
-import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.41.4';
-import { playSfx, prepareSfx, stopSfx, unlockSfx } from './sfx.js?v=0.41.4';
-import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.41.4';
-import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.41.4';
-import { announceBadges, commit } from './ui-modal.js?v=0.41.4';
-import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.41.4';
+import * as E from './engine.js?v=0.41.5';
+import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.41.5';
+import { combatSpellCue, describeCombatEvent } from './combat-presentation.js?v=0.41.5';
+import { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile } from './combat-attack-art.js?v=0.41.5';
+import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.41.5';
+import { playSfx, prepareSfx, stopSfx, unlockSfx } from './sfx.js?v=0.41.5';
+import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.41.5';
+import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.41.5';
+import { announceBadges, commit } from './ui-modal.js?v=0.41.5';
+import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.41.5';
 export function renderMonster() {
   const number = app.state.monster.number,
     won = !!app.state.monster.defeatedOn,

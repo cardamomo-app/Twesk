@@ -1,28 +1,28 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.41.4';
-import { flameArt } from './brand-art.js?v=0.41.4';
-import { avatarFaceArt } from './art.js?v=0.41.4';
-import { awardAchievements } from './achievements.js?v=0.41.4';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.41.4';
-import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.41.4';
-import { closeModal, openModal } from './ui-modal.js?v=0.41.4';
-import * as tasks from './ui-tasks.js?v=0.41.4';
-import * as quest from './ui-quest.js?v=0.41.4';
-import * as habits from './ui-habits.js?v=0.41.4';
-import * as vault from './ui-vault.js?v=0.41.4';
-import { vaultArt } from './vault-art.js?v=0.41.4';
-import * as character from './ui-character.js?v=0.41.4';
-import * as shop from './ui-shop.js?v=0.41.4';
-import * as battle from './ui-battle.js?v=0.41.4';
-import * as collection from './ui-collection.js?v=0.41.4';
-import * as settings from './ui-settings.js?v=0.41.4';
-import * as sync from './ui-sync.js?v=0.41.4';
-import * as history from './ui-history.js?v=0.41.4';
-import { installDelights, renderAmbience } from './ui-delights.js?v=0.41.4';
-import { installTagSuggest } from './ui-tag-suggest.js?v=0.41.4';
-import { installTaskOrder } from './ui-task-order.js?v=0.41.4';
-import * as fullscreen from './ui-fullscreen.js?v=0.41.4';
-import * as weather from './ui-weather.js?v=0.41.4';
+import * as E from './engine.js?v=0.41.5';
+import { flameArt } from './brand-art.js?v=0.41.5';
+import { avatarFaceArt } from './art.js?v=0.41.5';
+import { awardAchievements } from './achievements.js?v=0.41.5';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.41.5';
+import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.41.5';
+import { closeModal, openModal } from './ui-modal.js?v=0.41.5';
+import * as tasks from './ui-tasks.js?v=0.41.5';
+import * as quest from './ui-quest.js?v=0.41.5';
+import * as habits from './ui-habits.js?v=0.41.5';
+import * as vault from './ui-vault.js?v=0.41.5';
+import { vaultArt } from './vault-art.js?v=0.41.5';
+import * as character from './ui-character.js?v=0.41.5';
+import * as shop from './ui-shop.js?v=0.41.5';
+import * as battle from './ui-battle.js?v=0.41.5';
+import * as collection from './ui-collection.js?v=0.41.5';
+import * as settings from './ui-settings.js?v=0.41.5';
+import * as sync from './ui-sync.js?v=0.41.5';
+import * as history from './ui-history.js?v=0.41.5';
+import { installDelights, renderAmbience } from './ui-delights.js?v=0.41.5';
+import { installTagSuggest } from './ui-tag-suggest.js?v=0.41.5';
+import { installTaskOrder } from './ui-task-order.js?v=0.41.5';
+import * as fullscreen from './ui-fullscreen.js?v=0.41.5';
+import * as weather from './ui-weather.js?v=0.41.5';
 
 const features = [tasks, quest, habits, vault, character, shop, battle, collection, settings, history, sync, fullscreen, weather];
 const modals = Object.assign({}, ...features.map(f => f.modals));
@@ -83,7 +83,7 @@ function render() {
     h => h.category !== 'harm' && h.logs.some(l => l.day === day),
   ).length;
   $('#app').innerHTML = `
-    <header class="topbar"><div class="topbar-brand"><a class="wordmark" href="./" aria-label="Twesk home"><span class="logo-mark">${flameArt()}</span>twesk</a><div class="topbar-today">${weather.weatherArtSlot()}<time class="topbar-date" datetime="${day}" aria-label="${esc(dateLabel())}"><span class="date-long" aria-hidden="true">${esc(dateLabel())}</span><span class="date-compact" aria-hidden="true"><span>${esc(new Intl.DateTimeFormat('en', { timeZone: app.state.settings.timezone, weekday: 'short' }).format(new Date()))}</span>${esc(new Intl.DateTimeFormat('en', { timeZone: app.state.settings.timezone, month: 'short', day: 'numeric' }).format(new Date()))}</span></time><div id="weather-header">${weather.renderWeather()}</div></div></div>
+    <header class="topbar"><div class="topbar-brand"><a class="wordmark" href="./" aria-label="Twesk home"><span class="logo-mark">${flameArt()}</span>twesk</a><div class="topbar-today"><time class="topbar-date" datetime="${day}" aria-label="${esc(dateLabel())}"><span class="date-long" aria-hidden="true">${esc(dateLabel())}</span><span class="date-compact" aria-hidden="true"><span>${esc(new Intl.DateTimeFormat('en', { timeZone: app.state.settings.timezone, weekday: 'short' }).format(new Date()))}</span>${esc(new Intl.DateTimeFormat('en', { timeZone: app.state.settings.timezone, month: 'short', day: 'numeric' }).format(new Date()))}</span></time><div id="weather-header">${weather.renderWeather()}</div></div></div>
     <div class="topbar-actions"><button class="capture-button" data-action="capture" aria-label="Quick capture" title="Quick capture (⌘K)" aria-keyshortcuts="Meta+K">${icon('bolt')}<kbd>⌘ K</kbd></button><span class="toolbar-divider"></span><div class="topbar-tray ${app.trayOpen ? 'open' : ''}" id="topbar-tray" ${app.trayOpen ? '' : 'inert'}><div class="topbar-tray-clip"><div class="topbar-tray-items"><button class="collection-button" data-action="history" title="Progress history" aria-label="Open progress history">${icon('calendar')}</button><button class="collection-button" data-action="achievements" title="Achievements and monster collection" aria-label="Open achievements">${icon('medal')}</button>${iconButton('theme', app.state.settings.theme === 'dark' ? 'sun' : 'moon', 'Switch to ' + (app.state.settings.theme === 'dark' ? 'light' : 'dark') + ' mode')}${iconButton('mute', app.state.settings.muted ? 'mute' : 'sound', app.state.settings.muted ? 'Unmute sounds' : 'Mute sounds')}${fullscreen.fullscreenButton()}${iconButton('settings', 'settings', 'Settings and backup')}</div></div></div><button class="profile-dot" data-action="toggle-tray" aria-controls="topbar-tray" aria-expanded="${app.trayOpen}" aria-label="${app.trayOpen ? 'Hide' : 'Show'} quick controls" title="${app.trayOpen ? 'Hide' : 'Show'} quick controls">${avatarFaceArt(app.state.appearance)}</button></div></header>
     <main>
     ${app.saveError ? '<div class="save-warning">' + esc(app.startupWarning || 'Browser saving is unavailable. Export a backup in Settings to keep your progress.') + '</div>' : E.backupDue(app.state, day) ? settings.backupReminder() : ''}

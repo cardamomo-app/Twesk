@@ -1080,32 +1080,31 @@ button.hashtag:hover{text-decoration:underline}
 .tag-option.tag-colored.active,.tag-option.tag-colored:hover{background:color-mix(in srgb,var(--tag-color) 10%,var(--panel))}
 .vault-modal .note-text .hashtag.tag-colored,.review-modal .review-text .hashtag.tag-colored{color:var(--tag-color);background:color-mix(in srgb,var(--tag-color) 7%,var(--panel));border-radius:4px;padding:0 3px}
 
-/* Today, beside the logo: a large faceted sky spanning two lines, the date, and under it
-   one line of weather. Both lines share a left edge; details live in the weather dialog. */
+/* A single aligned row: date, divider, faceted sky, city/range, and current temperature. */
 .date-compact{display:none}
 .topbar{gap:20px}
 .topbar-brand{gap:20px}
-.topbar-today{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;column-gap:11px;row-gap:3px;align-items:center;min-width:0;padding-left:20px;border-left:1px solid var(--line)}
-.today-weather-art{grid-column:1;grid-row:1/3;display:flex;width:46px;height:48px;margin:-4px -2px -4px -4px;cursor:pointer;filter:drop-shadow(0 2px 2px #1c30400f);transition:transform .2s}
-/* A lone sun or moon fills less of its frame than a cloud scene, so it is drawn a little larger. */
-.today-weather-art .weather-art-sun,.today-weather-art .weather-art-moon{transform:scale(1.22)}
-.today-weather-art>svg{width:100%;height:100%}
-.today-weather-art:hover{transform:translateY(-1px)}
-.today-weather-art.is-empty{opacity:.55}
-.topbar-today .topbar-date{grid-column:2;grid-row:1;align-self:end;padding:0;border:0;font-size:11px;line-height:16px;font-weight:400;color:var(--secondary);letter-spacing:.2px;white-space:nowrap}
-#weather-header{grid-column:2;grid-row:2;align-self:start;min-width:0;display:flex}
-.topbar-weather{display:flex;align-items:center;gap:6px;min-width:0;padding:0;border-radius:5px;color:var(--secondary);font-size:11px;line-height:16px;text-align:left}
-.topbar-weather:focus-visible{outline-offset:3px}
-.weather-line{display:flex;align-items:baseline;gap:6px;min-width:0;white-space:nowrap}
-.weather-temperature{color:var(--text);font-weight:650;font-variant-numeric:tabular-nums}
-.weather-place{min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
-.weather-place:before{content:'·';margin-right:6px}
-.weather-saved{font-size:10px;color:var(--gold)}
-.topbar-weather:hover .weather-condition,.topbar-weather:hover .weather-temperature,.weather-empty:hover strong{color:var(--accent)}
-.weather-empty .weather-line strong{font-weight:500;color:var(--secondary)}
-.weather-empty .weather-line small{font-size:11px;color:var(--muted)}
-.weather-empty .weather-line small:empty{display:none}
-.weather-empty .weather-line small:before{content:'·';margin-right:6px}
+.topbar-today{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:18px;align-items:center;min-width:0}
+.topbar-today .topbar-date{padding:0;border:0;font-size:11px;line-height:16px;font-weight:400;color:var(--secondary);letter-spacing:.2px;white-space:nowrap}
+#weather-header{min-width:0;display:flex;padding-left:18px;border-left:1px solid var(--line)}
+.topbar-weather{display:grid;grid-template-columns:44px minmax(0,max-content) 54px;align-items:center;gap:12px;min-width:0;padding:0;border-radius:8px;color:var(--secondary);text-align:left}
+.topbar-weather:focus-visible{outline-offset:4px}
+.topbar-weather>.weather-art{width:44px;height:46px;filter:drop-shadow(0 2px 2px #1c30400f)}
+.topbar-weather>.weather-art-sun,.topbar-weather>.weather-art-moon{transform:scale(1.15)}
+.weather-location-summary{display:grid;grid-template-columns:minmax(0,1fr);gap:3px;min-width:0;align-content:center}
+.weather-place{font-size:12px;line-height:16px;font-weight:550;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.weather-range{display:flex;align-items:baseline;gap:5px;font-size:10px;line-height:14px;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--secondary)}
+.weather-range-separator{color:var(--muted);opacity:.6}
+.weather-temperature-circle{display:grid;place-items:center;width:54px;height:54px;border-radius:50%;border:1px solid var(--line);background:color-mix(in srgb,var(--accent) 3%,var(--panel));transition:border-color .2s,background .2s}
+.weather-temperature{display:flex;align-items:baseline;justify-content:center;gap:1px;color:var(--text);font-size:22px;line-height:1;font-weight:550;letter-spacing:-.7px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.weather-temperature small{font-size:15px;line-height:1;font-weight:450;letter-spacing:0;color:var(--secondary)}
+.weather-saved{font-size:8px;color:var(--gold)}
+.topbar-weather:hover .weather-temperature-circle{border-color:color-mix(in srgb,var(--accent) 35%,var(--line));background:var(--accent-soft)}
+.weather-empty{grid-template-columns:44px minmax(0,1fr)}
+.weather-empty>.weather-art{opacity:.55}
+.weather-empty strong{font-size:11px;font-weight:500;color:var(--secondary)}
+.weather-empty small{font-size:10px;color:var(--muted)}
+.weather-empty small:empty{display:none}
 
 /* The weather dialog: a reading, three measurements, then where the weather comes from. */
 .weather-modal{width:440px}
@@ -1173,10 +1172,7 @@ button.hashtag:hover{text-decoration:underline}
  .topbar-brand{display:contents}
  .topbar .wordmark{grid-column:1;grid-row:1;justify-self:start}
  .topbar-actions{grid-column:2;grid-row:1;justify-self:end;align-self:center}
- .topbar-today{grid-column:1/-1;grid-row:2;display:flex;align-items:center;justify-content:flex-start;gap:12px;padding:8px 0 0;border-left:0;border-top:1px solid var(--line)}
- .today-weather-art{width:28px;height:30px;margin-right:-3px}
- .topbar-today .topbar-date{align-self:center}
- .topbar-today #weather-header{align-self:center;padding-left:12px;border-left:1px solid var(--line)}
+ .topbar-today{grid-column:1/-1;grid-row:2;justify-self:start;padding-top:8px;border-top:1px solid var(--line)}
 }
 @media(max-width:650px){
  .topbar{grid-template-columns:minmax(0,1fr);gap:8px 10px;padding:12px 18px}
@@ -1189,25 +1185,35 @@ button.hashtag:hover{text-decoration:underline}
  .topbar .capture-button{font-size:0;border:0;padding:0;width:28px;height:28px;flex-shrink:0;gap:0;justify-content:center;background:var(--surface)}
  .capture-button kbd{display:none}
  .topbar .collection-button{width:27px}
- .topbar-today{gap:10px}
- .topbar-today #weather-header{padding-left:10px}
- .today-weather-art{width:24px;height:26px}
+ .topbar-today{width:100%;gap:12px}
+ .topbar-today #weather-header{padding-left:12px}
+ .topbar-weather{width:100%;grid-template-columns:34px minmax(0,1fr) 50px;gap:9px}
+ .topbar-weather>.weather-art{width:34px;height:36px}
+ .weather-place{max-width:160px;font-size:11px}
+ .weather-temperature-circle{width:50px;height:50px}
+ .weather-temperature{font-size:21px}
+ .weather-temperature small{font-size:14px}
+ .weather-empty{grid-template-columns:34px minmax(0,1fr)}
  .date-long{display:none}
- .date-compact{display:inline}
- .date-compact>span:after{content:', '}
+ .date-compact{display:flex;flex-direction:column;gap:2px}
+ .date-compact>span{font-size:10px;color:var(--muted)}
  .weather-overview{gap:14px}
  .weather-overview>.weather-art{width:80px;height:84px}
  .weather-overview-text{padding-right:70px}
  .weather-now strong{font-size:36px}
 }
 @media(max-width:400px){
- .topbar-today .topbar-date,.topbar-weather{font-size:10px}
- .weather-place{max-width:72px}
+ .topbar-today .topbar-date{font-size:10px}
+ .topbar-today{gap:10px}
+ .topbar-today #weather-header{padding-left:10px}
+ .topbar-weather{gap:7px}
+ .weather-place{max-width:100px}
+ .weather-range{gap:4px;font-size:9px}
+ .weather-saved{font-size:7px}
  .weather-detail-metrics>div{flex-direction:column;gap:5px;text-align:center}
  .weather-detail-metrics>div>span{align-items:center}
  .weather-credits{flex-direction:column;text-align:center}
 }
-@media(max-width:340px){.weather-place{display:none}}
 
 /* Quick controls fold in behind the head on the right: the strip opens like a drawer,
    from nothing to its full width, and each icon fades and slides in a moment after the last. */

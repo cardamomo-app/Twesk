@@ -1,7 +1,7 @@
-import { $, app, esc, icon, modalShell, view } from './ui-core.js?v=0.41.2';
-import { createWeatherController, searchWeatherPlaces, weatherCondition, weatherTemperature } from './weather.js?v=0.41.2';
-import { weatherArt } from './weather-art.js?v=0.41.2';
-import { openModal } from './ui-modal.js?v=0.41.2';
+import { $, app, esc, icon, modalShell, view } from './ui-core.js?v=0.41.3';
+import { createWeatherController, searchWeatherPlaces, weatherCondition, weatherTemperature } from './weather.js?v=0.41.3';
+import { weatherArt } from './weather-art.js?v=0.41.3';
+import { openModal } from './ui-modal.js?v=0.41.3';
 
 const locateIcon = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>';
 let storage; try { storage = localStorage; } catch {}
@@ -15,19 +15,24 @@ function updatedLabel(s) {
   const minutes = Math.max(0, Math.floor((Date.now() - s.data.measuredAt) / 60000));
   return minutes < 1 ? 'Updated just now' : minutes < 60 ? `Updated ${minutes} min ago` : minutes < 1440 ? `Updated ${Math.floor(minutes / 60)}h ago` : `Updated ${Math.floor(minutes / 1440)}d ago`;
 }
+// The header's second line under the date: a small icon, the temperature, the sky, and the place.
+// Everything else (low/high, rain, dew point) lives one click away in the dialog.
 export function renderWeather() {
   const s = controller.snapshot(), d = s.data;
-  if (!d) return `<button class="topbar-weather weather-empty" data-action="weather" aria-label="${s.place ? 'Open weather for ' + esc(s.place.name) : 'Set up local weather'}">${weatherArt('partly')}<span><strong>${s.busy ? 'Finding the weather…' : s.place ? esc(s.place.name) : 'Weather'}</strong><small>${s.busy ? 'One moment' : s.place ? 'Tap to retry' : 'Choose your location'}</small></span></button>`;
+  if (!d) return `<button class="topbar-weather weather-empty" data-action="weather" aria-label="${s.place ? 'Open weather for ' + esc(s.place.name) : 'Set up local weather'}">${weatherArt('partly')}<span class="weather-line"><strong>${s.busy ? 'Finding the weather…' : s.place ? esc(s.place.name) : 'Weather'}</strong><small>${s.busy ? '' : s.place ? 'Tap to retry' : 'Choose your location'}</small></span></button>`;
   const condition = weatherCondition(d.code, d.isDay);
   const label = `Weather in ${s.place.name}: ${condition.label}, ${temperature(d.temperature, true)}. Low ${temperature(d.low)}, high ${temperature(d.high)}. Rain chance this hour ${probability(d.rainChance)}. Dew point ${temperature(d.dewPoint, true)}. ${saved(s) ? 'Saved reading. ' : ''}${updatedLabel(s)}.`;
-  return `<button class="topbar-weather" data-action="weather" aria-label="${esc(label)}" title="${esc(label)}">${weatherArt(condition.art)}<span class="weather-header-content"><span class="weather-location-summary"><strong class="weather-place">${esc(s.place.name)}</strong><span class="weather-range" title="Today’s low and high"><span class="weather-low">${temperature(d.low)}</span><span class="weather-range-separator">/</span><span>${temperature(d.high)}</span></span></span><span class="weather-current"><strong class="weather-temperature">${temperature(d.temperature)}<small>${s.unit.toUpperCase()}</small></strong>${saved(s) ? '<span class="weather-saved">Saved</span>' : ''}</span><span class="weather-condition">${esc(condition.label)}</span><span class="weather-header-metrics"><span title="Chance of rain this hour">${weatherArt('drizzle')}<span class="weather-rain-value">${probability(d.rainChance)}</span></span><span title="Dew point">${weatherArt('dew')}<span>${temperature(d.dewPoint)}</span></span></span></span></button>`;
+  return `<button class="topbar-weather" data-action="weather" aria-label="${esc(label)}" title="${esc(label)}">${weatherArt(condition.art)}<span class="weather-line"><strong class="weather-temperature">${temperature(d.temperature)}</strong><span class="weather-condition">${esc(condition.label)}</span><span class="weather-place">${esc(s.place.name)}</span>${saved(s) ? '<span class="weather-saved">Saved</span>' : ''}</span></button>`;
 }
 function reading() {
   const s = controller.snapshot(), d = s.data;
   if (!d) return `<div class="weather-welcome">${weatherArt('partly')}<h3>${s.place ? esc(s.place.name) : 'Your weather, here'}</h3><p>${s.busy ? 'Getting the latest conditions…' : 'Use your current location, or search for a city.'}</p></div>`;
-  const condition = weatherCondition(d.code, d.isDay);
-  return `<div class="weather-overview">${weatherArt(condition.art)}<div><h3>${esc(s.place.name)}</h3><p>${esc([s.place.region, s.place.country].filter((v, i, a) => v && v !== s.place.name && a.indexOf(v) === i).join(', '))}</p><strong>${temperature(d.temperature)}<small>${s.unit.toUpperCase()}</small></strong><span>${esc(condition.label)}</span></div></div><div class="weather-detail-metrics"><div>${weatherArt('range')}<small>Today’s low / high</small><strong>${temperature(d.low)} <span>/</span> ${temperature(d.high)}</strong></div><div>${weatherArt('drizzle')}<small>Rain · this hour</small><strong>${probability(d.rainChance)}</strong></div><div>${weatherArt('dew')}<small>Dew point</small><strong>${temperature(d.dewPoint)}</strong></div></div><p class="weather-updated">${saved(s) ? 'Saved reading · ' : ''}${updatedLabel(s)}</p>`;
+  const condition = weatherCondition(d.code, d.isDay), region = [s.place.region, s.place.country].filter((v, i, a) => v && v !== s.place.name && a.indexOf(v) === i).join(', ');
+  const metric = (art, name, value) => `<div>${weatherArt(art)}<span><small>${name}</small><strong>${value}</strong></span></div>`;
+  return `<div class="weather-overview">${weatherArt(condition.art)}<div class="weather-overview-text"><h3>${esc(s.place.name)}</h3>${region ? `<p>${esc(region)}</p>` : ''}<div class="weather-now"><strong>${temperature(d.temperature)}</strong><span>${esc(condition.label)}</span></div></div></div>
+    <div class="weather-detail-metrics">${metric('range', 'Low / high', `${temperature(d.low)}<span>/</span>${temperature(d.high)}`)}${metric('drizzle', 'Rain this hour', probability(d.rainChance))}${metric('dew', 'Dew point', temperature(d.dewPoint))}</div>`;
 }
+const updatedNote = () => { const s = controller.snapshot(); return s.data ? `${saved(s) ? '<span class="weather-saved-note">Saved reading</span> · ' : ''}${updatedLabel(s)}` : ''; };
 function message() {
   const s = controller.snapshot();
   return s.error || (navigator.onLine === false ? 'You’re offline. Weather will update when you reconnect.' : '');
@@ -51,6 +56,8 @@ function updateWeather() {
   // Polling never redraws a location search or steals its input focus.
   const details = $('#weather-reading');
   if (details) details.innerHTML = reading();
+  const updated = $('#weather-updated');
+  if (updated) updated.innerHTML = updatedNote();
   const status = $('#weather-message');
   if (status) { status.textContent = message(); status.hidden = !message(); }
   for (const b of document.querySelectorAll('[data-action="weather-locate"], [data-action="weather-refresh"]')) b.disabled = controller.snapshot().busy;
@@ -74,7 +81,9 @@ export function onInput(event) {
 export const modals = {
   weather() {
     const s = controller.snapshot();
-    return modalShell('Weather', `<div class="form-body weather-body"><div class="weather-controls"><div class="weather-units" role="group" aria-label="Temperature unit">${['c', 'f'].map(unit => `<button data-action="weather-unit" data-unit="${unit}" aria-pressed="${s.unit === unit}" class="${s.unit === unit ? 'selected' : ''}">°${unit.toUpperCase()}</button>`).join('')}</div><button class="text-button weather-refresh" data-action="weather-refresh" ${s.place ? '' : 'hidden'} ${s.busy ? 'disabled' : ''}>${icon('repeat')}Refresh</button></div><div id="weather-reading">${reading()}</div><p class="weather-message" id="weather-message" role="status" ${message() ? '' : 'hidden'}>${esc(message())}</p><div class="weather-location"><button class="button secondary weather-locate" data-action="weather-locate" ${s.busy ? 'disabled' : ''}>${locateIcon}Use my location</button><form id="weather-search-form"><label for="weather-search">Or choose a city</label><div class="weather-search-row"><input id="weather-search" name="place" type="search" autocomplete="off" minlength="2" maxlength="120" required placeholder="City or postcode" value="${esc(query)}"><button class="button secondary" type="submit" aria-label="Search for a city" ${searchBusy ? 'disabled' : ''}>${icon('search')}</button></div></form><div class="weather-search-results" aria-live="polite">${searchResults()}</div></div><footer class="weather-credits"><span>Weather by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · Places by <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a> / <a href="https://www.bigdatacloud.com/" target="_blank" rel="noopener noreferrer">BigDataCloud</a></span><button class="text-button" data-action="weather-clear" ${s.place ? '' : 'hidden'}>Clear location</button></footer></div>`, 'weather-modal');
+    // With a place set, finding another one folds away; without one, it is the whole point of the dialog.
+    const open = !s.place || !!query || results.length || searchBusy || !!searchError;
+    return modalShell('Weather', `<div class="form-body weather-body"><div class="weather-units" role="group" aria-label="Temperature unit">${['c', 'f'].map(unit => `<button data-action="weather-unit" data-unit="${unit}" aria-pressed="${s.unit === unit}" class="${s.unit === unit ? 'selected' : ''}">°${unit.toUpperCase()}</button>`).join('')}</div><div id="weather-reading">${reading()}</div><div class="weather-status"><span class="weather-updated" id="weather-updated">${updatedNote()}</span><button class="text-button weather-refresh" data-action="weather-refresh" ${s.place ? '' : 'hidden'} ${s.busy ? 'disabled' : ''}>${icon('repeat')}Refresh</button></div><p class="weather-message" id="weather-message" role="status" ${message() ? '' : 'hidden'}>${esc(message())}</p><details class="weather-location" ${open ? 'open' : ''}><summary>${locateIcon}<span>${s.place ? 'Change location' : 'Choose a location'}</span>${icon('chevron', 'weather-location-chevron')}</summary><div class="weather-location-body"><button class="button secondary weather-locate" data-action="weather-locate" ${s.busy ? 'disabled' : ''}>${locateIcon}Use my location</button><form id="weather-search-form"><label for="weather-search">Or choose a city</label><div class="weather-search-row"><input id="weather-search" name="place" type="search" autocomplete="off" minlength="2" maxlength="120" required placeholder="City or postcode" value="${esc(query)}"><button class="button secondary" type="submit" aria-label="Search for a city" ${searchBusy ? 'disabled' : ''}>${icon('search')}</button></div></form><div class="weather-search-results" aria-live="polite">${searchResults()}</div></div></details><footer class="weather-credits"><span>Weather by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · Places by <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a> / <a href="https://www.bigdatacloud.com/" target="_blank" rel="noopener noreferrer">BigDataCloud</a></span><button class="text-button" data-action="weather-clear" ${s.place ? '' : 'hidden'}>Clear location</button></footer></div>`, 'weather-modal');
   },
 };
 export const actions = {

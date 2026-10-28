@@ -95,7 +95,7 @@ Quick capture: **Command/Ctrl-K**. Vault: **Command/Ctrl-J**. Confirm a task or 
 
 ## Local weather
 
-Click the weather beside the date, then **Use my location** or search for a city. The compact header shows the place, current conditions and temperature, daily low/high, this hour’s precipitation probability, and dew point, with original faceted icons. Open it for larger readings, Celsius/Fahrenheit, refresh, or Clear location.
+Click the weather under the date, then **Use my location** or search for a city. The header keeps today to two aligned lines: the date, and beneath it a small faceted icon, the temperature, the sky, and the place (on narrower screens both share one line). Open it for the full reading: daily low/high, this hour’s precipitation probability, and dew point, with Celsius/Fahrenheit beside the reading, the last update and Refresh on one line, and **Change location** folded away until you need it, along with Clear location.
 
 Weather uses Open-Meteo’s current model conditions and local-day minimum/maximum. It updates about every 15 minutes while the app is visible and checks again on return or reconnect. The last reading remains available offline and is marked Saved when stale or unavailable. Missing measurements stay unknown rather than appearing as zero. Location permission is requested only by the location control; a previously authorized device location can follow travel on later refreshes. If access is denied, city search remains available.
 

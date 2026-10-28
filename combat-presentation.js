@@ -1,5 +1,5 @@
 // Presentation only. These descriptions never roll dice or modify rewards.
-import { combatPetCue } from './combat-pet-art.js?v=0.41.2';
+import { combatPetCue } from './combat-pet-art.js?v=0.41.3';
 export function combatSpellCue(event, spell) {
   if (!event || !['ember', 'ward', 'storm', 'starfall'].includes(spell?.id)) return null;
   // Twin strikes inherit half of the first strike, including its spell damage.

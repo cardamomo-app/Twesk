@@ -1101,24 +1101,25 @@ button.hashtag:hover{text-decoration:underline}
 .topbar-today{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:18px;align-items:center;min-width:0}
 .topbar-today .topbar-date{padding:0;border:0;font-size:11px;line-height:16px;font-weight:400;color:var(--secondary);letter-spacing:.2px;white-space:nowrap}
 #weather-header{min-width:0;display:flex;padding-left:18px;border-left:1px solid var(--line)}
-.topbar-weather{display:grid;grid-template-columns:44px minmax(0,max-content) max-content;align-items:center;gap:12px;min-width:0;padding:0;border-radius:8px;color:var(--secondary);text-align:left}
+.topbar-weather{--weather-height:26px;display:grid;grid-template-columns:44px minmax(0,max-content) max-content;align-items:stretch;gap:12px;min-width:0;padding:0;border-radius:8px;color:var(--secondary);text-align:left}
 .topbar-weather:focus-visible{outline-offset:4px}
-.topbar-weather>.weather-art{width:44px;height:46px;filter:drop-shadow(0 2px 2px #1c30400f)}
-.topbar-weather>.weather-art-sun,.topbar-weather>.weather-art-moon{transform:scale(1.15)}
-.weather-location-summary{display:grid;grid-template-columns:minmax(0,1fr);gap:3px;min-width:0;align-content:center}
-.weather-place{font-size:12px;line-height:16px;font-weight:550;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
-.weather-range{display:flex;align-items:baseline;gap:5px;font-size:10px;line-height:14px;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--secondary)}
+.topbar-weather>.weather-art{width:44px;height:var(--weather-height);overflow:visible}
+.weather-location-summary{display:flex;flex-direction:column;justify-content:space-between;min-width:0;height:var(--weather-height)}
+.weather-place{font-size:12px;line-height:1;text-box:trim-start cap alphabetic;font-weight:550;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.weather-range{display:flex;align-items:baseline;gap:5px;font-size:10px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--secondary)}
+.weather-range>span{display:block;text-box:trim-both cap alphabetic}
 .weather-range-separator{color:var(--muted);opacity:.6}
 /* Bevels carry the voxel character without a surrounding badge or a font download. */
-.weather-temperature{display:block;line-height:1;--temperature-face:#56536c;--temperature-side:#3e3b52;--temperature-depth:#302e41;--temperature-bevel:#b6b0ca}
-.weather-temperature-art{display:block;width:auto;height:32px;overflow:visible}
+.weather-temperature{display:block;line-height:1;--temperature-face:var(--secondary);--temperature-side:color-mix(in srgb,var(--secondary) 80%,var(--text));--temperature-depth:color-mix(in srgb,var(--secondary) 65%,var(--text));--temperature-bevel:color-mix(in srgb,var(--secondary) 55%,var(--panel))}
+.weather-temperature-art{display:block;width:auto;height:var(--weather-height);overflow:visible}
 .temperature-face{fill:var(--temperature-face)}
 .temperature-side{fill:var(--temperature-side)}
 .temperature-depth{fill:var(--temperature-depth)}
 .temperature-bevel{fill:none;stroke:var(--temperature-bevel);stroke-width:.6;stroke-linejoin:bevel}
-:root[data-theme=dark] .weather-temperature{--temperature-face:#d8d3ea;--temperature-side:#8b819f;--temperature-depth:#645c79;--temperature-bevel:#fff8ff}
+:root[data-theme=dark] .weather-temperature{--temperature-side:color-mix(in srgb,var(--secondary) 70%,var(--panel));--temperature-depth:color-mix(in srgb,var(--secondary) 50%,var(--panel));--temperature-bevel:color-mix(in srgb,var(--secondary) 65%,var(--text))}
 .weather-saved{font-size:8px;color:var(--gold)}
-.weather-empty{grid-template-columns:44px minmax(0,1fr)}
+.weather-empty{grid-template-columns:44px minmax(0,1fr);align-items:center}
+.weather-empty .weather-location-summary{height:auto;gap:3px}
 .weather-empty>.weather-art{opacity:.55}
 .weather-empty strong{font-size:11px;font-weight:500;color:var(--secondary)}
 .weather-empty small{font-size:10px;color:var(--muted)}
@@ -1205,11 +1206,10 @@ button.hashtag:hover{text-decoration:underline}
  .topbar .collection-button{width:27px}
  .topbar-today{width:100%;gap:12px}
  .topbar-today #weather-header{padding-left:12px}
- .topbar-weather{width:100%;grid-template-columns:34px minmax(0,1fr) max-content;gap:9px}
- .topbar-weather>.weather-art{width:34px;height:36px}
+ .topbar-weather{--weather-height:24px;width:100%;grid-template-columns:36px minmax(0,1fr) max-content;gap:9px}
+ .topbar-weather>.weather-art{width:36px}
  .weather-place{max-width:160px;font-size:11px}
- .weather-temperature-art{height:29px}
- .weather-empty{grid-template-columns:34px minmax(0,1fr)}
+ .weather-empty{grid-template-columns:36px minmax(0,1fr)}
  .date-long{display:none}
  .date-compact{display:flex;flex-direction:column;gap:2px}
  .date-compact>span{font-size:10px;color:var(--muted)}
@@ -9029,7 +9029,7 @@ Object.assign(exports,{fullscreenSupported,fullscreenButton,toggleFullscreen,act
 "ui-weather.js":function(require,exports){
 const { $, app, esc, icon, modalShell, view }=require("ui-core.js");
 const { createWeatherController, searchWeatherPlaces, weatherCondition, weatherTemperature }=require("weather.js");
-const { weatherArt, temperatureArt }=require("weather-art.js");
+const { weatherArt, headerWeatherArt, temperatureArt }=require("weather-art.js");
 const { openModal }=require("ui-modal.js");
 
 const locateIcon = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>';
@@ -9047,10 +9047,10 @@ function updatedLabel(s) {
 // The date stays separate; one weather control aligns the sky, city/range, and temperature.
 function renderWeather() {
   const s = controller.snapshot(), d = s.data;
-  if (!d) return `<button class="topbar-weather weather-empty" data-action="weather" aria-label="${s.place ? 'Open weather for ' + esc(s.place.name) : 'Set up local weather'}">${weatherArt('partly')}<span class="weather-location-summary"><strong>${s.busy ? 'Finding weather…' : s.place ? esc(s.place.name) : 'Weather'}</strong><small>${s.busy ? '' : s.place ? 'Tap to retry' : 'Choose your location'}</small></span></button>`;
+  if (!d) return `<button class="topbar-weather weather-empty" data-action="weather" aria-label="${s.place ? 'Open weather for ' + esc(s.place.name) : 'Set up local weather'}">${headerWeatherArt('partly')}<span class="weather-location-summary"><strong>${s.busy ? 'Finding weather…' : s.place ? esc(s.place.name) : 'Weather'}</strong><small>${s.busy ? '' : s.place ? 'Tap to retry' : 'Choose your location'}</small></span></button>`;
   const condition = weatherCondition(d.code, d.isDay);
   const label = `Weather in ${s.place.name}: ${condition.label}, ${temperature(d.temperature, true)}. Low ${temperature(d.low)}, high ${temperature(d.high)}. Rain chance this hour ${probability(d.rainChance)}. Dew point ${temperature(d.dewPoint, true)}. ${saved(s) ? 'Saved reading. ' : ''}${updatedLabel(s)}.`;
-  return `<button class="topbar-weather" data-action="weather" aria-label="${esc(label)}" title="${esc(label)}">${weatherArt(condition.art)}<span class="weather-location-summary"><strong class="weather-place">${esc(s.place.name)}</strong><span class="weather-range" aria-label="Low ${temperature(d.low)}, high ${temperature(d.high)}"><span title="Today’s low">${temperature(d.low)}</span><span class="weather-range-separator" aria-hidden="true">/</span><span title="Today’s high">${temperature(d.high)}</span>${saved(s) ? '<span class="weather-saved">Saved</span>' : ''}</span></span><strong class="weather-temperature"><span class="sr-only">${temperature(d.temperature, true)}</span>${temperatureArt(temperature(d.temperature), s.unit.toUpperCase())}</strong></button>`;
+  return `<button class="topbar-weather" data-action="weather" aria-label="${esc(label)}" title="${esc(label)}">${headerWeatherArt(condition.art)}<span class="weather-location-summary"><strong class="weather-place">${esc(s.place.name)}</strong><span class="weather-range" aria-label="Low ${temperature(d.low)}, high ${temperature(d.high)}"><span title="Today’s low">${temperature(d.low)}</span><span class="weather-range-separator" aria-hidden="true">/</span><span title="Today’s high">${temperature(d.high)}</span>${saved(s) ? '<span class="weather-saved">Saved</span>' : ''}</span></span><strong class="weather-temperature"><span class="sr-only">${temperature(d.temperature, true)}</span>${temperatureArt(temperature(d.temperature), s.unit.toUpperCase())}</strong></button>`;
 }
 function reading() {
   const s = controller.snapshot(), d = s.data;
@@ -9304,6 +9304,19 @@ function weatherArt(kind = 'cloud') {
   return svg;
 }
 
+// Tight visible bounds give each header icon the same height, regardless of its silhouette.
+// Detail icons retain their original roomy canvas.
+const headerWeatherBounds = {
+  sun: [18, 7, 36, 36], moon: [23, 7, 29, 45],
+  partly: [8, 2.74, 46.8, 50.36], 'partly-night': [8, 2.74, 46.8, 50.36],
+  cloud: [10, 13, 52, 36], rain: [10, 8, 52, 52], drizzle: [10, 8, 52, 52],
+  snow: [10, 8, 52, 53], storm: [10, 7, 52, 57], fog: [10, 8, 52, 51.5],
+};
+function headerWeatherArt(kind = 'cloud') {
+  const bounds = headerWeatherBounds[kind] || headerWeatherBounds.cloud;
+  return weatherArt(kind).replace('viewBox="0 0 64 68"', `viewBox="${bounds.join(' ')}"`);
+}
+
 // A small original display alphabet: chamfered faces with shallow, directional extrusion.
 // Numerals stay upright and crisp; the degree mark and unit share the same cut and depth.
 const temperatureGlyphs = {
@@ -9346,10 +9359,10 @@ function temperatureArt(value, unit = 'C') {
   if (number !== '—') { art += temperatureGlyph('°', x, 1, .8); x += 10; }
   art += temperatureGlyph(unit === 'F' ? 'F' : 'C', x, 11.92, .58);
   const width = x + 12;
-  return `<svg class="weather-temperature-art" viewBox="0 0 ${width} 31" width="${width}" height="31" aria-hidden="true">${art}</svg>`;
+  return `<svg class="weather-temperature-art" viewBox="0 .7 ${width} 28.3" width="${width}" height="28.3" aria-hidden="true">${art}</svg>`;
 }
 
-Object.assign(exports,{weatherArt,temperatureArt});
+Object.assign(exports,{weatherArt,headerWeatherArt,temperatureArt});
 }};
 const cache=Object.create(null);function require(id){if(cache[id])return cache[id];const exports=cache[id]={};modules[id](require,exports);return exports;}require("app.js");
 })();

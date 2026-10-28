@@ -25,6 +25,19 @@ export function weatherArt(kind = 'cloud') {
   return svg;
 }
 
+// Tight visible bounds give each header icon the same height, regardless of its silhouette.
+// Detail icons retain their original roomy canvas.
+const headerWeatherBounds = {
+  sun: [18, 7, 36, 36], moon: [23, 7, 29, 45],
+  partly: [8, 2.74, 46.8, 50.36], 'partly-night': [8, 2.74, 46.8, 50.36],
+  cloud: [10, 13, 52, 36], rain: [10, 8, 52, 52], drizzle: [10, 8, 52, 52],
+  snow: [10, 8, 52, 53], storm: [10, 7, 52, 57], fog: [10, 8, 52, 51.5],
+};
+export function headerWeatherArt(kind = 'cloud') {
+  const bounds = headerWeatherBounds[kind] || headerWeatherBounds.cloud;
+  return weatherArt(kind).replace('viewBox="0 0 64 68"', `viewBox="${bounds.join(' ')}"`);
+}
+
 // A small original display alphabet: chamfered faces with shallow, directional extrusion.
 // Numerals stay upright and crisp; the degree mark and unit share the same cut and depth.
 const temperatureGlyphs = {
@@ -67,5 +80,5 @@ export function temperatureArt(value, unit = 'C') {
   if (number !== '—') { art += temperatureGlyph('°', x, 1, .8); x += 10; }
   art += temperatureGlyph(unit === 'F' ? 'F' : 'C', x, 11.92, .58);
   const width = x + 12;
-  return `<svg class="weather-temperature-art" viewBox="0 0 ${width} 31" width="${width}" height="31" aria-hidden="true">${art}</svg>`;
+  return `<svg class="weather-temperature-art" viewBox="0 .7 ${width} 28.3" width="${width}" height="28.3" aria-hidden="true">${art}</svg>`;
 }

@@ -1087,24 +1087,25 @@ button.hashtag:hover{text-decoration:underline}
 .topbar-today{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:18px;align-items:center;min-width:0}
 .topbar-today .topbar-date{padding:0;border:0;font-size:11px;line-height:16px;font-weight:400;color:var(--secondary);letter-spacing:.2px;white-space:nowrap}
 #weather-header{min-width:0;display:flex;padding-left:18px;border-left:1px solid var(--line)}
-.topbar-weather{display:grid;grid-template-columns:44px minmax(0,max-content) max-content;align-items:center;gap:12px;min-width:0;padding:0;border-radius:8px;color:var(--secondary);text-align:left}
+.topbar-weather{--weather-height:26px;display:grid;grid-template-columns:44px minmax(0,max-content) max-content;align-items:stretch;gap:12px;min-width:0;padding:0;border-radius:8px;color:var(--secondary);text-align:left}
 .topbar-weather:focus-visible{outline-offset:4px}
-.topbar-weather>.weather-art{width:44px;height:46px;filter:drop-shadow(0 2px 2px #1c30400f)}
-.topbar-weather>.weather-art-sun,.topbar-weather>.weather-art-moon{transform:scale(1.15)}
-.weather-location-summary{display:grid;grid-template-columns:minmax(0,1fr);gap:3px;min-width:0;align-content:center}
-.weather-place{font-size:12px;line-height:16px;font-weight:550;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
-.weather-range{display:flex;align-items:baseline;gap:5px;font-size:10px;line-height:14px;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--secondary)}
+.topbar-weather>.weather-art{width:44px;height:var(--weather-height);overflow:visible}
+.weather-location-summary{display:flex;flex-direction:column;justify-content:space-between;min-width:0;height:var(--weather-height)}
+.weather-place{font-size:12px;line-height:1;text-box:trim-start cap alphabetic;font-weight:550;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.weather-range{display:flex;align-items:baseline;gap:5px;font-size:10px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--secondary)}
+.weather-range>span{display:block;text-box:trim-both cap alphabetic}
 .weather-range-separator{color:var(--muted);opacity:.6}
 /* Bevels carry the voxel character without a surrounding badge or a font download. */
-.weather-temperature{display:block;line-height:1;--temperature-face:#56536c;--temperature-side:#3e3b52;--temperature-depth:#302e41;--temperature-bevel:#b6b0ca}
-.weather-temperature-art{display:block;width:auto;height:32px;overflow:visible}
+.weather-temperature{display:block;line-height:1;--temperature-face:var(--secondary);--temperature-side:color-mix(in srgb,var(--secondary) 80%,var(--text));--temperature-depth:color-mix(in srgb,var(--secondary) 65%,var(--text));--temperature-bevel:color-mix(in srgb,var(--secondary) 55%,var(--panel))}
+.weather-temperature-art{display:block;width:auto;height:var(--weather-height);overflow:visible}
 .temperature-face{fill:var(--temperature-face)}
 .temperature-side{fill:var(--temperature-side)}
 .temperature-depth{fill:var(--temperature-depth)}
 .temperature-bevel{fill:none;stroke:var(--temperature-bevel);stroke-width:.6;stroke-linejoin:bevel}
-:root[data-theme=dark] .weather-temperature{--temperature-face:#d8d3ea;--temperature-side:#8b819f;--temperature-depth:#645c79;--temperature-bevel:#fff8ff}
+:root[data-theme=dark] .weather-temperature{--temperature-side:color-mix(in srgb,var(--secondary) 70%,var(--panel));--temperature-depth:color-mix(in srgb,var(--secondary) 50%,var(--panel));--temperature-bevel:color-mix(in srgb,var(--secondary) 65%,var(--text))}
 .weather-saved{font-size:8px;color:var(--gold)}
-.weather-empty{grid-template-columns:44px minmax(0,1fr)}
+.weather-empty{grid-template-columns:44px minmax(0,1fr);align-items:center}
+.weather-empty .weather-location-summary{height:auto;gap:3px}
 .weather-empty>.weather-art{opacity:.55}
 .weather-empty strong{font-size:11px;font-weight:500;color:var(--secondary)}
 .weather-empty small{font-size:10px;color:var(--muted)}
@@ -1191,11 +1192,10 @@ button.hashtag:hover{text-decoration:underline}
  .topbar .collection-button{width:27px}
  .topbar-today{width:100%;gap:12px}
  .topbar-today #weather-header{padding-left:12px}
- .topbar-weather{width:100%;grid-template-columns:34px minmax(0,1fr) max-content;gap:9px}
- .topbar-weather>.weather-art{width:34px;height:36px}
+ .topbar-weather{--weather-height:24px;width:100%;grid-template-columns:36px minmax(0,1fr) max-content;gap:9px}
+ .topbar-weather>.weather-art{width:36px}
  .weather-place{max-width:160px;font-size:11px}
- .weather-temperature-art{height:29px}
- .weather-empty{grid-template-columns:34px minmax(0,1fr)}
+ .weather-empty{grid-template-columns:36px minmax(0,1fr)}
  .date-long{display:none}
  .date-compact{display:flex;flex-direction:column;gap:2px}
  .date-compact>span{font-size:10px;color:var(--muted)}

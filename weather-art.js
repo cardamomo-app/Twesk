@@ -24,3 +24,48 @@ export function weatherArt(kind = 'cloud') {
   cache.set(kind, svg);
   return svg;
 }
+
+// A small original display alphabet: chamfered faces with shallow, directional extrusion.
+// Numerals stay upright and crisp; the degree mark and unit share the same cut and depth.
+const temperatureGlyphs = {
+  '0': '3,0 13,0 16,3 16,23 13,26 3,26 0,23 0,3|5,6 5,20 6,21 10,21 11,20 11,6 10,5 6,5',
+  '1': '3,5 9,0 13,0 13,21 16,21 16,26 3,26 3,21 8,21 8,7 3,10',
+  '2': '0,3 3,0 13,0 16,3 16,11 5,21 16,21 16,26 0,26 0,20 11,10 11,6 10,5 6,5 5,6 5,9 0,9',
+  '3': '0,0 13,0 16,3 16,10 13,13 16,16 16,23 13,26 0,26 0,21 10,21 11,20 11,16 10,15 4,15 4,10 10,10 11,9 11,6 10,5 0,5',
+  '4': '0,0 5,0 5,10 11,10 11,0 16,0 16,26 11,26 11,15 0,15',
+  '5': '0,0 16,0 16,5 5,5 5,10 13,10 16,13 16,23 13,26 0,26 0,21 10,21 11,20 11,16 10,15 0,15',
+  '6': '3,0 15,0 15,5 6,5 5,6 5,10 13,10 16,13 16,23 13,26 3,26 0,23 0,3|5,15 5,21 11,21 11,15',
+  '7': '0,0 16,0 16,5 9,26 3,26 10,5 0,5',
+  '8': '3,0 13,0 16,3 16,10 13,13 16,16 16,23 13,26 3,26 0,23 0,16 3,13 0,10 0,3|5,5 5,10 11,10 11,5|5,16 5,21 11,21 11,16',
+  '9': '3,0 13,0 16,3 16,23 13,26 1,26 1,21 10,21 11,20 11,16 3,16 0,13 0,3|5,5 5,11 11,11 11,5',
+  '-': '0,11 10,11 10,16 0,16',
+  '—': '0,11 14,11 14,16 0,16',
+  '°': '2,0 6,0 8,2 8,6 6,8 2,8 0,6 0,2|2.5,2.5 2.5,5.5 5.5,5.5 5.5,2.5',
+  C: '3,0 16,0 16,5 6,5 5,6 5,20 6,21 16,21 16,26 3,26 0,23 0,3',
+  F: '0,0 16,0 16,5 5,5 5,10 13,10 13,15 5,15 5,26 0,26',
+};
+function temperatureGlyph(character, x, y = 0, scale = 1) {
+  const rings = temperatureGlyphs[character].split('|').map(ring => ring.split(' ').map(point => point.split(',').map(Number)));
+  const path = rings.map(points => `M${points.map(p => p.join(',')).join('L')}Z`).join('');
+  const sides = [], light = [];
+  for (const points of rings) for (let i = 0; i < points.length; i++) {
+    const a = points[i], b = points[(i + 1) % points.length];
+    const facing = (b[1] - a[1]) * 1.6 - (b[0] - a[0]) * 2;
+    if (facing > 0) sides.push(`<polygon points="${[a, b, [b[0] + 1.6, b[1] + 2], [a[0] + 1.6, a[1] + 2]].map(p => p.join(',')).join(' ')}" class="${b[1] > a[1] ? 'temperature-side' : 'temperature-depth'}"/>`);
+    else if (facing < 0) light.push(`M${a.join(',')}L${b.join(',')}`);
+  }
+  return `<g transform="translate(${x} ${y}) scale(${scale})">${sides.join('')}<path d="${path}" fill-rule="evenodd" class="temperature-face"/><path d="${light.join('')}" class="temperature-bevel"/></g>`;
+}
+export function temperatureArt(value, unit = 'C') {
+  const number = /^-?\d{1,3}°$/.test(value) ? value.slice(0, -1) : '—';
+  let x = 1, art = '';
+  for (const character of number) {
+    art += temperatureGlyph(character, x, 1);
+    x += character === '-' ? 14 : character === '—' ? 18 : 20;
+  }
+  x -= 3;
+  if (number !== '—') { art += temperatureGlyph('°', x, 1, .8); x += 10; }
+  art += temperatureGlyph(unit === 'F' ? 'F' : 'C', x, 11.92, .58);
+  const width = x + 12;
+  return `<svg class="weather-temperature-art" viewBox="0 0 ${width} 31" width="${width}" height="31" aria-hidden="true">${art}</svg>`;
+}

@@ -1,7 +1,7 @@
-import { $, app, esc, icon, modalShell, view } from './ui-core.js?v=0.41.5';
-import { createWeatherController, searchWeatherPlaces, weatherCondition, weatherTemperature } from './weather.js?v=0.41.5';
-import { weatherArt } from './weather-art.js?v=0.41.5';
-import { openModal } from './ui-modal.js?v=0.41.5';
+import { $, app, esc, icon, modalShell, view } from './ui-core.js?v=0.41.6';
+import { createWeatherController, searchWeatherPlaces, weatherCondition, weatherTemperature } from './weather.js?v=0.41.6';
+import { weatherArt, temperatureArt } from './weather-art.js?v=0.41.6';
+import { openModal } from './ui-modal.js?v=0.41.6';
 
 const locateIcon = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>';
 let storage; try { storage = localStorage; } catch {}
@@ -21,7 +21,7 @@ export function renderWeather() {
   if (!d) return `<button class="topbar-weather weather-empty" data-action="weather" aria-label="${s.place ? 'Open weather for ' + esc(s.place.name) : 'Set up local weather'}">${weatherArt('partly')}<span class="weather-location-summary"><strong>${s.busy ? 'Finding weather…' : s.place ? esc(s.place.name) : 'Weather'}</strong><small>${s.busy ? '' : s.place ? 'Tap to retry' : 'Choose your location'}</small></span></button>`;
   const condition = weatherCondition(d.code, d.isDay);
   const label = `Weather in ${s.place.name}: ${condition.label}, ${temperature(d.temperature, true)}. Low ${temperature(d.low)}, high ${temperature(d.high)}. Rain chance this hour ${probability(d.rainChance)}. Dew point ${temperature(d.dewPoint, true)}. ${saved(s) ? 'Saved reading. ' : ''}${updatedLabel(s)}.`;
-  return `<button class="topbar-weather" data-action="weather" aria-label="${esc(label)}" title="${esc(label)}">${weatherArt(condition.art)}<span class="weather-location-summary"><strong class="weather-place">${esc(s.place.name)}</strong><span class="weather-range" aria-label="Low ${temperature(d.low)}, high ${temperature(d.high)}"><span title="Today’s low">${temperature(d.low)}</span><span class="weather-range-separator" aria-hidden="true">/</span><span title="Today’s high">${temperature(d.high)}</span>${saved(s) ? '<span class="weather-saved">Saved</span>' : ''}</span></span><span class="weather-temperature-circle"><strong class="weather-temperature">${temperature(d.temperature)}<small>${s.unit.toUpperCase()}</small></strong></span></button>`;
+  return `<button class="topbar-weather" data-action="weather" aria-label="${esc(label)}" title="${esc(label)}">${weatherArt(condition.art)}<span class="weather-location-summary"><strong class="weather-place">${esc(s.place.name)}</strong><span class="weather-range" aria-label="Low ${temperature(d.low)}, high ${temperature(d.high)}"><span title="Today’s low">${temperature(d.low)}</span><span class="weather-range-separator" aria-hidden="true">/</span><span title="Today’s high">${temperature(d.high)}</span>${saved(s) ? '<span class="weather-saved">Saved</span>' : ''}</span></span><strong class="weather-temperature"><span class="sr-only">${temperature(d.temperature, true)}</span>${temperatureArt(temperature(d.temperature), s.unit.toUpperCase())}</strong></button>`;
 }
 function reading() {
   const s = controller.snapshot(), d = s.data;

@@ -1,9 +1,9 @@
 // Pointer dragging uses a dedicated handle so touch scrolling and task clicks stay natural.
 // Tasks reorder in their list and habits within their category; either can be dropped on the adventure box.
-import * as E from './engine.js?v=0.41.5';
-import { $, app, toast, today, view } from './ui-core.js?v=0.41.5';
-import { commit } from './ui-modal.js?v=0.41.5';
-import { sound } from './ui-effects.js?v=0.41.5';
+import * as E from './engine.js?v=0.41.6';
+import { $, app, toast, today, view } from './ui-core.js?v=0.41.6';
+import { commit } from './ui-modal.js?v=0.41.6';
+import { sound } from './ui-effects.js?v=0.41.6';
 
 const KINDS = {
   task: { grip: 'data-task-grip', list: 'taskList', row: 'taskId', panel: '.tasks-panel', scroller: '.tasks-scroll', items: s => s.tasks, move: E.moveTask },

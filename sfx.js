@@ -2,7 +2,7 @@
 // Most browsers use a shared Web Audio mix; Safari plays offline-rendered WAVs through media elements.
 // Repeated sounds draw from random variants, and quick successive rewards climb
 // a pentatonic scale so a run of completed tasks sounds increasingly triumphant.
-import { audioBufferWav, createMediaSoundPlayer, trimmedBuffer } from './sfx-media.js?v=0.41.3';
+import { audioBufferWav, createMediaSoundPlayer, trimmedBuffer } from './sfx-media.js?v=0.41.4';
 let ctx, master, reverbIn, noiseBuf, clock = null, stale = false, recovering = null;
 let recording = null, offlineRendering = false;
 // Setting localStorage 'twesk.sfx-media' to '1' forces the media path in any browser, for testing.

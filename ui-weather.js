@@ -1,7 +1,7 @@
-import { $, app, esc, icon, modalShell, view } from './ui-core.js?v=0.41.3';
-import { createWeatherController, searchWeatherPlaces, weatherCondition, weatherTemperature } from './weather.js?v=0.41.3';
-import { weatherArt } from './weather-art.js?v=0.41.3';
-import { openModal } from './ui-modal.js?v=0.41.3';
+import { $, app, esc, icon, modalShell, view } from './ui-core.js?v=0.41.4';
+import { createWeatherController, searchWeatherPlaces, weatherCondition, weatherTemperature } from './weather.js?v=0.41.4';
+import { weatherArt } from './weather-art.js?v=0.41.4';
+import { openModal } from './ui-modal.js?v=0.41.4';
 
 const locateIcon = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>';
 let storage; try { storage = localStorage; } catch {}
@@ -15,14 +15,21 @@ function updatedLabel(s) {
   const minutes = Math.max(0, Math.floor((Date.now() - s.data.measuredAt) / 60000));
   return minutes < 1 ? 'Updated just now' : minutes < 60 ? `Updated ${minutes} min ago` : minutes < 1440 ? `Updated ${Math.floor(minutes / 60)}h ago` : `Updated ${Math.floor(minutes / 1440)}d ago`;
 }
-// The header's second line under the date: a small icon, the temperature, the sky, and the place.
+// The large faceted sky beside the date: today's condition, or a gentle placeholder before setup.
+export function weatherIcon() {
+  const d = controller.snapshot().data;
+  return weatherArt(d ? weatherCondition(d.code, d.isDay).art : 'partly');
+}
+// Clicking the sky opens the dialog too; the button beside it carries the accessible label.
+export const weatherArtSlot = () => `<span class="today-weather-art ${controller.snapshot().data ? '' : 'is-empty'}" id="weather-art" data-action="weather" aria-hidden="true">${weatherIcon()}</span>`;
+// The header's second line under the date: the temperature, the sky, and the place.
 // Everything else (low/high, rain, dew point) lives one click away in the dialog.
 export function renderWeather() {
   const s = controller.snapshot(), d = s.data;
-  if (!d) return `<button class="topbar-weather weather-empty" data-action="weather" aria-label="${s.place ? 'Open weather for ' + esc(s.place.name) : 'Set up local weather'}">${weatherArt('partly')}<span class="weather-line"><strong>${s.busy ? 'Finding the weather…' : s.place ? esc(s.place.name) : 'Weather'}</strong><small>${s.busy ? '' : s.place ? 'Tap to retry' : 'Choose your location'}</small></span></button>`;
+  if (!d) return `<button class="topbar-weather weather-empty" data-action="weather" aria-label="${s.place ? 'Open weather for ' + esc(s.place.name) : 'Set up local weather'}"><span class="weather-line"><strong>${s.busy ? 'Finding the weather…' : s.place ? esc(s.place.name) : 'Weather'}</strong><small>${s.busy ? '' : s.place ? 'Tap to retry' : 'Choose your location'}</small></span></button>`;
   const condition = weatherCondition(d.code, d.isDay);
   const label = `Weather in ${s.place.name}: ${condition.label}, ${temperature(d.temperature, true)}. Low ${temperature(d.low)}, high ${temperature(d.high)}. Rain chance this hour ${probability(d.rainChance)}. Dew point ${temperature(d.dewPoint, true)}. ${saved(s) ? 'Saved reading. ' : ''}${updatedLabel(s)}.`;
-  return `<button class="topbar-weather" data-action="weather" aria-label="${esc(label)}" title="${esc(label)}">${weatherArt(condition.art)}<span class="weather-line"><strong class="weather-temperature">${temperature(d.temperature)}</strong><span class="weather-condition">${esc(condition.label)}</span><span class="weather-place">${esc(s.place.name)}</span>${saved(s) ? '<span class="weather-saved">Saved</span>' : ''}</span></button>`;
+  return `<button class="topbar-weather" data-action="weather" aria-label="${esc(label)}" title="${esc(label)}"><span class="weather-line"><strong class="weather-temperature">${temperature(d.temperature)}</strong><span class="weather-condition">${esc(condition.label)}</span><span class="weather-place">${esc(s.place.name)}</span>${saved(s) ? '<span class="weather-saved">Saved</span>' : ''}</span></button>`;
 }
 function reading() {
   const s = controller.snapshot(), d = s.data;
@@ -53,6 +60,8 @@ function updateWeather() {
       current.replaceChildren(...next.childNodes);
     }
   }
+  const art = $('#weather-art');
+  if (art) { const next = weatherIcon(); if (art.innerHTML !== next) art.innerHTML = next; art.classList.toggle('is-empty', !controller.snapshot().data); }
   // Polling never redraws a location search or steals its input focus.
   const details = $('#weather-reading');
   if (details) details.innerHTML = reading();
@@ -87,7 +96,8 @@ export const modals = {
   },
 };
 export const actions = {
-  weather() { query = ''; results = []; searchError = ''; searchBusy = false; searchVersion++; openModal({ type: 'weather' }); controller.refresh(); },
+  // Opened from the large sky: focus the weather button first, so closing the dialog returns there.
+  weather(b) { if (b?.id === 'weather-art') $('.topbar-weather')?.focus({ preventScroll: true }); query = ''; results = []; searchError = ''; searchBusy = false; searchVersion++; openModal({ type: 'weather' }); controller.refresh(); },
   'weather-locate'() { controller.locate(); },
   'weather-refresh'() { controller.refresh({ force: true, locate: true }); },
   'weather-unit'(b) { controller.setUnit(b.dataset.unit); view.renderModal(); $(`[data-action="weather-unit"][data-unit="${b.dataset.unit}"]`)?.focus(); },

@@ -1094,16 +1094,21 @@ button.hashtag:hover{text-decoration:underline}
 .tag-option.tag-colored.active,.tag-option.tag-colored:hover{background:color-mix(in srgb,var(--tag-color) 10%,var(--panel))}
 .vault-modal .note-text .hashtag.tag-colored,.review-modal .review-text .hashtag.tag-colored{color:var(--tag-color);background:color-mix(in srgb,var(--tag-color) 7%,var(--panel));border-radius:4px;padding:0 3px}
 
-/* Today, beside the logo: the date, and under it a one-line glimpse of the weather.
-   Both lines share a left edge and one type size; details live in the weather dialog. */
+/* Today, beside the logo: a large faceted sky spanning two lines, the date, and under it
+   one line of weather. Both lines share a left edge; details live in the weather dialog. */
 .date-compact{display:none}
 .topbar{gap:20px}
 .topbar-brand{gap:20px}
-.topbar-today{display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:0;padding-left:20px;border-left:1px solid var(--line)}
-.topbar-today .topbar-date{padding:0;border:0;font-size:11px;line-height:16px;font-weight:600;color:var(--text);letter-spacing:.1px;white-space:nowrap}
-#weather-header{min-width:0;display:flex}
+.topbar-today{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;column-gap:11px;row-gap:3px;align-items:center;min-width:0;padding-left:20px;border-left:1px solid var(--line)}
+.today-weather-art{grid-column:1;grid-row:1/3;display:flex;width:46px;height:48px;margin:-4px -2px -4px -4px;cursor:pointer;filter:drop-shadow(0 2px 2px #1c30400f);transition:transform .2s}
+/* A lone sun or moon fills less of its frame than a cloud scene, so it is drawn a little larger. */
+.today-weather-art .weather-art-sun,.today-weather-art .weather-art-moon{transform:scale(1.22)}
+.today-weather-art>svg{width:100%;height:100%}
+.today-weather-art:hover{transform:translateY(-1px)}
+.today-weather-art.is-empty{opacity:.55}
+.topbar-today .topbar-date{grid-column:2;grid-row:1;align-self:end;padding:0;border:0;font-size:11px;line-height:16px;font-weight:400;color:var(--secondary);letter-spacing:.2px;white-space:nowrap}
+#weather-header{grid-column:2;grid-row:2;align-self:start;min-width:0;display:flex}
 .topbar-weather{display:flex;align-items:center;gap:6px;min-width:0;padding:0;border-radius:5px;color:var(--secondary);font-size:11px;line-height:16px;text-align:left}
-.topbar-weather>.weather-art{width:18px;height:19px;flex-shrink:0;margin:-2px 0 -1px -1px}
 .topbar-weather:focus-visible{outline-offset:3px}
 .weather-line{display:flex;align-items:baseline;gap:6px;min-width:0;white-space:nowrap}
 .weather-temperature{color:var(--text);font-weight:650;font-variant-numeric:tabular-nums}
@@ -1182,8 +1187,10 @@ button.hashtag:hover{text-decoration:underline}
  .topbar-brand{display:contents}
  .topbar .wordmark{grid-column:1;grid-row:1;justify-self:start}
  .topbar-actions{grid-column:2;grid-row:1;justify-self:end;align-self:center}
- .topbar-today{grid-column:1/-1;grid-row:2;flex-direction:row;align-items:center;justify-content:flex-start;gap:14px;padding:9px 0 0;border-left:0;border-top:1px solid var(--line)}
- .topbar-today #weather-header{padding-left:14px;border-left:1px solid var(--line)}
+ .topbar-today{grid-column:1/-1;grid-row:2;display:flex;align-items:center;justify-content:flex-start;gap:12px;padding:8px 0 0;border-left:0;border-top:1px solid var(--line)}
+ .today-weather-art{width:28px;height:30px;margin-right:-3px}
+ .topbar-today .topbar-date{align-self:center}
+ .topbar-today #weather-header{align-self:center;padding-left:12px;border-left:1px solid var(--line)}
 }
 @media(max-width:650px){
  .topbar{grid-template-columns:minmax(0,1fr);gap:8px 10px;padding:12px 18px}
@@ -1191,12 +1198,14 @@ button.hashtag:hover{text-decoration:underline}
  .topbar .logo-mark{width:32px;height:32px}
  .topbar-actions{grid-column:1;grid-row:1;gap:3px}
  .topbar-actions>.icon-button{width:28px}
- .topbar-actions>.toolbar-divider,.topbar-actions>.profile-dot,.topbar-actions>[data-action=mute],.topbar-actions>[data-action=fullscreen]{display:none}
+ .topbar-actions>.toolbar-divider,.topbar-tray [data-action=mute],.topbar-tray [data-action=fullscreen]{display:none}
+ .topbar-tray{margin-left:-3px}.topbar-tray-items{padding-left:3px;gap:3px}
  .topbar .capture-button{font-size:0;border:0;padding:0;width:28px;height:28px;flex-shrink:0;gap:0;justify-content:center;background:var(--surface)}
  .capture-button kbd{display:none}
  .topbar .collection-button{width:27px}
- .topbar-today{gap:11px}
- .topbar-today #weather-header{padding-left:11px}
+ .topbar-today{gap:10px}
+ .topbar-today #weather-header{padding-left:10px}
+ .today-weather-art{width:24px;height:26px}
  .date-long{display:none}
  .date-compact{display:inline}
  .date-compact>span:after{content:', '}
@@ -1213,6 +1222,23 @@ button.hashtag:hover{text-decoration:underline}
  .weather-credits{flex-direction:column;text-align:center}
 }
 @media(max-width:340px){.weather-place{display:none}}
+
+/* Quick controls fold in behind the head on the right: the strip opens like a drawer,
+   from nothing to its full width, and each icon fades and slides in a moment after the last. */
+.topbar-tray{display:grid;grid-template-columns:0fr;margin-left:-9px;transition:grid-template-columns .45s cubic-bezier(.22,.9,.24,1)}
+.topbar-tray.open{grid-template-columns:1fr}
+.topbar-tray-clip{min-width:0;overflow:hidden;padding:4px 0;margin:-4px 0}
+.topbar-tray-items{display:flex;align-items:center;gap:9px;padding-left:9px;width:max-content}
+.topbar-tray-items>*{opacity:0;transform:translateX(14px);transition:opacity .2s ease,transform .35s cubic-bezier(.22,.9,.24,1)}
+.topbar-tray.open .topbar-tray-items>*{opacity:1;transform:none;transition:opacity .3s ease,transform .45s cubic-bezier(.22,.9,.24,1)}
+.topbar-tray.open .topbar-tray-items>:nth-child(1){transition-delay:.02s}.topbar-tray.open .topbar-tray-items>:nth-child(2){transition-delay:.05s}
+.topbar-tray.open .topbar-tray-items>:nth-child(3){transition-delay:.08s}.topbar-tray.open .topbar-tray-items>:nth-child(4){transition-delay:.11s}
+.topbar-tray.open .topbar-tray-items>:nth-child(5){transition-delay:.14s}.topbar-tray.open .topbar-tray-items>:nth-child(6){transition-delay:.17s}
+.profile-dot[aria-expanded=true]{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));box-shadow:0 0 0 3px var(--accent-soft)}
+[data-motion=reduced] .topbar-tray,[data-motion=reduced] .topbar-tray-items>*{transition:none}
+@media(prefers-reduced-motion:reduce){.topbar-tray,.topbar-tray-items>*{transition:none}}
+/* On the smallest phones an open strip borrows the wordmark's room, keeping the flame. */
+@media(max-width:400px){.topbar:has(.topbar-tray.open) .wordmark{font-size:0;gap:0}}
 
   </style>
   <script>
@@ -1268,6 +1294,17 @@ const weather=require("ui-weather.js");
 const features = [tasks, quest, habits, vault, character, shop, battle, collection, settings, history, sync, fullscreen, weather];
 const modals = Object.assign({}, ...features.map(f => f.modals));
 const actions = Object.assign({}, ...features.map(f => f.actions));
+// The head on the right folds the quick controls in and out, in place; each device remembers it.
+app.trayOpen = (() => { try { return localStorage.getItem('twesk.topbar-tray') === 'open'; } catch { return false; } })();
+actions['toggle-tray'] = b => {
+  app.trayOpen = !app.trayOpen;
+  try { localStorage.setItem('twesk.topbar-tray', app.trayOpen ? 'open' : 'closed'); } catch {}
+  const tray = $('#topbar-tray');
+  tray?.classList.toggle('open', app.trayOpen);
+  if (tray) tray.inert = !app.trayOpen;
+  const label = `${app.trayOpen ? 'Hide' : 'Show'} quick controls`;
+  b.setAttribute('aria-expanded', String(app.trayOpen)); b.setAttribute('aria-label', label); b.title = label;
+};
 const forms = Object.assign({}, ...features.map(f => f.forms || {}));
 
 function dateLabel() {
@@ -1313,8 +1350,8 @@ function render() {
     h => h.category !== 'harm' && h.logs.some(l => l.day === day),
   ).length;
   $('#app').innerHTML = `
-    <header class="topbar"><div class="topbar-brand"><a class="wordmark" href="" aria-label="Twesk home"><span class="logo-mark">${flameArt()}</span>twesk</a><div class="topbar-today"><time class="topbar-date" datetime="${day}" aria-label="${esc(dateLabel())}"><span class="date-long" aria-hidden="true">${esc(dateLabel())}</span><span class="date-compact" aria-hidden="true"><span>${esc(new Intl.DateTimeFormat('en', { timeZone: app.state.settings.timezone, weekday: 'short' }).format(new Date()))}</span>${esc(new Intl.DateTimeFormat('en', { timeZone: app.state.settings.timezone, month: 'short', day: 'numeric' }).format(new Date()))}</span></time><div id="weather-header">${weather.renderWeather()}</div></div></div>
-    <div class="topbar-actions"><button class="capture-button" data-action="capture" aria-label="Quick capture" title="Quick capture (⌘K)" aria-keyshortcuts="Meta+K">${icon('bolt')}<kbd>⌘ K</kbd></button><span class="toolbar-divider"></span><button class="collection-button" data-action="history" title="Progress history" aria-label="Open progress history">${icon('calendar')}</button><button class="collection-button" data-action="achievements" title="Achievements and monster collection" aria-label="Open achievements">${icon('medal')}</button>${iconButton('theme', app.state.settings.theme === 'dark' ? 'sun' : 'moon', 'Switch to ' + (app.state.settings.theme === 'dark' ? 'light' : 'dark') + ' mode')}${iconButton('mute', app.state.settings.muted ? 'mute' : 'sound', app.state.settings.muted ? 'Unmute sounds' : 'Mute sounds')}${fullscreen.fullscreenButton()}${iconButton('settings', 'settings', 'Settings and backup')}<button class="profile-dot" data-action="settings" aria-label="Your profile">${avatarFaceArt(app.state.appearance)}</button></div></header>
+    <header class="topbar"><div class="topbar-brand"><a class="wordmark" href="" aria-label="Twesk home"><span class="logo-mark">${flameArt()}</span>twesk</a><div class="topbar-today">${weather.weatherArtSlot()}<time class="topbar-date" datetime="${day}" aria-label="${esc(dateLabel())}"><span class="date-long" aria-hidden="true">${esc(dateLabel())}</span><span class="date-compact" aria-hidden="true"><span>${esc(new Intl.DateTimeFormat('en', { timeZone: app.state.settings.timezone, weekday: 'short' }).format(new Date()))}</span>${esc(new Intl.DateTimeFormat('en', { timeZone: app.state.settings.timezone, month: 'short', day: 'numeric' }).format(new Date()))}</span></time><div id="weather-header">${weather.renderWeather()}</div></div></div>
+    <div class="topbar-actions"><button class="capture-button" data-action="capture" aria-label="Quick capture" title="Quick capture (⌘K)" aria-keyshortcuts="Meta+K">${icon('bolt')}<kbd>⌘ K</kbd></button><span class="toolbar-divider"></span><div class="topbar-tray ${app.trayOpen ? 'open' : ''}" id="topbar-tray" ${app.trayOpen ? '' : 'inert'}><div class="topbar-tray-clip"><div class="topbar-tray-items"><button class="collection-button" data-action="history" title="Progress history" aria-label="Open progress history">${icon('calendar')}</button><button class="collection-button" data-action="achievements" title="Achievements and monster collection" aria-label="Open achievements">${icon('medal')}</button>${iconButton('theme', app.state.settings.theme === 'dark' ? 'sun' : 'moon', 'Switch to ' + (app.state.settings.theme === 'dark' ? 'light' : 'dark') + ' mode')}${iconButton('mute', app.state.settings.muted ? 'mute' : 'sound', app.state.settings.muted ? 'Unmute sounds' : 'Mute sounds')}${fullscreen.fullscreenButton()}${iconButton('settings', 'settings', 'Settings and backup')}</div></div></div><button class="profile-dot" data-action="toggle-tray" aria-controls="topbar-tray" aria-expanded="${app.trayOpen}" aria-label="${app.trayOpen ? 'Hide' : 'Show'} quick controls" title="${app.trayOpen ? 'Hide' : 'Show'} quick controls">${avatarFaceArt(app.state.appearance)}</button></div></header>
     <main>
     ${app.saveError ? '<div class="save-warning">' + esc(app.startupWarning || 'Browser saving is unavailable. Export a backup in Settings to keep your progress.') + '</div>' : E.backupDue(app.state, day) ? settings.backupReminder() : ''}
     <div class="dashboard">
@@ -8999,14 +9036,21 @@ function updatedLabel(s) {
   const minutes = Math.max(0, Math.floor((Date.now() - s.data.measuredAt) / 60000));
   return minutes < 1 ? 'Updated just now' : minutes < 60 ? `Updated ${minutes} min ago` : minutes < 1440 ? `Updated ${Math.floor(minutes / 60)}h ago` : `Updated ${Math.floor(minutes / 1440)}d ago`;
 }
-// The header's second line under the date: a small icon, the temperature, the sky, and the place.
+// The large faceted sky beside the date: today's condition, or a gentle placeholder before setup.
+function weatherIcon() {
+  const d = controller.snapshot().data;
+  return weatherArt(d ? weatherCondition(d.code, d.isDay).art : 'partly');
+}
+// Clicking the sky opens the dialog too; the button beside it carries the accessible label.
+const weatherArtSlot = () => `<span class="today-weather-art ${controller.snapshot().data ? '' : 'is-empty'}" id="weather-art" data-action="weather" aria-hidden="true">${weatherIcon()}</span>`;
+// The header's second line under the date: the temperature, the sky, and the place.
 // Everything else (low/high, rain, dew point) lives one click away in the dialog.
 function renderWeather() {
   const s = controller.snapshot(), d = s.data;
-  if (!d) return `<button class="topbar-weather weather-empty" data-action="weather" aria-label="${s.place ? 'Open weather for ' + esc(s.place.name) : 'Set up local weather'}">${weatherArt('partly')}<span class="weather-line"><strong>${s.busy ? 'Finding the weather…' : s.place ? esc(s.place.name) : 'Weather'}</strong><small>${s.busy ? '' : s.place ? 'Tap to retry' : 'Choose your location'}</small></span></button>`;
+  if (!d) return `<button class="topbar-weather weather-empty" data-action="weather" aria-label="${s.place ? 'Open weather for ' + esc(s.place.name) : 'Set up local weather'}"><span class="weather-line"><strong>${s.busy ? 'Finding the weather…' : s.place ? esc(s.place.name) : 'Weather'}</strong><small>${s.busy ? '' : s.place ? 'Tap to retry' : 'Choose your location'}</small></span></button>`;
   const condition = weatherCondition(d.code, d.isDay);
   const label = `Weather in ${s.place.name}: ${condition.label}, ${temperature(d.temperature, true)}. Low ${temperature(d.low)}, high ${temperature(d.high)}. Rain chance this hour ${probability(d.rainChance)}. Dew point ${temperature(d.dewPoint, true)}. ${saved(s) ? 'Saved reading. ' : ''}${updatedLabel(s)}.`;
-  return `<button class="topbar-weather" data-action="weather" aria-label="${esc(label)}" title="${esc(label)}">${weatherArt(condition.art)}<span class="weather-line"><strong class="weather-temperature">${temperature(d.temperature)}</strong><span class="weather-condition">${esc(condition.label)}</span><span class="weather-place">${esc(s.place.name)}</span>${saved(s) ? '<span class="weather-saved">Saved</span>' : ''}</span></button>`;
+  return `<button class="topbar-weather" data-action="weather" aria-label="${esc(label)}" title="${esc(label)}"><span class="weather-line"><strong class="weather-temperature">${temperature(d.temperature)}</strong><span class="weather-condition">${esc(condition.label)}</span><span class="weather-place">${esc(s.place.name)}</span>${saved(s) ? '<span class="weather-saved">Saved</span>' : ''}</span></button>`;
 }
 function reading() {
   const s = controller.snapshot(), d = s.data;
@@ -9037,6 +9081,8 @@ function updateWeather() {
       current.replaceChildren(...next.childNodes);
     }
   }
+  const art = $('#weather-art');
+  if (art) { const next = weatherIcon(); if (art.innerHTML !== next) art.innerHTML = next; art.classList.toggle('is-empty', !controller.snapshot().data); }
   // Polling never redraws a location search or steals its input focus.
   const details = $('#weather-reading');
   if (details) details.innerHTML = reading();
@@ -9071,7 +9117,8 @@ const modals = {
   },
 };
 const actions = {
-  weather() { query = ''; results = []; searchError = ''; searchBusy = false; searchVersion++; openModal({ type: 'weather' }); controller.refresh(); },
+  // Opened from the large sky: focus the weather button first, so closing the dialog returns there.
+  weather(b) { if (b?.id === 'weather-art') $('.topbar-weather')?.focus({ preventScroll: true }); query = ''; results = []; searchError = ''; searchBusy = false; searchVersion++; openModal({ type: 'weather' }); controller.refresh(); },
   'weather-locate'() { controller.locate(); },
   'weather-refresh'() { controller.refresh({ force: true, locate: true }); },
   'weather-unit'(b) { controller.setUnit(b.dataset.unit); view.renderModal(); $(`[data-action="weather-unit"][data-unit="${b.dataset.unit}"]`)?.focus(); },
@@ -9096,7 +9143,7 @@ function installWeather() {
   window.addEventListener('offline', updateWeather);
 }
 
-Object.assign(exports,{renderWeather,onInput,modals,actions,forms,installWeather});
+Object.assign(exports,{weatherIcon,weatherArtSlot,renderWeather,onInput,modals,actions,forms,installWeather});
 },
 "weather.js":function(require,exports){
 // Weather is a device preference, separate from progress, backups, and cloud sync.

@@ -26,6 +26,10 @@ const strong = () => {
   s.hp = E.maxHP(s);
   return s;
 };
+// The history, achievements, theme, sound, full-screen, and settings buttons fold behind the head.
+async function showControls(page) {
+  if (await page.evaluate(() => !document.querySelector('#topbar-tray')?.classList.contains('open'))) await page.click('[data-action="toggle-tray"]');
+}
 // Each test gets a fresh, isolated page; failures leave a screenshot in tests/ui/artifacts/.
 function uiTest(name, fn, options = {}) {
   test(name, { skip }, async () => {
@@ -927,7 +931,7 @@ uiTest('adjusting the duration winds the timer, but a running countdown does not
   await new Promise(r => setTimeout(r, 1100));
   assert.equal(await page.evaluate(() => window.__voices), voices, 'countdown is quiet between HP chimes');
   await page.click('[data-action="quest-play"]');
-  await page.click('[data-action="mute"]');
+  await showControls(page); await page.click('[data-action="mute"]');
   const pausedVoices = await page.evaluate(() => window.__voices);
   await page.evaluate(() => document.querySelector('.quest-dial').focus());
   await page.press('ArrowLeft');
@@ -939,7 +943,7 @@ uiTest('the history calendar shows today’s habit and task', async page => {
   await page.click('#app [data-action="toggle-task"]');
   await page.click('#app .habit-category.body .habit-complete');
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).habits.some(h => h.logs.length));
-  await page.click('#app [data-action="history"]');
+  await showControls(page); await page.click('#app [data-action="history"]');
   await page.waitFor(() => document.querySelector('.history-modal'));
   const s = await page.save();
   assert.ok(await page.exists(`.history-day.today.heat-1[data-day="${today(s)}"]`));
@@ -953,23 +957,44 @@ uiTest('export records the backup date; reset and restore round-trip a save', as
   s.gold = 321;
   s.name = 'Tester';
   await page.open({ save: s });
-  await page.click('.topbar [data-action="settings"]');
+  await showControls(page); await page.click('.topbar [data-action="settings"]');
   await page.click('#settings-form [data-action="export"]');
   await page.waitFor(() => /today/.test(document.querySelector('#backup-status')?.textContent || ''));
   await page.click('[data-action="reset-progress"]');
   await page.click('.modal [data-action="confirm-reset"]');
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).name === 'Adventurer');
   assert.equal((await page.save()).gold, 0);
-  await page.click('.topbar [data-action="settings"]');
+  await showControls(page); await page.click('.topbar [data-action="settings"]');
   await page.click('[data-action="restore-previous"]');
   await page.click('.modal [data-action="confirm-previous"]');
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).name === 'Tester');
   assert.equal((await page.save()).gold, 321);
 });
 
+uiTest('the head folds the quick controls in and out in place, and the device remembers', async page => {
+  await page.open();
+  const state = () => page.evaluate(() => {
+    const tray = document.querySelector('#topbar-tray'), head = document.querySelector('[data-action="toggle-tray"]');
+    return { open: tray.classList.contains('open'), inert: tray.inert, expanded: head.getAttribute('aria-expanded'), width: Math.round(tray.getBoundingClientRect().width), capture: !!document.querySelector('.topbar-actions > [data-action="capture"]') };
+  });
+  assert.deepEqual(await state(), { open: false, inert: true, expanded: 'false', width: 0, capture: true }, 'folded by default; quick capture stays out');
+  await page.click('[data-action="toggle-tray"]');
+  await page.waitFor(() => document.querySelector('#topbar-tray').getBoundingClientRect().width > 150, { message: 'the strip slides open' });
+  assert.deepEqual({ ...(await state()), width: undefined }, { open: true, inert: false, expanded: 'true', width: undefined, capture: true });
+  assert.ok(!(await page.exists('.modal')), 'the head no longer opens settings');
+  await page.goto('/');
+  assert.equal((await state()).open, true, 'remembered after reload');
+  await page.click('.topbar [data-action="settings"]');
+  await page.waitFor(() => document.querySelector('.modal'));
+  await page.press('Escape');
+  await page.click('[data-action="toggle-tray"]');
+  await page.waitFor(() => document.querySelector('#topbar-tray').getBoundingClientRect().width === 0, { message: 'the strip slides closed' });
+  assert.equal((await state()).inert, true, 'folded controls are out of the tab order');
+});
+
 uiTest('Escape closes dialogs and Tab keeps focus inside them', async page => {
   await page.open();
-  await page.click('.topbar [data-action="settings"]');
+  await showControls(page); await page.click('.topbar [data-action="settings"]');
   await page.waitFor(() => document.querySelector('#settings-form'));
   for (let i = 0; i < 25; i++) await page.press('Tab');
   assert.ok(await page.evaluate(() => document.querySelector('#overlay').contains(document.activeElement)));
@@ -1002,6 +1027,7 @@ uiTest('F and the top-bar button go full screen and back, but not while typing',
   await page.waitFor(() => document.querySelector('[data-action="fullscreen"]').getAttribute('aria-pressed') === 'true');
   await page.press('f');
   await page.waitFor(() => !document.fullscreenElement);
+  await showControls(page);
   await page.click('[data-action="fullscreen"]');
   await page.waitFor(() => document.fullscreenElement);
   await page.click('[data-action="fullscreen"]');
@@ -1052,7 +1078,7 @@ uiTest('once installed, the app opens and saves with no server or network', asyn
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).gold === 4);
   await page.cmd('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   page.errors.length = 0; // offline network errors for non-app requests are expected
-  await page.click('.topbar [data-action="settings"]');
+  await showControls(page); await page.click('.topbar [data-action="settings"]');
   assert.match(await page.text('#settings-form .form-actions .small-label'), /^TWESK · VERSION \d/);
   assert.ok(await page.exists('[data-action="refresh-offline"]'), 'the installed app can refresh its offline copy');
 });

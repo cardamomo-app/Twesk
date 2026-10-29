@@ -1,6 +1,6 @@
 // A visible-time clock for combat. A slow frame stretches the replay instead of
 // skipping an impact; nothing catches up while the window is hidden or asleep.
-export function createCombatClock({ requestFrame, cancelFrame, hidden = () => false, onFrame = () => {}, maxFrame = 50 }) {
+export function createCombatClock({ requestFrame, cancelFrame, hidden = () => false, onFrame = () => {}, onResync = () => {}, maxFrame = 50 }) {
   let elapsed = 0, last = null, nextId = 0, frame = null, stopped = false;
   const jobs = new Map();
   function tick(timestamp) {
@@ -8,7 +8,9 @@ export function createCombatClock({ requestFrame, cancelFrame, hidden = () => fa
     if (stopped) return;
     if (hidden()) last = null;
     else {
-      elapsed += last === null ? 0 : Math.max(0, Math.min(maxFrame, timestamp - last));
+      const gap = last === null ? 0 : Math.max(0, timestamp - last);
+      const resync = last === null || gap > maxFrame;
+      elapsed += Math.min(maxFrame, gap);
       last = timestamp;
       // Jobs scheduled by a callback wait for another frame, even with zero delay.
       const due = [...jobs].filter(([, job]) => job.at <= elapsed);
@@ -16,7 +18,7 @@ export function createCombatClock({ requestFrame, cancelFrame, hidden = () => fa
         if (stopped) break;
         if (jobs.delete(id)) job.run();
       }
-      if (!stopped) onFrame(elapsed);
+      if (!stopped) { if (resync) onResync(elapsed); onFrame(elapsed); }
     }
     if (!stopped) frame = requestFrame(tick);
   }

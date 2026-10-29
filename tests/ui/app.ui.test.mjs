@@ -1103,13 +1103,16 @@ uiTest('a real replay keeps spell, pet, and monster effects visible through a sl
   await page.open({ save });
   const before = await page.save();
   await page.evaluate(() => {
-    window.replayProbe = { samples: {}, reused: true, stalled: false, done: false, earlySpell: false, earlyPet: false };
+    window.replayProbe = { samples: {}, reused: true, stalled: false, done: false, earlySpell: false, earlyPet: false, seeks: 0, frames: 0 };
+    const descriptor = Object.getOwnPropertyDescriptor(Animation.prototype, 'currentTime');
+    Object.defineProperty(Animation.prototype, 'currentTime', { ...descriptor, set(value) { window.replayProbe.seeks++; return descriptor.set.call(this, value); } });
     let models = null, turnStarted = null;
     const sample = () => {
       const stage = document.querySelector('#battle-stage');
       if (stage?.dataset.playback) {
         const index = +stage.dataset.step;
         if (index >= 0) {
+          window.replayProbe.frames++;
           const nodes = [...stage.querySelectorAll('[data-battle-model]')].map(el => el.firstElementChild);
           if (!models) models = nodes; else window.replayProbe.reused &&= nodes.every((node, i) => node === models[i]);
           const entry = window.replayProbe.samples[index] ||= { spell: 0, pet: 0, projectile: 0, monster: 0, landed: [] };
@@ -1139,6 +1142,7 @@ uiTest('a real replay keeps spell, pet, and monster effects visible through a sl
   await page.waitFor(() => window.replayProbe.done, { timeout: 20000 });
   const probe = await page.evaluate(() => window.replayProbe);
   assert.equal(probe.stalled, true); assert.equal(probe.reused, true, 'voxel models survive turn changes');
+  assert.ok(probe.seeks < probe.frames, `native motion avoids per-frame animation seeking (${probe.seeks} seeks / ${probe.frames} frames)`);
   assert.equal(probe.earlySpell, false, 'spell burst does not appear during its delay');
   assert.equal(probe.earlyPet, false, 'pet burst does not appear during its delay');
   assert.ok(probe.samples[0].projectile > .5, 'the spell flight has painted frames');
@@ -1147,6 +1151,22 @@ uiTest('a real replay keeps spell, pet, and monster effects visible through a sl
   assert.deepEqual(probe.samples[0].landed, ['impacted', 'spell-landed', 'pet-landed']);
   assert.ok(probe.samples[1].monster > .5, 'the monster hit remains visible');
   assert.ok(probe.samples[1].spell > .5, 'the defensive spell remains visible');
+  const visibility = await page.evaluate(async () => {
+    const animation = document.querySelector('.player .fighter-motion').getAnimations()[0];
+    let hidden = true;
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
+    try {
+      document.dispatchEvent(new Event('visibilitychange'));
+      await new Promise(resolve => setTimeout(resolve, 30));
+      const paused = animation.playState === 'paused', time = animation.currentTime;
+      await new Promise(resolve => setTimeout(resolve, 80));
+      const held = animation.currentTime === time;
+      hidden = false; document.dispatchEvent(new Event('visibilitychange'));
+      await new Promise(resolve => setTimeout(resolve, 80));
+      return { paused, held, resumed: animation.currentTime > time && animation.playState === 'running' };
+    } finally { delete document.hidden; }
+  });
+  assert.deepEqual(visibility, { paused: true, held: true, resumed: true }, 'native motion pauses and resumes with the replay clock');
   await page.click('[data-action="skip-battle"]');
   assert.deepEqual(await page.save(), before, 'replay changes neither health nor rewards');
   assert.equal(await page.exists('.combat-spell, .combat-pet-effect'), false, 'no stale effects after skipping');

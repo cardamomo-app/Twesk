@@ -54,7 +54,7 @@
 .battle-modal .battle-fighter{position:relative;min-width:0;align-self:end;z-index:2}.fighter-scene{height:225px;position:relative;display:flex;align-items:center;justify-content:center}
 .fighter-motion{position:relative;z-index:2;transform-origin:50% 80%;will-change:transform;display:flex;align-items:center;justify-content:center;width:100%;height:100%}
 .battle-modal .battle-fighter .avatar-art{height:225px;width:205px;max-width:100%;padding:0}.battle-modal .battle-fighter .monster-art{height:220px;width:220px;max-width:100%;padding:0;animation:none}
-.battle-modal .battle-fighter>strong{font-size:13px;font-weight:700;position:relative;z-index:2}.battle-modal .battle-fighter .health-bar{max-width:190px;height:7px;margin-top:11px;transition:none}.battle-modal .battle-fighter .health-bar>div{transition:width .4s ease-out}.battle-modal .battle-fighter>small{font-size:10px;margin-top:7px;font-variant-numeric:tabular-nums}
+.battle-modal .battle-fighter>strong{font-size:13px;font-weight:700;position:relative;z-index:2}.battle-modal .battle-fighter .health-bar{max-width:190px;height:7px;margin-top:11px;transition:none}.battle-modal .battle-fighter .health-bar>div{width:100%;transform-origin:left center;transition:transform .4s ease-out}.battle-modal .battle-fighter>small{font-size:10px;margin-top:7px;font-variant-numeric:tabular-nums}
 .battle-divider{color:var(--muted);font-size:10px;font-weight:700;align-self:center;display:flex;align-items:center;justify-content:center;position:relative;z-index:0}.battle-divider i{position:absolute;width:150px;border-top:1px dashed var(--line);top:24px}
 .battle-step{background:var(--surface);border:1px solid var(--line);border-radius:11px;min-height:102px;padding:15px 18px;text-align:center;margin-top:2px}
 .battle-step-content>strong{font-family:var(--heading);font-size:18px;letter-spacing:-.4px;display:block}.battle-step p{font-size:11px;color:var(--secondary);margin-top:5px;line-height:1.7}.battle-step.hit .battle-step-content>strong,.battle-step.lost .battle-step-content>strong{color:var(--danger)}.battle-step.deflect .battle-step-content>strong{color:var(--soul)}.battle-step.rally .battle-step-content>strong{color:var(--heart)}.battle-step.won .battle-step-content>strong{color:var(--green)}
@@ -968,8 +968,9 @@ button.hashtag:hover{text-decoration:underline}
 .spell-guard .spell-impact{left:25%;top:42%}.spell-guard .spell-charge{opacity:.3}
 .impacted .spell-impact{animation:spell-burst .7s ease-out var(--spell-impact-delay,0ms) forwards}.impacted .spell-ward-shield{animation:ward-impact .85s ease-out var(--spell-impact-delay,0ms) forwards}
 @keyframes spell-charge{0%{opacity:0;transform:translate(-50%,-50%) rotate(0) scale(.4)}65%{opacity:.8}100%{opacity:0;transform:translate(-50%,-50%) rotate(45deg) scale(1.2)}}
-@keyframes spell-flight{0%{opacity:0;left:23%;transform:translate(-50%,-50%) scale(.4) rotate(-20deg)}20%{opacity:1}85%{opacity:1}100%{opacity:0;left:77%;transform:translate(-50%,-50%) scale(1.1) rotate(15deg)}}
-@keyframes starfall-dive{0%{opacity:0;left:62%;top:3%;transform:translate(-50%,-50%) scale(.4) rotate(-30deg)}20%,85%{opacity:1}100%{opacity:0;left:77%;top:45%;transform:translate(-50%,-50%) scale(1.2) rotate(15deg)}}
+@keyframes spell-flight{0%{opacity:0;transform:translate(-50%,-50%) scale(.4) rotate(-20deg)}20%{opacity:1}85%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--arena-width)*.54),-50%) scale(1.1) rotate(15deg)}}
+.spell-starfall.spell-attack .spell-projectile{left:62%;top:3%}
+@keyframes starfall-dive{0%{opacity:0;transform:translate(-50%,-50%) scale(.4) rotate(-30deg)}20%,85%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--arena-width)*.15),calc(-50% + var(--arena-height)*.42)) scale(1.2) rotate(15deg)}}
 @keyframes spell-burst{0%{opacity:1;transform:translate(-50%,-50%) scale(.3)}35%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.5)}}
 @keyframes ward-rise{0%{opacity:0;transform:translate(-50%,-40%) scale(.65)}100%{opacity:.85;transform:translate(-50%,-50%) scale(1)}}
 @keyframes ward-impact{0%{opacity:1;transform:translate(-50%,-50%) scale(1.08);filter:drop-shadow(0 0 18px var(--spell))}35%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.18)}}
@@ -978,8 +979,8 @@ button.hashtag:hover{text-decoration:underline}
 :root[data-motion=reduced] .spell-projectile{display:none}:root[data-motion=reduced] .spell-charge{animation:none;opacity:.5}:root[data-motion=reduced] .spell-ward-shield{animation:none!important;opacity:.65}:root[data-motion=reduced] .impacted .spell-impact{animation:none;opacity:.7}
 
 /* Weapon and creature attack signatures, all confined to the arena. */
-.combat-attack{position:absolute;inset:0 0 75px;z-index:3;pointer-events:none;color:var(--attack-color);--target:77%;--source:23%}
-.attack-monster{--target:23%;--source:77%}
+.combat-attack{position:absolute;inset:0 0 75px;z-index:3;pointer-events:none;color:var(--attack-color);--target:77%;--source:23%;--flight-direction:1}
+.attack-monster{--target:23%;--source:77%;--flight-direction:-1}
 .combat-attack>svg{position:absolute;width:135px;height:135px;left:var(--target);top:54%;transform:translate(-50%,-50%);opacity:0;overflow:visible;filter:drop-shadow(0 0 4px color-mix(in srgb,var(--attack-color) 40%,transparent))}
 .combat-attack .attack-projectile{width:75px;height:75px;left:var(--source);animation:creature-projectile .4s ease-in both}
 .impacted .attack-trail{animation:signature-strike .4s ease-out both}
@@ -1014,8 +1015,8 @@ button.hashtag:hover{text-decoration:underline}
 @keyframes signature-miss{0%{opacity:0;transform:translate(-20%,-65%) scale(.6)}25%{opacity:.5}100%{opacity:0;transform:translate(-70%,-40%) scale(1.1)}}
 @keyframes signature-power{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}20%,65%{opacity:.9}100%{opacity:0;transform:translate(-50%,-58%) scale(1.2)}}
 @keyframes signature-freeze{0%{opacity:0;transform:translate(-50%,-40%) scaleY(.5)}20%,80%{opacity:.85;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
-@keyframes signature-drain{0%{opacity:0;left:77%;transform:translate(-50%,-50%) scale(.4)}20%,75%{opacity:.9}100%{opacity:0;left:23%;transform:translate(-50%,-50%) scale(.7)}}
-@keyframes creature-projectile{0%{opacity:0;left:var(--source);transform:translate(-50%,-50%) scale(.4)}20%,85%{opacity:.9}100%{opacity:0;left:var(--target);transform:translate(-50%,-50%) scale(1)}}
+@keyframes signature-drain{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}20%,75%{opacity:.9}100%{opacity:0;transform:translate(calc(-50% - var(--arena-width)*.54),-50%) scale(.7)}}
+@keyframes creature-projectile{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}20%,85%{opacity:.9}100%{opacity:0;transform:translate(calc(-50% + var(--arena-width)*.54*var(--flight-direction)),-50%) scale(1)}}
 @keyframes dagger-thrust{0%,100%{transform:none}20%{transform:translateX(-5px) rotate(-4deg)}32%,40%{transform:translateX(var(--lunge)) rotate(3deg)}65%{transform:translateX(8px)}}
 @keyframes axe-chop{0%,100%{transform:none}18%{transform:translate(-8px,-9px) rotate(-12deg)}32%,40%{transform:translateX(var(--lunge)) rotate(14deg)}65%{transform:translateX(9px) rotate(-3deg)}}
 @keyframes unarmed-jab{0%,100%{transform:none}18%{transform:translateX(-5px) rotate(-6deg)}33%,41%{transform:translateX(calc(var(--lunge)*.8)) rotate(9deg)}}
@@ -1069,8 +1070,8 @@ button.hashtag:hover{text-decoration:underline}
 .impacted .pet-impact{animation:pet-burst .75s ease-out var(--pet-impact-delay,0ms) forwards}
 .impacted .pet-effect-guard .pet-impact{animation:shell-flash .8s ease-out var(--pet-impact-delay,0ms) forwards}
 .impacted .pet-effect-deflect .pet-impact{animation:pet-leaf-burst .8s ease-out var(--pet-impact-delay,0ms) forwards}
-@keyframes pet-flight{0%{opacity:0;left:9%;top:74%;transform:translate(-50%,-50%) scale(.45) rotate(-15deg)}20%,80%{opacity:1}100%{opacity:0;left:77%;top:72%;transform:translate(-50%,-50%) scale(1.1) rotate(20deg)}}
-@keyframes pet-heal-flight{0%{opacity:0;left:9%;top:74%;transform:translate(-50%,-50%) scale(.5)}20%,85%{opacity:1}100%{opacity:0;left:23%;top:52%;transform:translate(-50%,-50%) scale(1.15)}}
+@keyframes pet-flight{0%{opacity:0;transform:translate(-50%,-50%) scale(.45) rotate(-15deg)}20%,80%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--arena-width)*.68),calc(-50% - var(--arena-height)*.02)) scale(1.1) rotate(20deg)}}
+@keyframes pet-heal-flight{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}20%,85%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--arena-width)*.14),calc(-50% - var(--arena-height)*.22)) scale(1.15)}}
 @keyframes pet-burst{0%{opacity:1;transform:translate(-50%,-50%) scale(.4)}40%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}}
 @keyframes shell-flash{0%{opacity:.9;transform:translate(-50%,-50%) scale(.85)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.04)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.15)}}
 @keyframes pet-leaf-charge{0%{opacity:0;transform:translate(-50%,-50%) rotate(-45deg) scale(.7)}100%{opacity:.6;transform:translate(-50%,-50%) rotate(0) scale(1)}}
@@ -1079,8 +1080,9 @@ button.hashtag:hover{text-decoration:underline}
 @media(prefers-reduced-motion:reduce){.battle-companion *{animation:none!important;transition:none!important}.pet-projectile{display:none}.pet-effect-deflect .pet-impact{animation:none;opacity:.4}.impacted .pet-impact{animation:none!important;opacity:.7}}
 :root[data-motion=reduced] .battle-companion *{animation:none!important;transition:none!important}:root[data-motion=reduced] .pet-projectile{display:none}:root[data-motion=reduced] .pet-effect-deflect .pet-impact{animation:none;opacity:.4}:root[data-motion=reduced] .impacted .pet-impact{animation:none!important;opacity:.7}
 
-/* The replay clock advances these animations together, including after a slow frame or sleep. */
-.battle-stage[data-playback],.battle-stage[data-playback] *,.battle-stage[data-playback]::before,.battle-stage[data-playback]::after,.battle-stage[data-playback] *::before,.battle-stage[data-playback] *::after{animation-play-state:paused!important}
+/* Let the compositor run continuous motion; the replay only resynchronizes after a stall. */
+.battle-stage .companion-art,.battle-stage .spell-projectile,.battle-stage .pet-projectile,.battle-stage .attack-projectile{will-change:transform,opacity}
+.modal-open #app .monster-art{animation-play-state:paused}
 
 /* Keep the brand, date, and every control readable on the narrowest phones. */
 @media(max-width:400px){.topbar{height:auto;min-height:90px;padding-top:10px;padding-bottom:10px;flex-direction:column;align-items:stretch;gap:5px}.topbar-brand{width:100%;justify-content:space-between;flex-shrink:0}.topbar-date{max-width:none;white-space:nowrap;padding-left:0;border-left:0;font-size:9px;text-align:right}.topbar-actions{align-self:flex-end}}
@@ -7508,9 +7510,9 @@ function renderBattleModal() {
     `<div class="battle-body">
     <div class="battle-toolbar"><span>${finished ? `${round} rounds` : `${index < 0 ? 'GET READY' : `ROUND ${round} · ${event?.type === 'attack' ? 'YOUR TURN' : event?.type === 'rally' ? 'RECOVERY' : 'MONSTER’S TURN'}`}`}</span><div>${app.modal.replay ? '<span class="replay-label">REPLAY</span>' : ''}<span>${finished ? 'Encounter complete' : `Step ${Math.max(0, index + 1)} / ${r.events.length}`}</span><button class="icon-button" data-action="battle-mute" title="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}" aria-label="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}">${icon(app.state.settings.muted ? 'mute' : 'sound')}</button></div></div>
     <div class="battle-stage ${stageClass} ${pet ? 'has-companion' : ''}" id="battle-stage" ${!finished && app.modal.playback ? 'data-playback="true"' : ''} data-step="${index}" style="--attack-color:${attackCue?.profile?.color || 'var(--accent)'};--spell-delay:${timing.spellStart}ms;--spell-flight:${(timing.spellImpact ?? timing.impact) - timing.spellStart}ms;--spell-impact-delay:${Math.max(0, (timing.spellImpact ?? timing.impact) - timing.impact)}ms;--pet-delay:${timing.petStart}ms;--pet-flight:${(timing.petImpact ?? timing.impact) - timing.petStart}ms;--pet-impact-delay:${Math.max(0, (timing.petImpact ?? timing.impact) - timing.impact)}ms">${combatAttackArt(attackCue)}${spellAnimation(spellCue)}${combatPetArt(petCue)}${finished && r.won ? '<div class="victory-banner" aria-hidden="true"><span class="victory-rays"></span><strong>VICTORY</strong></div>' : ''}
-      <div class="battle-fighter player"><div class="fighter-scene"><div class="fighter-motion" data-battle-model="player">${model('player')}</div>${effect('player')}${companionScene(pet, petHat, petCue, { ready: index < 0, finished, won: r.won, art: visual.pet })}</div><strong>${esc(r.playerName || app.state.name)}</strong><div class="health-bar" role="progressbar" aria-label="Adventurer health" aria-valuemin="0" aria-valuemax="${maximum}" aria-valuenow="${hp}" id="battle-player-bar"><div style="width:${(hp / maximum) * 100}%"></div></div><small id="battle-player-hp">${hp} / ${maximum} HP</small></div>
+      <div class="battle-fighter player"><div class="fighter-scene"><div class="fighter-motion" data-battle-model="player">${model('player')}</div>${effect('player')}${companionScene(pet, petHat, petCue, { ready: index < 0, finished, won: r.won, art: visual.pet })}</div><strong>${esc(r.playerName || app.state.name)}</strong><div class="health-bar" role="progressbar" aria-label="Adventurer health" aria-valuemin="0" aria-valuemax="${maximum}" aria-valuenow="${hp}" id="battle-player-bar"><div style="transform:scaleX(${hp / maximum})"></div></div><small id="battle-player-hp">${hp} / ${maximum} HP</small></div>
       <div class="battle-divider"><span>VS</span><i></i></div>
-      <div class="battle-fighter monster"><div class="fighter-scene"><div class="fighter-motion" data-battle-model="monster">${finished && r.won ? visual.defeated : model('monster')}</div>${effect('monster')}</div><strong>${monsterName(r.monster)}</strong><div class="health-bar enemy" role="progressbar" aria-label="Monster health" aria-valuemin="0" aria-valuemax="${enemyMax}" aria-valuenow="${enemy}" id="battle-enemy-bar"><div style="width:${(enemy / enemyMax) * 100}%"></div></div><small id="battle-enemy-hp">${enemy} / ${enemyMax} HP</small></div>
+      <div class="battle-fighter monster"><div class="fighter-scene"><div class="fighter-motion" data-battle-model="monster">${finished && r.won ? visual.defeated : model('monster')}</div>${effect('monster')}</div><strong>${monsterName(r.monster)}</strong><div class="health-bar enemy" role="progressbar" aria-label="Monster health" aria-valuemin="0" aria-valuemax="${enemyMax}" aria-valuenow="${enemy}" id="battle-enemy-bar"><div style="transform:scaleX(${enemy / enemyMax})"></div></div><small id="battle-enemy-hp">${enemy} / ${enemyMax} HP</small></div>
     </div>
     <div class="battle-step ${finished ? (r.won ? 'won' : 'lost') : step?.tone || 'ready'}">${reservedSteps}<div class="battle-step-current" aria-live="polite">${stepContent(currentStep)}</div></div>
     ${finished ? `<div class="battle-result">${r.won ? `<div class="loot-box loot-reveal">${r.loot.type === 'gold' ? icon('coin') + `<strong>+${r.loot.amount} gold</strong>` : itemArt(E.SHOP.find(i => i.id === r.loot.id)) + `<strong>${E.SHOP.find(i => i.id === r.loot.id).name}</strong>`}<span>${app.modal.replay ? 'Previously earned' : r.loot.type === 'gold' ? 'Added to your pouch' : 'Added to your equipment'}</span></div><button class="button primary wide" data-action="close-modal">Back to dashboard</button>` : `${!app.modal.replay ? `<button class="button primary wide" data-action="recover">${icon('pencil')}Reflect & recover</button>` : ''}<button class="button secondary wide" data-action="close-modal">Back to dashboard</button>`}</div>` : ''}
@@ -7536,21 +7538,38 @@ function renderBattleModal() {
 const battleTimers = new Set();
 let battleClock = null, battleSoundScene = null;
 const battleAnimations = new Map();
+function setBattleAnimationTime(animation, record, elapsed, paused = false) {
+  const time = Math.max(0, elapsed - record.start);
+  animation.currentTime = Math.min(time, record.end);
+  // Playing a finished animation would restart it. Keep completed bursts at their end.
+  if (paused || time >= record.end) animation.pause(); else animation.play();
+}
 function captureBattleAnimations() {
   if (!battleClock) return;
-  const current = new Set($('#battle-stage')?.getAnimations({ subtree: true }) || []);
+  const stage = $('#battle-stage');
+  if (stage) {
+    // Travel is measured once per beat, never by animating layout positions each frame.
+    stage.style.setProperty('--arena-width', `${stage.clientWidth}px`);
+    stage.style.setProperty('--arena-height', `${stage.clientHeight - (matchMedia('(max-width:560px)').matches ? 68 : 75)}px`);
+  }
+  const current = new Set(stage?.getAnimations({ subtree: true }) || []);
   for (const animation of battleAnimations.keys()) if (!current.has(animation)) battleAnimations.delete(animation);
   for (const animation of current) if (!battleAnimations.has(animation)) {
-    animation.pause(); battleAnimations.set(animation, battleClock.elapsed);
+    const record = { start: battleClock.elapsed, end: animation.effect?.getComputedTiming().endTime ?? Infinity };
+    battleAnimations.set(animation, record);
+    setBattleAnimationTime(animation, record, battleClock.elapsed);
   }
 }
-function updateBattleAnimations(elapsed) {
-  for (const [animation, start] of battleAnimations) animation.currentTime = elapsed - start;
+function resyncBattleAnimations(elapsed, paused = false) {
+  for (const [animation, record] of battleAnimations) setBattleAnimationTime(animation, record, elapsed, paused);
 }
 document.addEventListener('visibilitychange', () => {
   battleClock?.resetFrame();
+  if (battleClock) resyncBattleAnimations(battleClock.elapsed, document.hidden);
   if (document.hidden) battleAudio.stop();
 });
+window.addEventListener('resize', () => { if (battleClock) captureBattleAnimations(); });
+
 const battleAudio = {
   unlock: unlockSfx,
   play: (name, options) => playSfx(name, { ...options, channel: 'battle' }),
@@ -7642,7 +7661,7 @@ function animateBattle(result, initialHP, replay = false) {
   app.busy = true;
   app.modal = { type: 'battle', result, index: -1, initialHP, finished: false, impact: false, replay, playback: true };
   view.render();
-  const clock = battleClock = createCombatClock({ requestFrame: fn => requestAnimationFrame(fn), cancelFrame: id => cancelAnimationFrame(id), hidden: () => document.hidden, onFrame: updateBattleAnimations });
+  const clock = battleClock = createCombatClock({ requestFrame: fn => requestAnimationFrame(fn), cancelFrame: id => cancelAnimationFrame(id), hidden: () => document.hidden, onResync: resyncBattleAnimations });
   captureBattleAnimations();
   const play = sounds => { for (const [name, options] of sounds) battleAudio.play(name, options); };
   const advance = () => {
@@ -7663,7 +7682,7 @@ function animateBattle(result, initialHP, replay = false) {
       const maximum = result.maxHP || E.maxHP(app.state), enemyMax = E.monsterStats(result.monster).hp;
       for (const [side, hp, max] of [['player', event.hp, maximum], ['enemy', event.enemy, enemyMax]]) {
         const bar = $('#battle-' + side + '-bar');
-        if (bar) { bar.firstElementChild.style.width = (hp / max) * 100 + '%'; bar.setAttribute('aria-valuenow', hp); $('#battle-' + side + '-hp').textContent = `${hp} / ${max} HP`; }
+        if (bar) { bar.firstElementChild.style.transform = `scaleX(${hp / max})`; bar.setAttribute('aria-valuenow', hp); $('#battle-' + side + '-hp').textContent = `${hp} / ${max} HP`; }
       }
       play(turn.impact);
       if (turn.grunt.length) clock.after(turn.finishing ? 140 : 80, () => play(turn.grunt));
@@ -7884,7 +7903,7 @@ Object.assign(exports,{WEAPON_ATTACKS,MONSTER_ATTACKS,weaponAttackProfile,monste
 "combat-playback.js":function(require,exports){
 // A visible-time clock for combat. A slow frame stretches the replay instead of
 // skipping an impact; nothing catches up while the window is hidden or asleep.
-function createCombatClock({ requestFrame, cancelFrame, hidden = () => false, onFrame = () => {}, maxFrame = 50 }) {
+function createCombatClock({ requestFrame, cancelFrame, hidden = () => false, onFrame = () => {}, onResync = () => {}, maxFrame = 50 }) {
   let elapsed = 0, last = null, nextId = 0, frame = null, stopped = false;
   const jobs = new Map();
   function tick(timestamp) {
@@ -7892,7 +7911,9 @@ function createCombatClock({ requestFrame, cancelFrame, hidden = () => false, on
     if (stopped) return;
     if (hidden()) last = null;
     else {
-      elapsed += last === null ? 0 : Math.max(0, Math.min(maxFrame, timestamp - last));
+      const gap = last === null ? 0 : Math.max(0, timestamp - last);
+      const resync = last === null || gap > maxFrame;
+      elapsed += Math.min(maxFrame, gap);
       last = timestamp;
       // Jobs scheduled by a callback wait for another frame, even with zero delay.
       const due = [...jobs].filter(([, job]) => job.at <= elapsed);
@@ -7900,7 +7921,7 @@ function createCombatClock({ requestFrame, cancelFrame, hidden = () => false, on
         if (stopped) break;
         if (jobs.delete(id)) job.run();
       }
-      if (!stopped) onFrame(elapsed);
+      if (!stopped) { if (resync) onResync(elapsed); onFrame(elapsed); }
     }
     if (!stopped) frame = requestFrame(tick);
   }

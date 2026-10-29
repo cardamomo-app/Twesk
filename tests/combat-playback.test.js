@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createCombatClock, combatTurnTiming } from '../combat-playback.js';
-function harness() {
+function harness(options = {}) {
   let callback, timestamp = 0, hidden = false;
   const frames = [];
-  const clock = createCombatClock({ requestFrame(fn) { callback = fn; return 1; }, cancelFrame() { callback = null; }, hidden: () => hidden, onFrame: time => frames.push(time) });
+  const clock = createCombatClock({ requestFrame(fn) { callback = fn; return 1; }, cancelFrame() { callback = null; }, hidden: () => hidden, onFrame: time => frames.push(time), onResync: options.onResync });
   return { clock, frames, step(ms = 16) { timestamp += ms; const fn = callback; callback = null; fn?.(timestamp); }, hide(value) { hidden = value; clock.resetFrame(); }, advance(ms) { for (let i = 0; i < ms; i += 20) this.step(20); } };
 }
 test('a stalled frame cannot run impact and the next turn back-to-back', () => {
@@ -39,4 +39,15 @@ test('spell and pet effects have distinct arrivals and enough time to finish, in
     assert.ok(t.duration - t.petImpact >= (reduced ? 700 : 1000));
   }
   assert.equal(combatTurnTiming().duration, 1650);
+});
+
+test('normal frames do not force animation seeks; only stalls and resume resynchronize', () => {
+  const syncs = [], h = harness({ onResync: time => syncs.push(time) });
+  h.step(); for (let i = 0; i < 180; i++) h.step(16);
+  assert.equal(syncs.length, 1, 'native animation runs uninterrupted between ordinary frames');
+  h.step(650); assert.equal(syncs.length, 2, 'one correction after a stall');
+  for (let i = 0; i < 60; i++) h.step(16);
+  assert.equal(syncs.length, 2);
+  h.hide(true); h.step(10000); h.hide(false); h.step(10000);
+  assert.equal(syncs.length, 3, 'one correction after resuming'); h.clock.stop();
 });

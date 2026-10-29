@@ -40,7 +40,7 @@
 .battle-modal .battle-fighter{position:relative;min-width:0;align-self:end;z-index:2}.fighter-scene{height:225px;position:relative;display:flex;align-items:center;justify-content:center}
 .fighter-motion{position:relative;z-index:2;transform-origin:50% 80%;will-change:transform;display:flex;align-items:center;justify-content:center;width:100%;height:100%}
 .battle-modal .battle-fighter .avatar-art{height:225px;width:205px;max-width:100%;padding:0}.battle-modal .battle-fighter .monster-art{height:220px;width:220px;max-width:100%;padding:0;animation:none}
-.battle-modal .battle-fighter>strong{font-size:13px;font-weight:700;position:relative;z-index:2}.battle-modal .battle-fighter .health-bar{max-width:190px;height:7px;margin-top:11px;transition:none}.battle-modal .battle-fighter .health-bar>div{transition:width .4s ease-out}.battle-modal .battle-fighter>small{font-size:10px;margin-top:7px;font-variant-numeric:tabular-nums}
+.battle-modal .battle-fighter>strong{font-size:13px;font-weight:700;position:relative;z-index:2}.battle-modal .battle-fighter .health-bar{max-width:190px;height:7px;margin-top:11px;transition:none}.battle-modal .battle-fighter .health-bar>div{width:100%;transform-origin:left center;transition:transform .4s ease-out}.battle-modal .battle-fighter>small{font-size:10px;margin-top:7px;font-variant-numeric:tabular-nums}
 .battle-divider{color:var(--muted);font-size:10px;font-weight:700;align-self:center;display:flex;align-items:center;justify-content:center;position:relative;z-index:0}.battle-divider i{position:absolute;width:150px;border-top:1px dashed var(--line);top:24px}
 .battle-step{background:var(--surface);border:1px solid var(--line);border-radius:11px;min-height:102px;padding:15px 18px;text-align:center;margin-top:2px}
 .battle-step-content>strong{font-family:var(--heading);font-size:18px;letter-spacing:-.4px;display:block}.battle-step p{font-size:11px;color:var(--secondary);margin-top:5px;line-height:1.7}.battle-step.hit .battle-step-content>strong,.battle-step.lost .battle-step-content>strong{color:var(--danger)}.battle-step.deflect .battle-step-content>strong{color:var(--soul)}.battle-step.rally .battle-step-content>strong{color:var(--heart)}.battle-step.won .battle-step-content>strong{color:var(--green)}
@@ -954,8 +954,9 @@ button.hashtag:hover{text-decoration:underline}
 .spell-guard .spell-impact{left:25%;top:42%}.spell-guard .spell-charge{opacity:.3}
 .impacted .spell-impact{animation:spell-burst .7s ease-out var(--spell-impact-delay,0ms) forwards}.impacted .spell-ward-shield{animation:ward-impact .85s ease-out var(--spell-impact-delay,0ms) forwards}
 @keyframes spell-charge{0%{opacity:0;transform:translate(-50%,-50%) rotate(0) scale(.4)}65%{opacity:.8}100%{opacity:0;transform:translate(-50%,-50%) rotate(45deg) scale(1.2)}}
-@keyframes spell-flight{0%{opacity:0;left:23%;transform:translate(-50%,-50%) scale(.4) rotate(-20deg)}20%{opacity:1}85%{opacity:1}100%{opacity:0;left:77%;transform:translate(-50%,-50%) scale(1.1) rotate(15deg)}}
-@keyframes starfall-dive{0%{opacity:0;left:62%;top:3%;transform:translate(-50%,-50%) scale(.4) rotate(-30deg)}20%,85%{opacity:1}100%{opacity:0;left:77%;top:45%;transform:translate(-50%,-50%) scale(1.2) rotate(15deg)}}
+@keyframes spell-flight{0%{opacity:0;transform:translate(-50%,-50%) scale(.4) rotate(-20deg)}20%{opacity:1}85%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--arena-width)*.54),-50%) scale(1.1) rotate(15deg)}}
+.spell-starfall.spell-attack .spell-projectile{left:62%;top:3%}
+@keyframes starfall-dive{0%{opacity:0;transform:translate(-50%,-50%) scale(.4) rotate(-30deg)}20%,85%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--arena-width)*.15),calc(-50% + var(--arena-height)*.42)) scale(1.2) rotate(15deg)}}
 @keyframes spell-burst{0%{opacity:1;transform:translate(-50%,-50%) scale(.3)}35%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.5)}}
 @keyframes ward-rise{0%{opacity:0;transform:translate(-50%,-40%) scale(.65)}100%{opacity:.85;transform:translate(-50%,-50%) scale(1)}}
 @keyframes ward-impact{0%{opacity:1;transform:translate(-50%,-50%) scale(1.08);filter:drop-shadow(0 0 18px var(--spell))}35%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.18)}}
@@ -964,8 +965,8 @@ button.hashtag:hover{text-decoration:underline}
 :root[data-motion=reduced] .spell-projectile{display:none}:root[data-motion=reduced] .spell-charge{animation:none;opacity:.5}:root[data-motion=reduced] .spell-ward-shield{animation:none!important;opacity:.65}:root[data-motion=reduced] .impacted .spell-impact{animation:none;opacity:.7}
 
 /* Weapon and creature attack signatures, all confined to the arena. */
-.combat-attack{position:absolute;inset:0 0 75px;z-index:3;pointer-events:none;color:var(--attack-color);--target:77%;--source:23%}
-.attack-monster{--target:23%;--source:77%}
+.combat-attack{position:absolute;inset:0 0 75px;z-index:3;pointer-events:none;color:var(--attack-color);--target:77%;--source:23%;--flight-direction:1}
+.attack-monster{--target:23%;--source:77%;--flight-direction:-1}
 .combat-attack>svg{position:absolute;width:135px;height:135px;left:var(--target);top:54%;transform:translate(-50%,-50%);opacity:0;overflow:visible;filter:drop-shadow(0 0 4px color-mix(in srgb,var(--attack-color) 40%,transparent))}
 .combat-attack .attack-projectile{width:75px;height:75px;left:var(--source);animation:creature-projectile .4s ease-in both}
 .impacted .attack-trail{animation:signature-strike .4s ease-out both}
@@ -1000,8 +1001,8 @@ button.hashtag:hover{text-decoration:underline}
 @keyframes signature-miss{0%{opacity:0;transform:translate(-20%,-65%) scale(.6)}25%{opacity:.5}100%{opacity:0;transform:translate(-70%,-40%) scale(1.1)}}
 @keyframes signature-power{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}20%,65%{opacity:.9}100%{opacity:0;transform:translate(-50%,-58%) scale(1.2)}}
 @keyframes signature-freeze{0%{opacity:0;transform:translate(-50%,-40%) scaleY(.5)}20%,80%{opacity:.85;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
-@keyframes signature-drain{0%{opacity:0;left:77%;transform:translate(-50%,-50%) scale(.4)}20%,75%{opacity:.9}100%{opacity:0;left:23%;transform:translate(-50%,-50%) scale(.7)}}
-@keyframes creature-projectile{0%{opacity:0;left:var(--source);transform:translate(-50%,-50%) scale(.4)}20%,85%{opacity:.9}100%{opacity:0;left:var(--target);transform:translate(-50%,-50%) scale(1)}}
+@keyframes signature-drain{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}20%,75%{opacity:.9}100%{opacity:0;transform:translate(calc(-50% - var(--arena-width)*.54),-50%) scale(.7)}}
+@keyframes creature-projectile{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}20%,85%{opacity:.9}100%{opacity:0;transform:translate(calc(-50% + var(--arena-width)*.54*var(--flight-direction)),-50%) scale(1)}}
 @keyframes dagger-thrust{0%,100%{transform:none}20%{transform:translateX(-5px) rotate(-4deg)}32%,40%{transform:translateX(var(--lunge)) rotate(3deg)}65%{transform:translateX(8px)}}
 @keyframes axe-chop{0%,100%{transform:none}18%{transform:translate(-8px,-9px) rotate(-12deg)}32%,40%{transform:translateX(var(--lunge)) rotate(14deg)}65%{transform:translateX(9px) rotate(-3deg)}}
 @keyframes unarmed-jab{0%,100%{transform:none}18%{transform:translateX(-5px) rotate(-6deg)}33%,41%{transform:translateX(calc(var(--lunge)*.8)) rotate(9deg)}}
@@ -1055,8 +1056,8 @@ button.hashtag:hover{text-decoration:underline}
 .impacted .pet-impact{animation:pet-burst .75s ease-out var(--pet-impact-delay,0ms) forwards}
 .impacted .pet-effect-guard .pet-impact{animation:shell-flash .8s ease-out var(--pet-impact-delay,0ms) forwards}
 .impacted .pet-effect-deflect .pet-impact{animation:pet-leaf-burst .8s ease-out var(--pet-impact-delay,0ms) forwards}
-@keyframes pet-flight{0%{opacity:0;left:9%;top:74%;transform:translate(-50%,-50%) scale(.45) rotate(-15deg)}20%,80%{opacity:1}100%{opacity:0;left:77%;top:72%;transform:translate(-50%,-50%) scale(1.1) rotate(20deg)}}
-@keyframes pet-heal-flight{0%{opacity:0;left:9%;top:74%;transform:translate(-50%,-50%) scale(.5)}20%,85%{opacity:1}100%{opacity:0;left:23%;top:52%;transform:translate(-50%,-50%) scale(1.15)}}
+@keyframes pet-flight{0%{opacity:0;transform:translate(-50%,-50%) scale(.45) rotate(-15deg)}20%,80%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--arena-width)*.68),calc(-50% - var(--arena-height)*.02)) scale(1.1) rotate(20deg)}}
+@keyframes pet-heal-flight{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}20%,85%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--arena-width)*.14),calc(-50% - var(--arena-height)*.22)) scale(1.15)}}
 @keyframes pet-burst{0%{opacity:1;transform:translate(-50%,-50%) scale(.4)}40%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}}
 @keyframes shell-flash{0%{opacity:.9;transform:translate(-50%,-50%) scale(.85)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.04)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.15)}}
 @keyframes pet-leaf-charge{0%{opacity:0;transform:translate(-50%,-50%) rotate(-45deg) scale(.7)}100%{opacity:.6;transform:translate(-50%,-50%) rotate(0) scale(1)}}
@@ -1065,8 +1066,9 @@ button.hashtag:hover{text-decoration:underline}
 @media(prefers-reduced-motion:reduce){.battle-companion *{animation:none!important;transition:none!important}.pet-projectile{display:none}.pet-effect-deflect .pet-impact{animation:none;opacity:.4}.impacted .pet-impact{animation:none!important;opacity:.7}}
 :root[data-motion=reduced] .battle-companion *{animation:none!important;transition:none!important}:root[data-motion=reduced] .pet-projectile{display:none}:root[data-motion=reduced] .pet-effect-deflect .pet-impact{animation:none;opacity:.4}:root[data-motion=reduced] .impacted .pet-impact{animation:none!important;opacity:.7}
 
-/* The replay clock advances these animations together, including after a slow frame or sleep. */
-.battle-stage[data-playback],.battle-stage[data-playback] *,.battle-stage[data-playback]::before,.battle-stage[data-playback]::after,.battle-stage[data-playback] *::before,.battle-stage[data-playback] *::after{animation-play-state:paused!important}
+/* Let the compositor run continuous motion; the replay only resynchronizes after a stall. */
+.battle-stage .companion-art,.battle-stage .spell-projectile,.battle-stage .pet-projectile,.battle-stage .attack-projectile{will-change:transform,opacity}
+.modal-open #app .monster-art{animation-play-state:paused}
 
 /* Keep the brand, date, and every control readable on the narrowest phones. */
 @media(max-width:400px){.topbar{height:auto;min-height:90px;padding-top:10px;padding-bottom:10px;flex-direction:column;align-items:stretch;gap:5px}.topbar-brand{width:100%;justify-content:space-between;flex-shrink:0}.topbar-date{max-width:none;white-space:nowrap;padding-left:0;border-left:0;font-size:9px;text-align:right}.topbar-actions{align-self:flex-end}}

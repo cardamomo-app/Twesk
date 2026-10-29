@@ -1,10 +1,10 @@
 // Opening and closing dialogs, saving changes as transactions, and seal notifications.
-import { awardAchievements } from './achievements.js?v=0.42.4';
-import { badgeArt } from './badge-art.js?v=0.42.4';
-import { $, app, esc, persist, toast, today, view } from './ui-core.js?v=0.42.4';
-import { burst, motionOK, sound } from './ui-effects.js?v=0.42.4';
-import { hideStatTooltip } from './ui-stat-tooltip.js?v=0.42.4';
-import * as E from './engine.js?v=0.42.4';
+import { awardAchievements } from './achievements.js?v=0.42.5';
+import { badgeArt } from './badge-art.js?v=0.42.5';
+import { $, app, esc, persist, toast, today, view } from './ui-core.js?v=0.42.5';
+import { burst, motionOK, sound } from './ui-effects.js?v=0.42.5';
+import { hideStatTooltip } from './ui-stat-tooltip.js?v=0.42.5';
+import * as E from './engine.js?v=0.42.5';
 export function commit(fn, { deferBadges = false } = {}) {
   if (app.busy) return;
   // Only commit a complete successful transaction.

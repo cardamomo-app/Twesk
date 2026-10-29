@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombatClock, combatTurnTiming, syncCombatAnimation } from '../combat-playback.js';
+import { createCombatClock, combatTurnTiming, syncCombatAnimation, createCombatImpactSequence } from '../combat-playback.js';
 function harness(options = {}) {
   let callback, timestamp = 0, hidden = false;
   const frames = [];
@@ -98,4 +98,18 @@ test('compositor motion that finishes during a stalled frame must stay finished'
   syncCombatAnimation(animation, record, 300);
   assert.equal(animation.currentTime, 700);
   assert.equal(animation.plays, 0);
+});
+test('animation arrivals and fallback timers apply each impact exactly once, in order', () => {
+  const landed=[], land=createCombatImpactSequence(['impact','spell','pet'],phase => landed.push(phase));
+  land('impact');land('impact');land('spell');land('spell');land('pet');land('pet');land('impact');
+  assert.deepEqual(landed,['impact','spell','pet']);
+  const resumed=[], resume=createCombatImpactSequence(['impact','spell','pet'],phase => resumed.push(phase));
+  resume('unknown');resume('pet');resume('spell');resume('impact');
+  assert.deepEqual(resumed,['impact','spell','pet'],'late arrivals never apply an older HP snapshot');
+});
+test('wards, shell guards, and fox deflections land with the incoming attack', () => {
+  for(const reduced of [false,true]) for(const mode of ['guard','deflect']) {
+    const t=combatTurnTiming({spell:{mode:'guard'},pet:{mode},reduced});
+    assert.equal(t.spellImpact,t.impact);assert.equal(t.petImpact,t.impact);assert.equal(t.petStart,0);
+  }
 });

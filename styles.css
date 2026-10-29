@@ -40,7 +40,7 @@
 .battle-modal .battle-fighter{position:relative;min-width:0;align-self:end;z-index:2}.fighter-scene{height:225px;position:relative;display:flex;align-items:center;justify-content:center}
 .fighter-motion{position:relative;z-index:2;transform-origin:50% 80%;will-change:transform;display:flex;align-items:center;justify-content:center;width:100%;height:100%}
 .battle-modal .battle-fighter .avatar-art{height:225px;width:205px;max-width:100%;padding:0}.battle-modal .battle-fighter .monster-art{height:220px;width:220px;max-width:100%;padding:0;animation:none}
-.battle-modal .battle-fighter>strong{font-size:13px;font-weight:700;position:relative;z-index:2}.battle-modal .battle-fighter .health-bar{max-width:190px;height:7px;margin-top:11px;transition:none}.battle-modal .battle-fighter .health-bar>div{width:100%;transform-origin:left center;transition:transform .4s ease-out}.battle-modal .battle-fighter>small{font-size:10px;margin-top:7px;font-variant-numeric:tabular-nums}
+.battle-modal .battle-fighter>strong{font-size:13px;font-weight:700;position:relative;z-index:2}.battle-modal .battle-fighter .health-bar{max-width:190px;height:7px;margin-top:11px;transition:none}.battle-modal .battle-fighter .health-bar>div{width:100%;transform-origin:left center;transition:transform .16s ease-out}.battle-modal .battle-fighter>small{font-size:10px;margin-top:7px;font-variant-numeric:tabular-nums}
 .battle-divider{color:var(--muted);font-size:10px;font-weight:700;align-self:center;display:flex;align-items:center;justify-content:center;position:relative;z-index:0}.battle-divider i{position:absolute;width:150px;border-top:1px dashed var(--line);top:24px}
 .battle-step{background:var(--surface);border:1px solid var(--line);border-radius:11px;min-height:102px;padding:15px 18px;text-align:center;margin-top:2px}
 .battle-step-content>strong{font-family:var(--heading);font-size:18px;letter-spacing:-.4px;display:block}.battle-step p{font-size:11px;color:var(--secondary);margin-top:5px;line-height:1.7}.battle-step.hit .battle-step-content>strong,.battle-step.lost .battle-step-content>strong{color:var(--danger)}.battle-step.deflect .battle-step-content>strong{color:var(--soul)}.battle-step.rally .battle-step-content>strong{color:var(--heart)}.battle-step.won .battle-step-content>strong{color:var(--green)}
@@ -1274,3 +1274,21 @@ button.hashtag:hover{text-decoration:underline}
 @media(prefers-reduced-motion:reduce){.topbar-tray,.topbar-tray-items>*{transition:none}}
 /* On the smallest phones an open strip borrows the wordmark's room, keeping the flame. */
 @media(max-width:400px){.topbar:has(.topbar-tray.open) .wordmark{font-size:0;gap:0}}
+
+/* Each impact owns its number; later spell/pet numbers stay hidden until landing. */
+.combat-float[data-impact],.combat-block[data-impact]{animation:none;opacity:0}
+.impacted .combat-float[data-impact=impact],.spell-landed .combat-float[data-impact=spell],.pet-landed .combat-float[data-impact=pet]{animation:combat-number 1.15s ease-out both}
+.impacted .combat-block[data-impact=impact],.spell-landed .combat-block[data-impact=spell],.pet-landed .combat-block[data-impact=pet]{animation:block-callout 1.3s ease-out both}
+.combat-float small{display:block;font-size:8px;line-height:1.3;letter-spacing:0;font-weight:650;margin-top:1px}
+.combat-float.from-spell{top:84px;font-size:20px;color:var(--soul)}
+.combat-float.from-pet{top:122px;font-size:20px;color:var(--float-color,var(--gold))}
+.combat-block small{font-size:8px;font-weight:550;letter-spacing:0}
+.combat-block.from-spell{top:74px;color:var(--soul);background:var(--soul-bg)}
+.combat-block.from-pet{top:116px;color:var(--float-color,var(--gold));background:var(--panel)}
+@media(max-width:560px){.combat-float.from-spell{top:62px;font-size:18px}.combat-float.from-pet{top:100px;font-size:18px}.combat-block.from-spell{top:58px}.combat-block.from-pet{top:98px}}
+@media(prefers-reduced-motion:reduce){
+.battle-stage .combat-float[data-impact],.battle-stage .combat-block[data-impact]{animation:none!important;opacity:0;transform:translate(-50%,0)}
+.battle-stage.impacted [data-impact=impact],.battle-stage.spell-landed [data-impact=spell],.battle-stage.pet-landed [data-impact=pet]{opacity:1}
+}
+:root[data-motion=reduced] .battle-stage .combat-float[data-impact],:root[data-motion=reduced] .battle-stage .combat-block[data-impact]{animation:none!important;opacity:0;transform:translate(-50%,0)}
+:root[data-motion=reduced] .battle-stage.impacted [data-impact=impact],:root[data-motion=reduced] .battle-stage.spell-landed [data-impact=spell],:root[data-motion=reduced] .battle-stage.pet-landed [data-impact=pet]{opacity:1}

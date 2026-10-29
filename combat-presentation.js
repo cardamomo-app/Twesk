@@ -1,5 +1,5 @@
 // Presentation only. These descriptions never roll dice or modify rewards.
-import { combatPetCue } from './combat-pet-art.js?v=0.42.4';
+import { combatPetCue } from './combat-pet-art.js?v=0.42.5';
 export function combatSpellCue(event, spell) {
   if (!event || !['ember', 'ward', 'storm', 'starfall'].includes(spell?.id)) return null;
   // Twin strikes inherit half of the first strike, including its spell damage.
@@ -7,6 +7,68 @@ export function combatSpellCue(event, spell) {
     return { id: spell.id, mode: 'attack' };
   if (event.type === 'hit' && event.spellBlock > 0) return { id: spell.id, mode: 'guard' };
   return null;
+}
+// Split recorded health changes into visual impacts, without rerolling the fight.
+// Allocate remaining HP in landing order so overkill never invents extra damage.
+export function combatHealthImpacts(event, { spell, pet, previousAttack, hpBefore, enemyBefore } = {}) {
+  if (!event) return { before: { hp: hpBefore, enemy: enemyBefore }, beats: [] };
+  const before = {
+    hp: event.hpBefore ?? hpBefore ?? (event.type === 'hit' ? event.hp + (event.actualDamage ?? event.amount) : event.type === 'rally' ? event.hp - event.amount : event.hp - (event.healed || 0)),
+    enemy: event.enemyBefore ?? enemyBefore ?? event.enemy + (event.type === 'attack' ? event.actualDamage ?? event.amount : event.thorns || 0),
+  };
+  let hp = before.hp, enemy = before.enemy;
+  const spellCue = combatSpellCue(event, spell), petCue = combatPetCue(event, pet);
+  const beats = ['impact', ...(spellCue ? ['spell'] : []), ...(petCue ? ['pet'] : [])].map(phase => ({ phase, hp, enemy, floats: [] }));
+  const byPhase = Object.fromEntries(beats.map(b => [b.phase, b]));
+  const number = (beat, side, amount, kind = 'damage', label = '') => {
+    if (amount) beat.floats.push({ side, amount, kind, label });
+  };
+  if (event.type === 'attack') {
+    let spellBonus = spellCue ? event.spellBonus || 0 : 0, petBonus = petCue ? event.petBonus || 0 : 0;
+    if (event.strike === 'twin' && previousAttack?.type === 'attack') {
+      const first = previousAttack.amount, firstPet = previousAttack.petBonus || 0, firstSpell = previousAttack.spellBonus || 0;
+      if (petCue && event.petBonus === undefined) petBonus = Math.ceil(first / 2) - Math.ceil((first - firstPet) / 2);
+      if (spellCue && event.spellBonus === undefined) spellBonus = Math.ceil((first - firstPet) / 2) - Math.ceil((first - firstPet - firstSpell) / 2);
+    }
+    // Missing legacy metadata stays in the weapon hit rather than guessing bonuses.
+    petBonus = Math.min(event.amount, petBonus);
+    spellBonus = Math.min(event.amount - petBonus, spellBonus);
+    const raw = { impact: event.amount - spellBonus - petBonus, spell: spellBonus, pet: petBonus };
+    const damage = Math.max(0, before.enemy - event.enemy), healing = Math.max(0, event.hp - before.hp);
+    let dealt = 0, restored = 0;
+    for (const beat of beats) {
+      const amount = Math.min(enemy - event.enemy, raw[beat.phase] || 0);
+      enemy -= amount; dealt += amount;
+      const cumulativeHealing = damage ? Math.round(healing * dealt / damage) : healing;
+      const healed = cumulativeHealing - restored; restored = cumulativeHealing; hp += healed;
+      number(beat, 'monster', amount, 'damage', beat.phase === 'spell' ? spell.name : beat.phase === 'pet' ? pet.name : '');
+      number(beat, 'player', healed, 'heal', 'Drain');
+      Object.assign(beat, { hp, enemy });
+    }
+  } else if (event.type === 'rally') {
+    const healing = Math.max(0, event.hp - before.hp), petHealing = petCue ? Math.min(healing, event.petHeal || 0) : 0;
+    hp += healing - petHealing;
+    number(byPhase.impact, 'player', healing - petHealing, 'heal', 'Heart');
+    Object.assign(byPhase.impact, { hp, enemy });
+    if (byPhase.pet) {
+      hp += petHealing;
+      number(byPhase.pet, 'player', petHealing, 'heal', pet.name);
+      Object.assign(byPhase.pet, { hp, enemy });
+    }
+  } else {
+    for (const beat of beats) Object.assign(beat, { hp: event.hp, enemy: event.enemy });
+    if (event.type === 'hit') {
+      number(byPhase.impact, 'player', before.hp - event.hp);
+      number(byPhase.impact, 'monster', before.enemy - event.enemy, 'damage', 'Thorns');
+      number(byPhase.impact, 'player', Math.max(0, (event.blocked || 0) - (spellCue ? event.spellBlock || 0 : 0) - (petCue ? event.petBlock || 0 : 0)), 'block');
+      if (byPhase.spell) number(byPhase.spell, 'player', event.spellBlock, 'block', spell.name);
+      if (byPhase.pet) number(byPhase.pet, 'player', event.petBlock, 'block', pet.name);
+    } else if (event.type === 'deflect' || event.type === 'stagger') {
+      const beat = petCue?.mode === 'deflect' ? byPhase.pet : byPhase.impact;
+      beat.floats.push({ side: event.type === 'stagger' ? 'monster' : 'player', kind: 'deflect', text: event.type === 'stagger' ? 'STAGGERED' : 'DEFLECTED', label: petCue?.mode === 'deflect' ? pet.name : '' });
+    }
+  }
+  return { before, beats };
 }
 export function describeCombatEvent(event, { monster = 'Monster', weapon, armor, shield, spell, pet } = {}) {
   const damage = event.actualDamage ?? event.amount;

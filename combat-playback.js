@@ -35,12 +35,23 @@ export function createCombatClock({ requestFrame, cancelFrame, hidden = () => fa
 export function combatTurnTiming({ duration = 1650, spell, pet, reduced = false } = {}) {
   const impact = reduced ? 100 : 400;
   const spellStart = !reduced && spell?.mode === 'attack' ? 150 : 0;
-  const spellImpact = spell ? reduced ? 220 : spell.mode === 'attack' ? 600 : 400 : null;
-  const petStart = pet ? reduced ? 80 : spell ? 350 : 150 : 0;
-  const petImpact = pet ? reduced ? 340 : petStart + 450 : null;
+  const spellImpact = spell ? spell.mode === 'guard' ? impact : reduced ? 220 : 600 : null;
+  const defendingPet = pet && ['guard', 'deflect'].includes(pet.mode);
+  const petStart = pet ? defendingPet ? 0 : reduced ? 80 : spell ? 350 : 150 : 0;
+  const petImpact = pet ? defendingPet ? impact : reduced ? 340 : petStart + 450 : null;
   const lastImpact = Math.max(impact, spellImpact || 0, petImpact || 0);
   return { impact, spellStart, spellImpact, petStart, petImpact,
     duration: Math.max(reduced ? Math.max(1200, duration - 200) : duration, lastImpact + (reduced ? 700 : 1000)) };
+}
+
+// Animation arrivals and the fallback clock share this gate. Each hit lands once,
+// in order, even when both signals arrive or the app returns from a hidden window.
+export function createCombatImpactSequence(phases, land) {
+  let next = 0;
+  return phase => {
+    const last = phases.indexOf(phase);
+    while (next <= last) land(phases[next++]);
+  };
 }
 
 // Native animations keep painting on the compositor even when the replay clock

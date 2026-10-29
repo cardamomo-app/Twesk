@@ -1,15 +1,15 @@
 // The monster card, victory odds, and animated encounters.
-import * as E from './engine.js?v=0.42.4';
-import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.42.4';
-import { combatSpellCue, describeCombatEvent } from './combat-presentation.js?v=0.42.4';
-import { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile } from './combat-attack-art.js?v=0.42.4';
-import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.42.4';
-import { playSfx, prepareSfx, prepareBattleSfx, stopSfx, unlockSfx } from './sfx.js?v=0.42.4';
-import { createCombatClock, combatTurnTiming, syncCombatAnimation } from './combat-playback.js?v=0.42.4';
-import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.42.4';
-import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.42.4';
-import { announceBadges, commit } from './ui-modal.js?v=0.42.4';
-import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.42.4';
+import * as E from './engine.js?v=0.42.5';
+import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.42.5';
+import { combatSpellCue, describeCombatEvent, combatHealthImpacts } from './combat-presentation.js?v=0.42.5';
+import { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile } from './combat-attack-art.js?v=0.42.5';
+import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.42.5';
+import { playSfx, prepareSfx, prepareBattleSfx, stopSfx, unlockSfx } from './sfx.js?v=0.42.5';
+import { createCombatClock, combatTurnTiming, syncCombatAnimation, createCombatImpactSequence } from './combat-playback.js?v=0.42.5';
+import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.42.5';
+import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.42.5';
+import { announceBadges, commit } from './ui-modal.js?v=0.42.5';
+import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.42.5';
 export function renderMonster() {
   const number = app.state.monster.number,
     won = !!app.state.monster.defeatedOn,
@@ -81,6 +81,7 @@ function renderBattleModal() {
     initial = r.initialHP ?? app.modal.initialHP;
   const hp = finished
     ? r.hp
+    : app.modal.health ? app.modal.health.hp
     : event
       ? app.modal.impact
         ? event.hp
@@ -90,6 +91,7 @@ function renderBattleModal() {
     ? r.won
       ? 0
       : r.events.at(-1).enemy
+    : app.modal.health ? app.modal.health.enemy
     : event
       ? app.modal.impact
         ? event.enemy
@@ -132,17 +134,22 @@ function renderBattleModal() {
   };
   const model = key => app.modal.reuseBattleModels?.includes(key) ? '' : visual[key];
   const timing = app.modal.timing || combatTurnTiming({ duration: step?.duration, spell: spellCue, pet: petCue });
+  const healthPlan = app.modal.healthPlan || combatHealthImpacts(event, { spell: context.spell, pet, previousAttack: previous, hpBefore: previous?.hp ?? initial, enemyBefore: previous?.enemy ?? enemyMax });
   const reservedSteps = finished ? '' : visual.reserve;
   const round = event?.round || Math.floor(Math.max(0, index) / 2) + 1;
   const stageClass = (finished
     ? `outcome ${r.won ? 'victory' : 'defeat'}`
     : event
-      ? `event-${event.type}${event.enemy === 0 ? ' finishing-strike' : ''}${event.hp === 0 ? ' fatal-hit' : ''}${isHeavy(event, r.monster) ? ' heavy-blow' : ''}`
+      ? `event-${event.type}${app.modal.impact && (app.modal.health?.enemy ?? event.enemy) === 0 ? ' finishing-strike' : ''}${event.hp === 0 ? ' fatal-hit' : ''}${isHeavy(event, r.monster) ? ' heavy-blow' : ''}`
       : 'ready') + (attackCue ? ` actor-${attackCue.side} motion-${attackCue.profile.motion} style-${attackCue.profile.id}${attackCue.twin ? ' quick-strike' : ''}` : '') + (app.modal.impact && !finished ? ' impacted' : '');
-  const effect = side =>
-    !finished && step?.target === side
-      ? `<div class="combat-float ${step.tone}">${esc(step.float)}</div>${event.type === 'hit' && event.blocked ? `<div class="combat-block">${icon('shield')}BLOCKED ${event.blocked}</div>` : ''}${event.type === 'deflect' ? `<div class="deflect-ring">${icon('soul')}</div>` : ''}${event.type === 'rally' ? '<div class="healing-ring"></div>' : ''}`
-      : '';
+  const effect = side => {
+    if (finished) return '';
+    const numbers = healthPlan.beats.flatMap(beat => beat.floats.filter(f => f.side === side).map(f => {
+      const text = f.kind === 'block' ? `BLOCKED ${f.amount}` : f.kind === 'deflect' ? event.type === 'stagger' ? step.float : f.text : `${f.kind === 'heal' ? '+' : '−'}${f.amount} HP`;
+      return `<div class="${f.kind === 'block' ? 'combat-block' : 'combat-float'} ${f.kind === 'heal' ? 'rally' : f.kind === 'deflect' ? 'deflect' : ''} from-${beat.phase}" data-impact="${beat.phase}" data-amount="${f.amount || 0}" data-kind="${f.kind}"${beat.phase === 'pet' ? ` style="--float-color:${PET_COMBAT[pet?.id]?.color || 'var(--gold)'}"` : ''}>${f.kind === 'block' ? icon('shield') : ''}<span>${esc(text)}</span>${f.label ? `<small>${esc(f.label)}</small>` : ''}</div>`;
+    })).join('');
+    return numbers + (step?.target === side ? `${event.type === 'deflect' ? `<div class="deflect-ring">${icon('soul')}</div>` : ''}${event.type === 'rally' ? '<div class="healing-ring"></div>' : ''}` : '');
+  };
   const historyEnd = finished ? r.events.length : Math.max(0, index);
   const history = r.events.slice(Math.max(0, historyEnd - 4), historyEnd);
   const chips = [
@@ -288,16 +295,19 @@ export function finishBattlePlayback(playSound = true) {
     app.pendingBadges = [];
   }
 }
-function turnPlan(event, result, reduced) {
-  const spell = combatSpellCue(event, E.SHOP.find(i => i.id === result.spell));
-  const pet = combatPetCue(event, E.SHOP.find(i => i.id === result.pet));
+function turnPlan(event, result, reduced, before) {
+  const spellItem = E.SHOP.find(i => i.id === result.spell), petItem = E.SHOP.find(i => i.id === result.pet);
+  const spell = combatSpellCue(event, spellItem);
+  const pet = combatPetCue(event, petItem);
+  const healthPlan = combatHealthImpacts(event, { ...before, spell: spellItem, pet: petItem });
+  const finishingPhase = healthPlan.before.enemy > 0 && event.enemy === 0 ? healthPlan.beats.find(b => b.enemy === 0)?.phase : null;
   const attack = combatAttackCue(event, { weapon: E.SHOP.find(i => i.id === (result.loadout || app.state.equipped).weapon), monster: result.monster });
-  const heavy = isHeavy(event, result.monster), finishing = event.type === 'attack' && event.enemy === 0;
+  const heavy = isHeavy(event, result.monster);
   const launch = event.type === 'attack' ? [['weaponSwing', { voice: attack.profile.voice, pitch: attack.profile.pitch }]]
     : ['hit', 'deflect'].includes(event.type) ? [['creatureAttack', { voice: attack.profile.voice, pitch: attack.profile.pitch }]] : [];
   const impact = [], grunt = [];
   if (event.type === 'attack') {
-    impact.push([finishing ? 'finisher' : 'impact', { target: 'monster', heavy }]);
+    impact.push([finishingPhase === 'impact' ? 'finisher' : 'impact', { target: 'monster', heavy }]);
     grunt.push(['grunt', { who: 'monster' }]);
     for (const power of ['venom', 'critical', 'sunder', 'drain']) if (attack[power]) impact.push(['weaponPower', { power }]);
   } else if (event.type === 'hit') {
@@ -306,17 +316,23 @@ function turnPlan(event, result, reduced) {
   } else if (event.type === 'deflect') impact.push(['deflect']);
   else if (event.type === 'stagger') impact.push(['weaponPower', { power: attack.profile.id === 'frostbite' ? 'freeze' : 'stagger' }]);
   else if (event.type === 'rally') impact.push(['heal']);
-  return { event, spell, pet, launch, impact, grunt, finishing,
+  if (event.thorns) grunt.push(['grunt', { who: 'monster' }]);
+  return { event, spell, pet, launch, impact, grunt, finishingPhase, healthPlan,
     timing: combatTurnTiming({ duration: describeCombatEvent(event).duration, spell, pet, reduced }) };
 }
 function animateBattle(result, initialHP, replay = false) {
   stopBattlePlayback();
   battleAudio.unlock();
   const reduced = app.state.settings.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const turns = result.events.map(event => turnPlan(event, result, reduced));
+  const turns = result.events.map((event, index) => turnPlan(event, result, reduced, {
+    hpBefore: result.events[index - 1]?.hp ?? initialHP,
+    enemyBefore: result.events[index - 1]?.enemy ?? E.monsterStats(result.monster).hp,
+    previousAttack: result.events[index - 1],
+  }));
   const entries = [['start'], [result.won ? 'victory' : 'defeat'], ...(result.pet ? [['petCall', { pet: result.pet }]] : [])];
   for (const turn of turns) {
     entries.push(...turn.launch, ...turn.impact, ...turn.grunt);
+    if (turn.finishingPhase && turn.finishingPhase !== 'impact') entries.push(['finisher', { target: 'monster', heavy: false }]);
     if (turn.spell) for (const name of ['spellCast', 'spellImpact']) entries.push([name, { spell: turn.spell.id, mode: turn.spell.mode }]);
     if (turn.pet) for (const name of ['petCall', 'petImpact']) entries.push([name, { pet: turn.pet.id }]);
   }
@@ -333,32 +349,59 @@ function animateBattle(result, initialHP, replay = false) {
     if (app.modal.index >= turns.length) { finishBattlePlayback(); return; }
     const turn = turns[app.modal.index], { event, timing, spell, pet } = turn;
     app.modal.timing = timing;
+    app.modal.healthPlan = turn.healthPlan;
+    app.modal.health = turn.healthPlan.before;
     battleAnimations.clear();
     view.renderModal(); captureBattleAnimations();
-    $('#battle-stage').dataset.phase = 'windup';
+    const stage = $('#battle-stage'); stage.dataset.phase = 'windup';
     clock.after(reduced ? 40 : 120, () => play(turn.launch));
     if (spell) clock.after(timing.spellStart, () => battleAudio.play('spellCast', { spell: spell.id, mode: spell.mode }));
     if (pet) clock.after(timing.petStart, () => battleAudio.play('petCall', { pet: pet.id }));
-    clock.after(timing.impact, () => {
-      app.modal.impact = true;
-      const stage = $('#battle-stage'); stage?.classList.add('impacted'); if (stage) stage.dataset.phase = 'impact';
+    const deliver = createCombatImpactSequence(turn.healthPlan.beats.map(b => b.phase), phase => {
+      const beat = turn.healthPlan.beats.find(b => b.phase === phase);
+      if (phase === 'impact') app.modal.impact = true;
+      stage.classList.add(phase === 'impact' ? 'impacted' : `${phase}-landed`); stage.dataset.phase = phase;
+      if (phase === turn.finishingPhase) stage.classList.add('finishing-strike');
+      app.modal.health = { hp: beat.hp, enemy: beat.enemy };
       const maximum = result.maxHP || E.maxHP(app.state), enemyMax = E.monsterStats(result.monster).hp;
-      for (const [side, hp, max] of [['player', event.hp, maximum], ['enemy', event.enemy, enemyMax]]) {
+      for (const [side, hp, max] of [['player', beat.hp, maximum], ['enemy', beat.enemy, enemyMax]]) {
         const bar = $('#battle-' + side + '-bar');
-        if (bar) { bar.firstElementChild.style.transform = `scaleX(${hp / max})`; bar.setAttribute('aria-valuenow', hp); $('#battle-' + side + '-hp').textContent = `${hp} / ${max} HP`; }
+        if (bar && +bar.getAttribute('aria-valuenow') !== hp) { bar.firstElementChild.style.transform = `scaleX(${hp / max})`; bar.setAttribute('aria-valuenow', hp); $('#battle-' + side + '-hp').textContent = `${hp} / ${max} HP`; }
       }
-      play(turn.impact);
-      if (turn.grunt.length) clock.after(turn.finishing ? 140 : 80, () => play(turn.grunt));
+      if (phase === 'impact') play(turn.impact);
+      if (phase === 'spell') battleAudio.play('spellImpact', { spell: spell.id, mode: spell.mode });
+      if (phase === 'pet') battleAudio.play('petImpact', { pet: pet.id });
+      if (phase === turn.finishingPhase && phase !== 'impact') battleAudio.play('finisher', { target: 'monster', heavy: false });
+      const targets = new Set(beat.floats.filter(f => f.kind === 'damage').map(f => f.side));
+      const grunts = turn.grunt.filter(([, options]) => targets.has(options.who === 'monster' ? 'monster' : 'player'));
+      if (grunts.length) clock.after(phase === turn.finishingPhase ? 140 : 80, () => play(grunts));
       captureBattleAnimations();
-      // Chain the rest from the painted impact, rather than racing an independent next-turn timeout.
-      clock.after(timing.duration - timing.impact, advance);
+      if (phase === 'impact') clock.after(timing.duration - timing.impact, advance);
     });
-    if (spell) clock.after(timing.spellImpact, () => {
-      $('#battle-stage')?.classList.add('spell-landed'); captureBattleAnimations(); battleAudio.play('spellImpact', { spell: spell.id, mode: spell.mode });
+    const land = phase => {
+      if (!document.hidden && battleClock === clock && $('#battle-stage') === stage) deliver(phase);
+    };
+    // Actual projectile arrivals and fallback timers enter the same once-only gate.
+    // Their burst, number, HP value, and bar update together in this callback.
+    stage.addEventListener('animationend', e => {
+      if (e.target.matches('.attack-projectile')) land('impact');
+      else if (e.target.matches('.spell-projectile') || e.animationName === 'ward-rise') land('spell');
+      else if (e.target.matches('.pet-projectile') || e.animationName === 'pet-leaf-charge') land('pet');
     });
-    if (pet) clock.after(timing.petImpact, () => {
-      $('#battle-stage')?.classList.add('pet-landed'); captureBattleAnimations(); battleAudio.play('petImpact', { pet: pet.id });
-    });
+    const fallback = phase => {
+      if (stage.classList.contains(phase === 'impact' ? 'impacted' : `${phase}-landed`)) return;
+      const selector = phase === 'impact' ? '.attack-projectile' : phase === 'spell' ? '.spell-projectile, .spell-ward-shield' : '.pet-projectile, .pet-effect-deflect .pet-impact';
+      const flying = !reduced && stage.querySelector(selector)?.getAnimations().find(a => a.playState !== 'finished' && a.playState !== 'idle' && (a.currentTime ?? 0) < a.effect.getComputedTiming().endTime);
+      if (flying) {
+        // A native animation can begin a frame after the clock. Let its arrival
+        // finish first; the watchdog also covers cancelled or unavailable motion.
+        flying.finished.then(() => land(phase)).catch(() => {});
+        clock.after(500, () => land(phase));
+      } else land(phase);
+    };
+    clock.after(timing.impact, () => fallback('impact'));
+    if (spell) clock.after(timing.spellImpact, () => fallback('spell'));
+    if (pet) clock.after(timing.petImpact, () => fallback('pet'));
   };
   let begun = false;
   const begin = () => {

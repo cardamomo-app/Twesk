@@ -1187,3 +1187,50 @@ uiTest('a real replay keeps spell, pet, and monster effects visible through a sl
   assert.deepEqual(await page.save(), before, 'replay changes neither health nor rewards');
   assert.equal(await page.exists('.combat-spell, .combat-pet-effect'), false, 'no stale effects after skipping');
 }, { width: 390, height: 900, reducedMotion: false });
+
+for (const reducedMotion of [false,true]) uiTest(`health and floating numbers follow individual weapon, spell, and pet landings (${reducedMotion?'reduced motion':'full motion'})`, async page => {
+  const save=E.freshState(); save.gold=5000;
+  for(const category of E.CATEGORIES) save.xp[category]=300;
+  for(const id of ['twig','guard','drake']) E.buy(save,id);
+  save.hp=E.maxHP(save);save.monster.number=3;save.preparedSpell='starfall';save.supplies.starfall=1;
+  const result=E.fight(save,today(save),()=>.6), first=result.events[0], enemyMax=E.monsterStats(result.monster).hp;
+  await page.open({save});const before=await page.save();
+  await page.evaluate(() => {
+    window.healthProbe={before:null,landings:{},writes:0,done:false};
+    const observer=new MutationObserver(mutations => {
+      const stage=document.querySelector('#battle-stage'),p=window.healthProbe;
+      if(!stage?.dataset.playback)return;
+      if(+stage.dataset.step>=1){p.done=true;observer.disconnect();return;}
+      if(+stage.dataset.step!==0)return;
+      const bar=document.querySelector('#battle-enemy-bar'), hp=document.querySelector('#battle-player-bar');
+      const snapshot=() => ({enemy:+bar.getAttribute('aria-valuenow'),hp:+hp.getAttribute('aria-valuenow'),bar:bar.firstElementChild.style.transform,text:document.querySelector('#battle-enemy-hp').textContent});
+      if(!stage.classList.contains('impacted'))p.before=snapshot();
+      p.writes+=mutations.filter(m => m.target===bar&&m.attributeName==='aria-valuenow').length;
+      for(const [phase,cls] of [['impact','impacted'],['spell','spell-landed'],['pet','pet-landed']]) {
+        if(!stage.classList.contains(cls)||p.landings[phase])continue;
+        const number=stage.querySelector(`.monster .combat-float[data-impact="${phase}"][data-kind="damage"]`);
+        const future=[...stage.querySelectorAll('.monster .combat-float[data-impact]')].filter(el => !stage.classList.contains({impact:'impacted',spell:'spell-landed',pet:'pet-landed'}[el.dataset.impact]));
+        p.landings[phase]={...snapshot(),amount:+number.dataset.amount,active:(document.documentElement.dataset.motion==='reduced'||matchMedia('(prefers-reduced-motion: reduce)').matches)?+getComputedStyle(number).opacity===1:getComputedStyle(number).animationName==='combat-number',futureHidden:future.every(el => +getComputedStyle(el).opacity===0&&getComputedStyle(el).animationName==='none')};
+      }
+    });
+    observer.observe(document.querySelector('#overlay'),{subtree:true,childList:true,attributes:true,attributeFilter:['class','aria-valuenow']});
+  });
+  await page.click('#app [data-action="replay-battle"]');
+  await page.waitFor(() => window.healthProbe.done,{timeout:15000});
+  const p=await page.evaluate(() => window.healthProbe);
+  assert.equal(p.before.enemy,enemyMax,'no HP lost during windup');
+  assert.deepEqual(Object.keys(p.landings),['impact','spell','pet']);
+  let enemy=enemyMax;
+  for(const [phase,amount] of [['impact',first.amount-first.spellBonus-first.petBonus],['spell',first.spellBonus],['pet',first.petBonus]]) {
+    enemy-=amount;const snap=p.landings[phase];
+    assert.equal(snap.enemy,enemy,`${phase} updates only its share of damage`);
+    assert.equal(snap.amount,amount);assert.equal(snap.hp,first.hpBefore);
+    assert.ok(Math.abs(parseFloat(snap.bar.slice(7))-enemy/enemyMax)<1e-6);assert.equal(snap.text,`${enemy} / ${enemyMax} HP`);
+    assert.equal(snap.active,true,`${phase} number starts with its landing`);
+    assert.equal(snap.futureHidden,true,'later numbers remain hidden');
+  }
+  assert.equal(p.writes,3,'each hit changes the bar once, despite animation and timer signals');
+  assert.equal(enemy,first.enemy);
+  await page.click('[data-action="skip-battle"]');
+  assert.deepEqual(await page.save(),before,'watching impacts never changes saved health or rewards');
+},{width:reducedMotion?390:1200,height:900,reducedMotion});

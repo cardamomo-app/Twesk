@@ -952,7 +952,7 @@ button.hashtag:hover{text-decoration:underline}
 .spell-ward-shield{position:absolute;left:25%;top:42%;width:128px;height:140px;overflow:visible;filter:drop-shadow(0 0 9px var(--spell));transform:translate(-50%,-50%);animation:ward-rise var(--spell-flight,.4s) ease-out var(--spell-delay,0ms) both}
 .spell-impact{position:absolute;left:77%;top:45%;width:130px;height:130px;overflow:visible;opacity:0;transform:translate(-50%,-50%);filter:drop-shadow(0 0 7px var(--spell))}
 .spell-guard .spell-impact{left:25%;top:42%}.spell-guard .spell-charge{opacity:.3}
-.impacted .spell-impact{animation:spell-burst .7s ease-out var(--spell-impact-delay,0ms) forwards}.impacted .spell-ward-shield{animation:ward-impact .85s ease-out var(--spell-impact-delay,0ms) forwards}
+:is(.spell-landed,.battle-stage:not([data-playback]).impacted) .spell-impact{animation:spell-burst .7s ease-out forwards}:is(.spell-landed,.battle-stage:not([data-playback]).impacted) .spell-ward-shield{animation:ward-impact .85s ease-out forwards}
 @keyframes spell-charge{0%{opacity:0;transform:translate(-50%,-50%) rotate(0) scale(.4)}65%{opacity:.8}100%{opacity:0;transform:translate(-50%,-50%) rotate(45deg) scale(1.2)}}
 @keyframes spell-flight{0%{opacity:0;transform:translate(-50%,-50%) scale(.4) rotate(-20deg)}20%{opacity:1}85%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--arena-width)*.54),-50%) scale(1.1) rotate(15deg)}}
 .spell-starfall.spell-attack .spell-projectile{left:62%;top:3%}
@@ -961,8 +961,8 @@ button.hashtag:hover{text-decoration:underline}
 @keyframes ward-rise{0%{opacity:0;transform:translate(-50%,-40%) scale(.65)}100%{opacity:.85;transform:translate(-50%,-50%) scale(1)}}
 @keyframes ward-impact{0%{opacity:1;transform:translate(-50%,-50%) scale(1.08);filter:drop-shadow(0 0 18px var(--spell))}35%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.18)}}
 @media(max-width:560px){.combat-spell{bottom:68px}.spell-charge{width:48px;height:48px}.spell-projectile{width:47px;height:47px}.spell-storm .spell-projectile{width:59px;height:59px}.spell-ward-shield{width:91px;height:104px}.spell-impact{width:92px;height:92px}}
-@media(prefers-reduced-motion:reduce){.spell-projectile{display:none}.spell-charge{animation:none;opacity:.5}.spell-ward-shield{animation:none!important;opacity:.65}.impacted .spell-impact{animation:none;opacity:.7}}
-:root[data-motion=reduced] .spell-projectile{display:none}:root[data-motion=reduced] .spell-charge{animation:none;opacity:.5}:root[data-motion=reduced] .spell-ward-shield{animation:none!important;opacity:.65}:root[data-motion=reduced] .impacted .spell-impact{animation:none;opacity:.7}
+@media(prefers-reduced-motion:reduce){.spell-projectile{display:none}.spell-charge{animation:none;opacity:.5}.spell-ward-shield{animation:none!important;opacity:.65}:is(.spell-landed,.battle-stage:not([data-playback]).impacted) .spell-impact{animation:none;opacity:.7}}
+:root[data-motion=reduced] .spell-projectile{display:none}:root[data-motion=reduced] .spell-charge{animation:none;opacity:.5}:root[data-motion=reduced] .spell-ward-shield{animation:none!important;opacity:.65}:root[data-motion=reduced] :is(.spell-landed,.battle-stage:not([data-playback]).impacted) .spell-impact{animation:none;opacity:.7}
 
 /* Weapon and creature attack signatures, all confined to the arena. */
 .combat-attack{position:absolute;inset:0 0 75px;z-index:3;pointer-events:none;color:var(--attack-color);--target:77%;--source:23%;--flight-direction:1}
@@ -1053,9 +1053,9 @@ button.hashtag:hover{text-decoration:underline}
 .pet-effect-deflect .pet-impact{left:23%;top:63%;width:145px;height:145px;opacity:.4;animation:pet-leaf-charge var(--pet-flight,.4s) ease-out var(--pet-delay,0ms) both}
 .pet-effect-heal .pet-projectile{width:45px;height:45px;animation-name:pet-heal-flight}
 .pet-effect-heal .pet-impact{left:23%;top:63%;width:130px;height:130px}
-.impacted .pet-impact{animation:pet-burst .75s ease-out var(--pet-impact-delay,0ms) forwards}
-.impacted .pet-effect-guard .pet-impact{animation:shell-flash .8s ease-out var(--pet-impact-delay,0ms) forwards}
-.impacted .pet-effect-deflect .pet-impact{animation:pet-leaf-burst .8s ease-out var(--pet-impact-delay,0ms) forwards}
+:is(.pet-landed,.battle-stage:not([data-playback]).impacted) .pet-impact{animation:pet-burst .75s ease-out forwards}
+:is(.pet-landed,.battle-stage:not([data-playback]).impacted) .pet-effect-guard .pet-impact{animation:shell-flash .8s ease-out forwards}
+:is(.pet-landed,.battle-stage:not([data-playback]).impacted) .pet-effect-deflect .pet-impact{animation:pet-leaf-burst .8s ease-out forwards}
 @keyframes pet-flight{0%{opacity:0;transform:translate(-50%,-50%) scale(.45) rotate(-15deg)}20%,80%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--arena-width)*.68),calc(-50% - var(--arena-height)*.02)) scale(1.1) rotate(20deg)}}
 @keyframes pet-heal-flight{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}20%,85%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--arena-width)*.14),calc(-50% - var(--arena-height)*.22)) scale(1.15)}}
 @keyframes pet-burst{0%{opacity:1;transform:translate(-50%,-50%) scale(.4)}40%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}}
@@ -1063,8 +1063,8 @@ button.hashtag:hover{text-decoration:underline}
 @keyframes pet-leaf-charge{0%{opacity:0;transform:translate(-50%,-50%) rotate(-45deg) scale(.7)}100%{opacity:.6;transform:translate(-50%,-50%) rotate(0) scale(1)}}
 @keyframes pet-leaf-burst{0%{opacity:.85;transform:translate(-50%,-50%) rotate(0) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) rotate(70deg) scale(1.4)}}
 @media(max-width:560px){.battle-companion{--pet-hop:24px;left:-7px;bottom:0;width:68px;height:81px}.companion-art{bottom:12px}.companion-name{font-size:8px;letter-spacing:-.15px}.companion-callout{max-width:108px;padding:5px 7px}.companion-callout strong{font-size:10px}.companion-callout>span{font-size:9px}.pet-projectile{width:40px;height:40px}.pet-effect-heal .pet-projectile{width:35px;height:35px}.pet-impact,.pet-effect-heal .pet-impact{width:86px;height:86px}.pet-effect-guard .pet-impact{width:80px;height:92px}.pet-effect-deflect .pet-impact{width:106px;height:106px}}
-@media(prefers-reduced-motion:reduce){.battle-companion *{animation:none!important;transition:none!important}.pet-projectile{display:none}.pet-effect-deflect .pet-impact{animation:none;opacity:.4}.impacted .pet-impact{animation:none!important;opacity:.7}}
-:root[data-motion=reduced] .battle-companion *{animation:none!important;transition:none!important}:root[data-motion=reduced] .pet-projectile{display:none}:root[data-motion=reduced] .pet-effect-deflect .pet-impact{animation:none;opacity:.4}:root[data-motion=reduced] .impacted .pet-impact{animation:none!important;opacity:.7}
+@media(prefers-reduced-motion:reduce){.battle-companion *{animation:none!important;transition:none!important}.pet-projectile{display:none}.pet-effect-deflect .pet-impact{animation:none;opacity:.4}:is(.pet-landed,.battle-stage:not([data-playback]).impacted) .pet-impact{animation:none!important;opacity:.7}}
+:root[data-motion=reduced] .battle-companion *{animation:none!important;transition:none!important}:root[data-motion=reduced] .pet-projectile{display:none}:root[data-motion=reduced] .pet-effect-deflect .pet-impact{animation:none;opacity:.4}:root[data-motion=reduced] :is(.pet-landed,.battle-stage:not([data-playback]).impacted) .pet-impact{animation:none!important;opacity:.7}
 
 /* Let the compositor run continuous motion; the replay only resynchronizes after a stall. */
 .battle-stage .companion-art,.battle-stage .spell-projectile,.battle-stage .pet-projectile,.battle-stage .attack-projectile{will-change:transform,opacity}

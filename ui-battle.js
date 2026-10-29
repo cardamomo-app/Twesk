@@ -213,10 +213,10 @@ function setBattleAnimationTime(animation, record, elapsed, paused = false) {
   // Playing a finished animation would restart it. Keep completed bursts at their end.
   if (paused || time >= record.end) animation.pause(); else animation.play();
 }
-function captureBattleAnimations() {
+function captureBattleAnimations({ measure = false } = {}) {
   if (!battleClock) return;
   const stage = $('#battle-stage');
-  if (stage) {
+  if (stage && (measure || !stage.style.getPropertyValue('--arena-width'))) {
     // Travel is measured once per beat, never by animating layout positions each frame.
     stage.style.setProperty('--arena-width', `${stage.clientWidth}px`);
     stage.style.setProperty('--arena-height', `${stage.clientHeight - (matchMedia('(max-width:560px)').matches ? 68 : 75)}px`);
@@ -237,7 +237,7 @@ document.addEventListener('visibilitychange', () => {
   if (battleClock) resyncBattleAnimations(battleClock.elapsed, document.hidden);
   if (document.hidden) battleAudio.stop();
 });
-window.addEventListener('resize', () => { if (battleClock) captureBattleAnimations(); });
+window.addEventListener('resize', () => { if (battleClock) captureBattleAnimations({ measure: true }); });
 
 const battleAudio = {
   unlock: unlockSfx,
@@ -360,10 +360,10 @@ function animateBattle(result, initialHP, replay = false) {
       clock.after(timing.duration - timing.impact, advance);
     });
     if (spell) clock.after(timing.spellImpact, () => {
-      $('#battle-stage')?.classList.add('spell-landed'); battleAudio.play('spellImpact', { spell: spell.id, mode: spell.mode });
+      $('#battle-stage')?.classList.add('spell-landed'); captureBattleAnimations(); battleAudio.play('spellImpact', { spell: spell.id, mode: spell.mode });
     });
     if (pet) clock.after(timing.petImpact, () => {
-      $('#battle-stage')?.classList.add('pet-landed'); battleAudio.play('petImpact', { pet: pet.id });
+      $('#battle-stage')?.classList.add('pet-landed'); captureBattleAnimations(); battleAudio.play('petImpact', { pet: pet.id });
     });
   };
   let begun = false;

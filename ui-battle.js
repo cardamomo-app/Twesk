@@ -1,15 +1,15 @@
 // The monster card, victory odds, and animated encounters.
-import * as E from './engine.js?v=0.42.2';
-import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.42.2';
-import { combatSpellCue, describeCombatEvent } from './combat-presentation.js?v=0.42.2';
-import { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile } from './combat-attack-art.js?v=0.42.2';
-import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.42.2';
-import { playSfx, prepareSfx, prepareBattleSfx, stopSfx, unlockSfx } from './sfx.js?v=0.42.2';
-import { createCombatClock, combatTurnTiming } from './combat-playback.js?v=0.42.2';
-import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.42.2';
-import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.42.2';
-import { announceBadges, commit } from './ui-modal.js?v=0.42.2';
-import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.42.2';
+import * as E from './engine.js?v=0.42.3';
+import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.42.3';
+import { combatSpellCue, describeCombatEvent } from './combat-presentation.js?v=0.42.3';
+import { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile } from './combat-attack-art.js?v=0.42.3';
+import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.42.3';
+import { playSfx, prepareSfx, prepareBattleSfx, stopSfx, unlockSfx } from './sfx.js?v=0.42.3';
+import { createCombatClock, combatTurnTiming, syncCombatAnimation, recordCombatAnimationFrame } from './combat-playback.js?v=0.42.3';
+import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.42.3';
+import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.42.3';
+import { announceBadges, commit } from './ui-modal.js?v=0.42.3';
+import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.42.3';
 export function renderMonster() {
   const number = app.state.monster.number,
     won = !!app.state.monster.defeatedOn,
@@ -207,12 +207,6 @@ function renderBattleModal() {
 const battleTimers = new Set();
 let battleClock = null, battleSoundScene = null;
 const battleAnimations = new Map();
-function setBattleAnimationTime(animation, record, elapsed, paused = false) {
-  const time = Math.max(0, elapsed - record.start);
-  animation.currentTime = Math.min(time, record.end);
-  // Playing a finished animation would restart it. Keep completed bursts at their end.
-  if (paused || time >= record.end) animation.pause(); else animation.play();
-}
 function captureBattleAnimations({ measure = false } = {}) {
   if (!battleClock) return;
   const stage = $('#battle-stage');
@@ -224,13 +218,16 @@ function captureBattleAnimations({ measure = false } = {}) {
   const current = new Set(stage?.getAnimations({ subtree: true }) || []);
   for (const animation of battleAnimations.keys()) if (!current.has(animation)) battleAnimations.delete(animation);
   for (const animation of current) if (!battleAnimations.has(animation)) {
-    const record = { start: battleClock.elapsed, end: animation.effect?.getComputedTiming().endTime ?? Infinity };
+    const record = { start: battleClock.elapsed, end: animation.effect?.getComputedTiming().endTime ?? Infinity, painted: animation.currentTime ?? 0 };
     battleAnimations.set(animation, record);
-    setBattleAnimationTime(animation, record, battleClock.elapsed);
+    syncCombatAnimation(animation, record, battleClock.elapsed);
   }
 }
 function resyncBattleAnimations(elapsed, paused = false) {
-  for (const [animation, record] of battleAnimations) setBattleAnimationTime(animation, record, elapsed, paused);
+  for (const [animation, record] of battleAnimations) syncCombatAnimation(animation, record, elapsed, paused);
+}
+function recordBattleFrame() {
+  for (const [animation, record] of battleAnimations) recordCombatAnimationFrame(animation, record);
 }
 document.addEventListener('visibilitychange', () => {
   battleClock?.resetFrame();
@@ -330,7 +327,7 @@ function animateBattle(result, initialHP, replay = false) {
   app.busy = true;
   app.modal = { type: 'battle', result, index: -1, initialHP, finished: false, impact: false, replay, playback: true };
   view.render();
-  const clock = battleClock = createCombatClock({ requestFrame: fn => requestAnimationFrame(fn), cancelFrame: id => cancelAnimationFrame(id), hidden: () => document.hidden, onResync: resyncBattleAnimations });
+  const clock = battleClock = createCombatClock({ requestFrame: fn => requestAnimationFrame(fn), cancelFrame: id => cancelAnimationFrame(id), hidden: () => document.hidden, onResync: resyncBattleAnimations, onFrame: recordBattleFrame });
   captureBattleAnimations();
   const play = sounds => { for (const [name, options] of sounds) battleAudio.play(name, options); };
   const advance = () => {

@@ -1103,13 +1103,23 @@ uiTest('a real replay keeps spell, pet, and monster effects visible through a sl
   await page.open({ save });
   const before = await page.save();
   await page.evaluate(() => {
-    window.replayProbe = { samples: {}, reused: true, stalled: false, done: false, earlySpell: false, earlyPet: false, seeks: 0, frames: 0 };
+    window.replayProbe = { samples: {}, reused: true, stalled: false, lateStalls: [], rewinds: [], done: false, earlySpell: false, earlyPet: false, seeks: 0, frames: 0 };
+    const shown = new WeakMap();
     const descriptor = Object.getOwnPropertyDescriptor(Animation.prototype, 'currentTime');
-    Object.defineProperty(Animation.prototype, 'currentTime', { ...descriptor, set(value) { window.replayProbe.seeks++; return descriptor.set.call(this, value); } });
-    let models = null, turnStarted = null;
+    Object.defineProperty(Animation.prototype, 'currentTime', { ...descriptor, set(value) {
+      window.replayProbe.seeks++;
+      const before = shown.get(this);
+      if (before !== undefined && value < before - 1) window.replayProbe.rewinds.push({ name: this.animationName || this.transitionProperty, before, after: value });
+      return descriptor.set.call(this, value);
+    } });
+    let models = null, turnStarted = null, ordered = false;
     const sample = () => {
       const stage = document.querySelector('#battle-stage');
       if (stage?.dataset.playback) {
+        // Observe after the replay's own frame callback, so an unpainted jump
+        // during a stall is not mistaken for motion the player has already seen.
+        if (!ordered) { ordered = true; setTimeout(() => requestAnimationFrame(sample), 0); return; }
+        for (const animation of stage.getAnimations({ subtree: true })) shown.set(animation, animation.currentTime);
         const index = +stage.dataset.step;
         if (index >= 0) {
           window.replayProbe.frames++;
@@ -1122,6 +1132,15 @@ uiTest('a real replay keeps spell, pet, and monster effects visible through a sl
           if (stage.querySelector('.spell-projectile')) entry.projectile = Math.max(entry.projectile, opacity('.spell-projectile'));
           if (stage.querySelector('.attack-monster .attack-impact')) entry.monster = Math.max(entry.monster, opacity('.attack-monster .attack-impact'));
           for (const cls of ['impacted', 'spell-landed', 'pet-landed']) if (stage.classList.contains(cls) && !entry.landed.includes(cls)) entry.landed.push(cls);
+          if (stage.classList.contains('impacted')) {
+            entry.impactAt ??= performance.now();
+            if (index < 2 && !window.replayProbe.lateStalls.includes(index) && performance.now() - entry.impactAt > 300) {
+              window.replayProbe.lateStalls.push(index);
+              // Native damage numbers and swings can finish while the visible-time
+              // clock is held back. A correction must never replay either one.
+              const until = performance.now() + 1000; while (performance.now() < until) {}
+            }
+          }
           if (index === 0) {
             if (!stage.classList.contains('spell-landed') && stage.querySelector('.spell-impact') && opacity('.spell-impact') > .2) window.replayProbe.earlySpell = true;
             if (!stage.classList.contains('pet-landed') && stage.querySelector('.pet-impact') && opacity('.pet-impact') > .2) window.replayProbe.earlyPet = true;
@@ -1142,6 +1161,8 @@ uiTest('a real replay keeps spell, pet, and monster effects visible through a sl
   await page.waitFor(() => window.replayProbe.done, { timeout: 20000 });
   const probe = await page.evaluate(() => window.replayProbe);
   assert.equal(probe.stalled, true); assert.equal(probe.reused, true, 'voxel models survive turn changes');
+  assert.deepEqual(probe.lateStalls, [0, 1], 'exercise late stalls on both player and monster attacks');
+  assert.deepEqual(probe.rewinds, [], 'corrections never rewind a swing, pet, or damage number');
   assert.ok(probe.seeks < probe.frames, `native motion avoids per-frame animation seeking (${probe.seeks} seeks / ${probe.frames} frames)`);
   assert.equal(probe.earlySpell, false, 'spell burst does not appear during its delay');
   assert.equal(probe.earlyPet, false, 'pet burst does not appear during its delay');

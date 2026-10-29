@@ -1,8 +1,8 @@
 // Settings, backups, and full reset/restore.
-import { syncSettings } from './ui-sync.js?v=0.42.2';
-import { stopSfx, unlockSfx } from './sfx.js?v=0.42.2';
-import * as E from './engine.js?v=0.42.2';
-import { PREVIOUS_SAVE_KEY, replaceSave, resetProgress, restorePreviousProgress } from './save-recovery.js?v=0.42.2';
+import { syncSettings } from './ui-sync.js?v=0.42.3';
+import { stopSfx, unlockSfx } from './sfx.js?v=0.42.3';
+import * as E from './engine.js?v=0.42.3';
+import { PREVIOUS_SAVE_KEY, replaceSave, resetProgress, restorePreviousProgress } from './save-recovery.js?v=0.42.3';
 import {
   $,
   app,
@@ -14,8 +14,8 @@ import {
   today,
   view,
   viewDefaults,
-} from './ui-core.js?v=0.42.2';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.42.2';
+} from './ui-core.js?v=0.42.3';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.42.3';
 function backupStatus() {
   const last = app.state.settings.lastBackup;
   if (!last) return 'No backup exported from this browser yet.';

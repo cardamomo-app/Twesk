@@ -1092,3 +1092,62 @@ uiTest('the standalone Twesk.html runs, including its built-in odds worker', asy
   await page.click('#app [data-action="toggle-task"]');
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1'))?.gold === 4);
 });
+
+uiTest('a real replay keeps spell, pet, and monster effects visible through a slow frame with Safari audio', async page => {
+  const save = E.freshState(); save.gold = 5000; save.settings.muted = false;
+  for (const c of E.CATEGORIES) save.xp[c] = 300;
+  for (const id of ['twig', 'guard', 'drake']) E.buy(save, id);
+  save.hp = E.maxHP(save); save.monster.number = 3; save.preparedSpell = 'starfall'; save.supplies.starfall = 1;
+  E.fight(save, today(save), () => .6);
+  await page.cmd('Page.addScriptToEvaluateOnNewDocument', { source: "localStorage.setItem('twesk.sfx-media','1');" });
+  await page.open({ save });
+  const before = await page.save();
+  await page.evaluate(() => {
+    window.replayProbe = { samples: {}, reused: true, stalled: false, done: false, earlySpell: false, earlyPet: false };
+    let models = null, turnStarted = null;
+    const sample = () => {
+      const stage = document.querySelector('#battle-stage');
+      if (stage?.dataset.playback) {
+        const index = +stage.dataset.step;
+        if (index >= 0) {
+          const nodes = [...stage.querySelectorAll('[data-battle-model]')].map(el => el.firstElementChild);
+          if (!models) models = nodes; else window.replayProbe.reused &&= nodes.every((node, i) => node === models[i]);
+          const entry = window.replayProbe.samples[index] ||= { spell: 0, pet: 0, projectile: 0, monster: 0, landed: [] };
+          const opacity = selector => +(getComputedStyle(stage.querySelector(selector) || stage).opacity);
+          if (stage.querySelector('.spell-impact')) entry.spell = Math.max(entry.spell, opacity('.spell-impact'));
+          if (stage.querySelector('.pet-impact')) entry.pet = Math.max(entry.pet, opacity('.pet-impact'));
+          if (stage.querySelector('.spell-projectile')) entry.projectile = Math.max(entry.projectile, opacity('.spell-projectile'));
+          if (stage.querySelector('.attack-monster .attack-impact')) entry.monster = Math.max(entry.monster, opacity('.attack-monster .attack-impact'));
+          for (const cls of ['impacted', 'spell-landed', 'pet-landed']) if (stage.classList.contains(cls) && !entry.landed.includes(cls)) entry.landed.push(cls);
+          if (index === 0) {
+            if (!stage.classList.contains('spell-landed') && stage.querySelector('.spell-impact') && opacity('.spell-impact') > .2) window.replayProbe.earlySpell = true;
+            if (!stage.classList.contains('pet-landed') && stage.querySelector('.pet-impact') && opacity('.pet-impact') > .2) window.replayProbe.earlyPet = true;
+            turnStarted ??= performance.now();
+            if (!window.replayProbe.stalled && performance.now() - turnStarted > 200) {
+              window.replayProbe.stalled = true;
+              const until = performance.now() + 650; while (performance.now() < until) {}
+            }
+          }
+          if (index >= 2) { window.replayProbe.done = true; return; }
+        }
+      }
+      requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  });
+  await page.click('#app [data-action="replay-battle"]');
+  await page.waitFor(() => window.replayProbe.done, { timeout: 20000 });
+  const probe = await page.evaluate(() => window.replayProbe);
+  assert.equal(probe.stalled, true); assert.equal(probe.reused, true, 'voxel models survive turn changes');
+  assert.equal(probe.earlySpell, false, 'spell burst does not appear during its delay');
+  assert.equal(probe.earlyPet, false, 'pet burst does not appear during its delay');
+  assert.ok(probe.samples[0].projectile > .5, 'the spell flight has painted frames');
+  assert.ok(probe.samples[0].spell > .5, 'the attack spell has a visible burst');
+  assert.ok(probe.samples[0].pet > .5, 'the pet has its own visible burst');
+  assert.deepEqual(probe.samples[0].landed, ['impacted', 'spell-landed', 'pet-landed']);
+  assert.ok(probe.samples[1].monster > .5, 'the monster hit remains visible');
+  assert.ok(probe.samples[1].spell > .5, 'the defensive spell remains visible');
+  await page.click('[data-action="skip-battle"]');
+  assert.deepEqual(await page.save(), before, 'replay changes neither health nor rewards');
+  assert.equal(await page.exists('.combat-spell, .combat-pet-effect'), false, 'no stale effects after skipping');
+}, { width: 390, height: 900, reducedMotion: false });

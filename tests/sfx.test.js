@@ -6,7 +6,7 @@ import { WEAPON_ATTACKS, MONSTER_ATTACKS } from '../combat-attack-art.js';
 import { audioBufferWav, createMediaSoundPlayer, trimmedBuffer } from '../sfx-media.js';
 
 // Exercise the public sound API against audio-device interruptions, with no browser or speakers.
-const source = readFileSync(new URL('../sfx.js', import.meta.url), 'utf8').replace(/^import .+;$/gm, '').replace(/\bexport /g, '') + '\nthis.sfx = { configureSfx, playSfx, prepareSfx, stopSfx, unlockSfx, SOUND_NAMES };';
+const source = readFileSync(new URL('../sfx.js', import.meta.url), 'utf8').replace(/^import .+;$/gm, '').replace(/\bexport /g, '') + '\nthis.sfx = { configureSfx, playSfx, prepareSfx, prepareBattleSfx, stopSfx, unlockSfx, SOUND_NAMES };';
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 function audioHarness({ session = { type: 'auto' }, initial = 'running', rebuildState = 'running', time = performance, safari = false, controlledIdle = false, renderOffline = buffer => Promise.resolve(buffer) } = {}) {
   const contexts = [], starts = [], stops = [], listeners = {}, windowListeners = {}, media = [];
@@ -241,4 +241,32 @@ test('foreground recovery also retries preparation that was still rendering at w
   h.windowListeners.focus({ type: 'focus' }); release(); await wait(0); await h.drainIdle();
   assert.equal(h.contexts.length, 2, 'the discarded render is replaced once');
   h.prepareSfx([['trailBell']]); await h.drainIdle(); assert.equal(h.contexts.length, 2);
+});
+
+test('Safari warms a fixed encounter set and does no new rendering while it plays', async () => {
+  const h = audioHarness({ safari: true, controlledIdle: true });
+  const entries = [['spellCast', { spell: 'starfall', mode: 'attack' }], ['petImpact', { pet: 'drake' }], ['impact', { target: 'monster', heavy: true }]];
+  h.prepareSfx([['check']]);
+  const scene = h.prepareBattleSfx(entries); await scene.ready; scene.start();
+  const renders = h.contexts.length; assert.equal(renders, 3);
+  await h.drainIdle(); assert.equal(h.contexts.length, renders, 'background preparation stays paused');
+  for (let i = 0; i < 4; i++) for (const [name, options] of entries) h.playSfx(name, { ...options, channel: 'battle' });
+  await wait(0);
+  assert.equal(h.contexts.length, renders, 'all battle sounds reuse the retained variant');
+  assert.ok(h.media.some(a => a.plays.some(src => src.startsWith('blob:'))));
+  h.playSfx('grunt', { who: 'monster', channel: 'battle' }); await wait(0);
+  assert.equal(h.contexts.length, renders, 'a missing sound never starts an on-demand render during combat');
+  scene.release(); await h.drainIdle(); assert.ok(h.contexts.length > renders, 'ordinary preparation resumes');
+});
+test('a muted encounter warms silently for a later unmute, and starting stops an unfinished warm-up', async () => {
+  const h = audioHarness({ safari: true, controlledIdle: true });
+  let muted = true; h.configureSfx({ muted: () => muted });
+  const scene = h.prepareBattleSfx([['petCall', { pet: 'owl' }]]); await scene.ready; scene.start();
+  assert.ok(h.media.every(a => !a.plays.some(src => src.startsWith('blob:'))));
+  muted = false; h.playSfx('petCall', { pet: 'owl', channel: 'battle' }); await wait(0);
+  assert.equal(h.contexts.length, 1); assert.ok(h.media.some(a => a.plays.some(src => src.startsWith('blob:')))); scene.release();
+  let release;
+  const slow = audioHarness({ safari: true, controlledIdle: true, renderOffline: buffer => new Promise(resolve => { release = () => resolve(buffer); }) });
+  const cold = slow.prepareBattleSfx([['block'], ['deflect'], ['heal']]); await wait(0); cold.start(); release(); await cold.ready;
+  assert.equal(slow.contexts.length, 1, 'the startup deadline stops any remaining preparation'); cold.release();
 });

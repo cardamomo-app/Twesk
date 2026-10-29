@@ -40,7 +40,7 @@ export function trimmedBuffer(buffer, { threshold = .001, fade = .02 } = {}) {
 }
 
 export function createMediaSoundPlayer({ render, muted, createAudio, now = () => performance.now(), wallNow = () => Date.now(), voices = 12, cacheBytes = 8 * 1024 * 1024, maxClips = 160 }) {
-  const pool = [], clips = new Map(), cancelled = new Map(), pending = new Set();
+  const pool = [], clips = new Map(), cancelled = new Map(), pending = new Set(), retained = new Map();
   let epoch = 0, bytes = 0;
   let lastUse = wallNow();
   const valid = request => request.epoch === epoch && request.generation === (cancelled.get(request.channel) || 0) &&
@@ -49,7 +49,7 @@ export function createMediaSoundPlayer({ render, muted, createAudio, now = () =>
   function trim() {
     for (const [key, clip] of clips) {
       if (clips.size <= maxClips && bytes <= cacheBytes) break;
-      if (!clip.url || clip.users) continue;
+      if (!clip.url || clip.users || retained.has(key)) continue;
       URL.revokeObjectURL(clip.url); bytes -= clip.bytes; clips.delete(key);
     }
   }
@@ -170,8 +170,21 @@ export function createMediaSoundPlayer({ render, muted, createAudio, now = () =>
     for (const slot of pool) { slot.audio.src = ''; try { slot.audio.load(); } catch {} }
     pool.length = 0;
     for (const clip of clips.values()) clip.ready.then(c => URL.revokeObjectURL(c.url)).catch(() => {});
-    clips.clear(); bytes = 0;
+    clips.clear(); retained.clear(); bytes = 0;
   }
+  // An encounter holds its small set of clips until it ends. Ordinary UI sounds
+  // cannot evict them and force an offline render in the middle of an attack.
+  function retain(plans) {
+    const keys = [...new Set(plans.map(plan => JSON.stringify(plan)))];
+    for (const key of keys) retained.set(key, (retained.get(key) || 0) + 1);
+    let released = false;
+    return () => {
+      if (released) return; released = true;
+      for (const key of keys) { const count = retained.get(key) - 1; if (count) retained.set(key, count); else retained.delete(key); }
+      trim();
+    };
+  }
+  const has = plan => !!clips.get(JSON.stringify(plan))?.url;
   const stats = () => ({ clips: clips.size, bytes });
-  return { unlock, prepare, play, stop, wake, dispose, stats };
+  return { unlock, prepare, play, stop, wake, dispose, stats, retain, has };
 }

@@ -128,3 +128,12 @@ test('late rendered effects expire and delayed clips stay alive under cache pres
   await wait(45); assert.equal(h.played.length, 2);
   h.player.stop(); assert.equal(resolveObjectURL(h.played.at(-1).src), undefined, 'released clips can be evicted');
 });
+
+test('an encounter retains its warmed clips through cache pressure, then releases the memory', async t => {
+  const h = harness(t, { cacheBytes: 1, maxClips: 1 });
+  const held = plan('held'), release = h.player.retain([held]);
+  await h.player.prepare(held); await h.player.prepare(plan('other'));
+  assert.equal(h.player.has(held), true, 'UI effects do not evict the encounter’s sound');
+  assert.equal(h.player.has(plan('other')), false);
+  release(); release(); assert.equal(h.player.has(held), false, 'releasing is idempotent and trims the cache');
+});

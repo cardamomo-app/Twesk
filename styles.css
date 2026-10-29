@@ -946,16 +946,16 @@ button.hashtag:hover{text-decoration:underline}
 /* Spell layers live over the arena so casting never changes the layout. */
 .combat-spell{--spell:#efac56;position:absolute;inset:0 0 75px;pointer-events:none;z-index:4;color:var(--spell)}
 .spell-storm{--spell:#7ccde6}.spell-ward{--spell:#a5bb94}.spell-starfall{--spell:#c2a4ee}
-.spell-charge{position:absolute;left:23%;top:58%;width:68px;height:68px;border:2px solid var(--spell);box-shadow:0 0 20px color-mix(in srgb,var(--spell) 40%,transparent),inset 0 0 14px color-mix(in srgb,var(--spell) 20%,transparent);transform:translate(-50%,-50%) rotate(45deg);animation:spell-charge .4s ease-out both}
-.spell-projectile{position:absolute;left:23%;top:53%;width:62px;height:62px;overflow:visible;filter:drop-shadow(0 0 8px var(--spell));animation:spell-flight .4s ease-in both}
+.spell-charge{position:absolute;left:23%;top:58%;width:68px;height:68px;border:2px solid var(--spell);box-shadow:0 0 20px color-mix(in srgb,var(--spell) 40%,transparent),inset 0 0 14px color-mix(in srgb,var(--spell) 20%,transparent);transform:translate(-50%,-50%) rotate(45deg);animation:spell-charge var(--spell-flight,.4s) ease-out var(--spell-delay,0ms) both}
+.spell-projectile{position:absolute;left:23%;top:45%;width:62px;height:62px;overflow:visible;filter:drop-shadow(0 0 8px var(--spell));animation:spell-flight var(--spell-flight,.4s) ease-in var(--spell-delay,0ms) both}
 .spell-storm .spell-projectile{width:83px;height:83px}.spell-starfall.spell-attack .spell-projectile{animation-name:starfall-dive}
-.spell-ward-shield{position:absolute;left:23%;top:54%;width:128px;height:140px;overflow:visible;filter:drop-shadow(0 0 9px var(--spell));transform:translate(-50%,-50%);animation:ward-rise .4s ease-out both}
-.spell-impact{position:absolute;left:77%;top:54%;width:130px;height:130px;overflow:visible;opacity:0;transform:translate(-50%,-50%);filter:drop-shadow(0 0 7px var(--spell))}
-.spell-guard .spell-impact{left:23%}.spell-guard .spell-charge{opacity:.3}
-.impacted .spell-impact{animation:spell-burst .7s ease-out both}.impacted .spell-ward-shield{animation:ward-impact .85s ease-out both}
+.spell-ward-shield{position:absolute;left:25%;top:42%;width:128px;height:140px;overflow:visible;filter:drop-shadow(0 0 9px var(--spell));transform:translate(-50%,-50%);animation:ward-rise var(--spell-flight,.4s) ease-out var(--spell-delay,0ms) both}
+.spell-impact{position:absolute;left:77%;top:45%;width:130px;height:130px;overflow:visible;opacity:0;transform:translate(-50%,-50%);filter:drop-shadow(0 0 7px var(--spell))}
+.spell-guard .spell-impact{left:25%;top:42%}.spell-guard .spell-charge{opacity:.3}
+.impacted .spell-impact{animation:spell-burst .7s ease-out var(--spell-impact-delay,0ms) forwards}.impacted .spell-ward-shield{animation:ward-impact .85s ease-out var(--spell-impact-delay,0ms) forwards}
 @keyframes spell-charge{0%{opacity:0;transform:translate(-50%,-50%) rotate(0) scale(.4)}65%{opacity:.8}100%{opacity:0;transform:translate(-50%,-50%) rotate(45deg) scale(1.2)}}
 @keyframes spell-flight{0%{opacity:0;left:23%;transform:translate(-50%,-50%) scale(.4) rotate(-20deg)}20%{opacity:1}85%{opacity:1}100%{opacity:0;left:77%;transform:translate(-50%,-50%) scale(1.1) rotate(15deg)}}
-@keyframes starfall-dive{0%{opacity:0;left:62%;top:3%;transform:translate(-50%,-50%) scale(.4) rotate(-30deg)}20%,85%{opacity:1}100%{opacity:0;left:77%;top:54%;transform:translate(-50%,-50%) scale(1.2) rotate(15deg)}}
+@keyframes starfall-dive{0%{opacity:0;left:62%;top:3%;transform:translate(-50%,-50%) scale(.4) rotate(-30deg)}20%,85%{opacity:1}100%{opacity:0;left:77%;top:45%;transform:translate(-50%,-50%) scale(1.2) rotate(15deg)}}
 @keyframes spell-burst{0%{opacity:1;transform:translate(-50%,-50%) scale(.3)}35%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.5)}}
 @keyframes ward-rise{0%{opacity:0;transform:translate(-50%,-40%) scale(.65)}100%{opacity:.85;transform:translate(-50%,-50%) scale(1)}}
 @keyframes ward-impact{0%{opacity:1;transform:translate(-50%,-50%) scale(1.08);filter:drop-shadow(0 0 18px var(--spell))}35%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.18)}}
@@ -1027,6 +1027,7 @@ button.hashtag:hover{text-decoration:underline}
 .companion-callout{position:absolute;left:0;top:-4px;transform:translateY(-100%);display:flex;flex-direction:column;gap:1px;width:max-content;max-width:135px;padding:6px 9px;border-radius:8px;border:1px solid color-mix(in srgb,var(--pet-color) 50%,var(--line));background:var(--panel);box-shadow:var(--shadow);text-align:left;z-index:8}
 .companion-callout strong{font-size:10px;line-height:1.35;color:var(--text);font-weight:650}
 .companion-callout>span{font-size:9px;line-height:1.4;color:color-mix(in srgb,var(--pet-color) 58%,var(--text));font-weight:650}
+.companion-callout{animation:companion-callout .18s ease-out var(--pet-delay,0ms) both}
 .companion-enter .companion-art{animation:pet-arrive .65s ease-out both}
 .companion-victory .companion-art{animation:pet-cheer .8s ease-in-out 2}
 .companion-rest{opacity:.72}
@@ -1035,6 +1036,8 @@ button.hashtag:hover{text-decoration:underline}
 .pet-tortoise.is-assisting .companion-art{animation:shell-assist .85s ease-in-out both}
 .pet-fox.is-assisting .companion-art{animation:fox-assist .85s ease-in-out both}
 .pet-cat.is-assisting .companion-art{animation:cat-assist 1.15s ease-in-out both}
+.is-assisting .companion-art{animation-delay:var(--pet-delay,0ms)}
+@keyframes companion-callout{from{opacity:0}to{opacity:1}}
 @keyframes pet-arrive{0%{opacity:0;transform:translate(-12px,5px) scale(.85)}65%{opacity:1;transform:translate(0,-5px) scale(1.03)}100%{opacity:1;transform:none}}
 @keyframes pet-cheer{0%,100%{transform:none}45%{transform:translateY(-9px) rotate(-5deg)}70%{transform:translateY(-3px) rotate(4deg)}}
 @keyframes owl-assist{0%,100%{transform:none}30%{transform:translate(calc(var(--pet-hop)*.4),-40px) rotate(-12deg)}50%{transform:translate(var(--pet-hop),-23px) rotate(13deg)}75%{transform:translate(12px,-14px) rotate(-5deg)}}
@@ -1043,16 +1046,16 @@ button.hashtag:hover{text-decoration:underline}
 @keyframes fox-assist{0%,100%{transform:none}25%{transform:translate(calc(var(--pet-hop)*.2),-8px) rotate(-8deg)}45%{transform:translate(var(--pet-hop),-4px) rotate(8deg)}65%{transform:translate(calc(var(--pet-hop)*.4),-12px) rotate(-5deg)}}
 @keyframes cat-assist{0%,100%{transform:none}30%,65%{transform:translateY(-14px) rotate(-5deg)}80%{transform:translateY(-6px) rotate(3deg)}}
 .combat-pet-effect{position:absolute;inset:0 0 68px;pointer-events:none;z-index:5;color:var(--pet-color)}
-.pet-projectile{position:absolute;left:9%;top:74%;width:56px;height:56px;overflow:visible;filter:drop-shadow(0 0 7px var(--pet-color));animation:pet-flight .4s ease-in both}
-.pet-impact{position:absolute;left:77%;top:55%;width:112px;height:112px;overflow:visible;opacity:0;transform:translate(-50%,-50%);filter:drop-shadow(0 0 7px var(--pet-color))}
-.pet-effect-guard .pet-impact{left:27%;top:63%;width:112px;height:124px;transform:translate(-50%,-50%) scale(.8);opacity:.5}
-.pet-effect-deflect .pet-impact{left:23%;top:63%;width:145px;height:145px;opacity:.4;animation:pet-leaf-charge .4s ease-out both}
+.pet-projectile{position:absolute;left:9%;top:74%;width:56px;height:56px;overflow:visible;filter:drop-shadow(0 0 7px var(--pet-color));animation:pet-flight var(--pet-flight,.4s) ease-in var(--pet-delay,0ms) both}
+.pet-impact{position:absolute;left:77%;top:72%;width:112px;height:112px;overflow:visible;opacity:0;transform:translate(-50%,-50%);filter:drop-shadow(0 0 7px var(--pet-color))}
+.pet-effect-guard .pet-impact{left:18%;top:76%;width:112px;height:124px;transform:translate(-50%,-50%) scale(.8);opacity:.5}
+.pet-effect-deflect .pet-impact{left:23%;top:63%;width:145px;height:145px;opacity:.4;animation:pet-leaf-charge var(--pet-flight,.4s) ease-out var(--pet-delay,0ms) both}
 .pet-effect-heal .pet-projectile{width:45px;height:45px;animation-name:pet-heal-flight}
 .pet-effect-heal .pet-impact{left:23%;top:63%;width:130px;height:130px}
-.impacted .pet-impact{animation:pet-burst .75s ease-out both}
-.impacted .pet-effect-guard .pet-impact{animation:shell-flash .8s ease-out both}
-.impacted .pet-effect-deflect .pet-impact{animation:pet-leaf-burst .8s ease-out both}
-@keyframes pet-flight{0%{opacity:0;left:9%;top:74%;transform:translate(-50%,-50%) scale(.45) rotate(-15deg)}20%,80%{opacity:1}100%{opacity:0;left:77%;top:55%;transform:translate(-50%,-50%) scale(1.1) rotate(20deg)}}
+.impacted .pet-impact{animation:pet-burst .75s ease-out var(--pet-impact-delay,0ms) forwards}
+.impacted .pet-effect-guard .pet-impact{animation:shell-flash .8s ease-out var(--pet-impact-delay,0ms) forwards}
+.impacted .pet-effect-deflect .pet-impact{animation:pet-leaf-burst .8s ease-out var(--pet-impact-delay,0ms) forwards}
+@keyframes pet-flight{0%{opacity:0;left:9%;top:74%;transform:translate(-50%,-50%) scale(.45) rotate(-15deg)}20%,80%{opacity:1}100%{opacity:0;left:77%;top:72%;transform:translate(-50%,-50%) scale(1.1) rotate(20deg)}}
 @keyframes pet-heal-flight{0%{opacity:0;left:9%;top:74%;transform:translate(-50%,-50%) scale(.5)}20%,85%{opacity:1}100%{opacity:0;left:23%;top:52%;transform:translate(-50%,-50%) scale(1.15)}}
 @keyframes pet-burst{0%{opacity:1;transform:translate(-50%,-50%) scale(.4)}40%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}}
 @keyframes shell-flash{0%{opacity:.9;transform:translate(-50%,-50%) scale(.85)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.04)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.15)}}
@@ -1061,6 +1064,9 @@ button.hashtag:hover{text-decoration:underline}
 @media(max-width:560px){.battle-companion{--pet-hop:24px;left:-7px;bottom:0;width:68px;height:81px}.companion-art{bottom:12px}.companion-name{font-size:8px;letter-spacing:-.15px}.companion-callout{max-width:108px;padding:5px 7px}.companion-callout strong{font-size:10px}.companion-callout>span{font-size:9px}.pet-projectile{width:40px;height:40px}.pet-effect-heal .pet-projectile{width:35px;height:35px}.pet-impact,.pet-effect-heal .pet-impact{width:86px;height:86px}.pet-effect-guard .pet-impact{width:80px;height:92px}.pet-effect-deflect .pet-impact{width:106px;height:106px}}
 @media(prefers-reduced-motion:reduce){.battle-companion *{animation:none!important;transition:none!important}.pet-projectile{display:none}.pet-effect-deflect .pet-impact{animation:none;opacity:.4}.impacted .pet-impact{animation:none!important;opacity:.7}}
 :root[data-motion=reduced] .battle-companion *{animation:none!important;transition:none!important}:root[data-motion=reduced] .pet-projectile{display:none}:root[data-motion=reduced] .pet-effect-deflect .pet-impact{animation:none;opacity:.4}:root[data-motion=reduced] .impacted .pet-impact{animation:none!important;opacity:.7}
+
+/* The replay clock advances these animations together, including after a slow frame or sleep. */
+.battle-stage[data-playback],.battle-stage[data-playback] *,.battle-stage[data-playback]::before,.battle-stage[data-playback]::after,.battle-stage[data-playback] *::before,.battle-stage[data-playback] *::after{animation-play-state:paused!important}
 
 /* Keep the brand, date, and every control readable on the narrowest phones. */
 @media(max-width:400px){.topbar{height:auto;min-height:90px;padding-top:10px;padding-bottom:10px;flex-direction:column;align-items:stretch;gap:5px}.topbar-brand{width:100%;justify-content:space-between;flex-shrink:0}.topbar-date{max-width:none;white-space:nowrap;padding-left:0;border-left:0;font-size:9px;text-align:right}.topbar-actions{align-self:flex-end}}

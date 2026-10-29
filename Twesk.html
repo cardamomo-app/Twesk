@@ -960,16 +960,16 @@ button.hashtag:hover{text-decoration:underline}
 /* Spell layers live over the arena so casting never changes the layout. */
 .combat-spell{--spell:#efac56;position:absolute;inset:0 0 75px;pointer-events:none;z-index:4;color:var(--spell)}
 .spell-storm{--spell:#7ccde6}.spell-ward{--spell:#a5bb94}.spell-starfall{--spell:#c2a4ee}
-.spell-charge{position:absolute;left:23%;top:58%;width:68px;height:68px;border:2px solid var(--spell);box-shadow:0 0 20px color-mix(in srgb,var(--spell) 40%,transparent),inset 0 0 14px color-mix(in srgb,var(--spell) 20%,transparent);transform:translate(-50%,-50%) rotate(45deg);animation:spell-charge .4s ease-out both}
-.spell-projectile{position:absolute;left:23%;top:53%;width:62px;height:62px;overflow:visible;filter:drop-shadow(0 0 8px var(--spell));animation:spell-flight .4s ease-in both}
+.spell-charge{position:absolute;left:23%;top:58%;width:68px;height:68px;border:2px solid var(--spell);box-shadow:0 0 20px color-mix(in srgb,var(--spell) 40%,transparent),inset 0 0 14px color-mix(in srgb,var(--spell) 20%,transparent);transform:translate(-50%,-50%) rotate(45deg);animation:spell-charge var(--spell-flight,.4s) ease-out var(--spell-delay,0ms) both}
+.spell-projectile{position:absolute;left:23%;top:45%;width:62px;height:62px;overflow:visible;filter:drop-shadow(0 0 8px var(--spell));animation:spell-flight var(--spell-flight,.4s) ease-in var(--spell-delay,0ms) both}
 .spell-storm .spell-projectile{width:83px;height:83px}.spell-starfall.spell-attack .spell-projectile{animation-name:starfall-dive}
-.spell-ward-shield{position:absolute;left:23%;top:54%;width:128px;height:140px;overflow:visible;filter:drop-shadow(0 0 9px var(--spell));transform:translate(-50%,-50%);animation:ward-rise .4s ease-out both}
-.spell-impact{position:absolute;left:77%;top:54%;width:130px;height:130px;overflow:visible;opacity:0;transform:translate(-50%,-50%);filter:drop-shadow(0 0 7px var(--spell))}
-.spell-guard .spell-impact{left:23%}.spell-guard .spell-charge{opacity:.3}
-.impacted .spell-impact{animation:spell-burst .7s ease-out both}.impacted .spell-ward-shield{animation:ward-impact .85s ease-out both}
+.spell-ward-shield{position:absolute;left:25%;top:42%;width:128px;height:140px;overflow:visible;filter:drop-shadow(0 0 9px var(--spell));transform:translate(-50%,-50%);animation:ward-rise var(--spell-flight,.4s) ease-out var(--spell-delay,0ms) both}
+.spell-impact{position:absolute;left:77%;top:45%;width:130px;height:130px;overflow:visible;opacity:0;transform:translate(-50%,-50%);filter:drop-shadow(0 0 7px var(--spell))}
+.spell-guard .spell-impact{left:25%;top:42%}.spell-guard .spell-charge{opacity:.3}
+.impacted .spell-impact{animation:spell-burst .7s ease-out var(--spell-impact-delay,0ms) forwards}.impacted .spell-ward-shield{animation:ward-impact .85s ease-out var(--spell-impact-delay,0ms) forwards}
 @keyframes spell-charge{0%{opacity:0;transform:translate(-50%,-50%) rotate(0) scale(.4)}65%{opacity:.8}100%{opacity:0;transform:translate(-50%,-50%) rotate(45deg) scale(1.2)}}
 @keyframes spell-flight{0%{opacity:0;left:23%;transform:translate(-50%,-50%) scale(.4) rotate(-20deg)}20%{opacity:1}85%{opacity:1}100%{opacity:0;left:77%;transform:translate(-50%,-50%) scale(1.1) rotate(15deg)}}
-@keyframes starfall-dive{0%{opacity:0;left:62%;top:3%;transform:translate(-50%,-50%) scale(.4) rotate(-30deg)}20%,85%{opacity:1}100%{opacity:0;left:77%;top:54%;transform:translate(-50%,-50%) scale(1.2) rotate(15deg)}}
+@keyframes starfall-dive{0%{opacity:0;left:62%;top:3%;transform:translate(-50%,-50%) scale(.4) rotate(-30deg)}20%,85%{opacity:1}100%{opacity:0;left:77%;top:45%;transform:translate(-50%,-50%) scale(1.2) rotate(15deg)}}
 @keyframes spell-burst{0%{opacity:1;transform:translate(-50%,-50%) scale(.3)}35%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.5)}}
 @keyframes ward-rise{0%{opacity:0;transform:translate(-50%,-40%) scale(.65)}100%{opacity:.85;transform:translate(-50%,-50%) scale(1)}}
 @keyframes ward-impact{0%{opacity:1;transform:translate(-50%,-50%) scale(1.08);filter:drop-shadow(0 0 18px var(--spell))}35%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.18)}}
@@ -1041,6 +1041,7 @@ button.hashtag:hover{text-decoration:underline}
 .companion-callout{position:absolute;left:0;top:-4px;transform:translateY(-100%);display:flex;flex-direction:column;gap:1px;width:max-content;max-width:135px;padding:6px 9px;border-radius:8px;border:1px solid color-mix(in srgb,var(--pet-color) 50%,var(--line));background:var(--panel);box-shadow:var(--shadow);text-align:left;z-index:8}
 .companion-callout strong{font-size:10px;line-height:1.35;color:var(--text);font-weight:650}
 .companion-callout>span{font-size:9px;line-height:1.4;color:color-mix(in srgb,var(--pet-color) 58%,var(--text));font-weight:650}
+.companion-callout{animation:companion-callout .18s ease-out var(--pet-delay,0ms) both}
 .companion-enter .companion-art{animation:pet-arrive .65s ease-out both}
 .companion-victory .companion-art{animation:pet-cheer .8s ease-in-out 2}
 .companion-rest{opacity:.72}
@@ -1049,6 +1050,8 @@ button.hashtag:hover{text-decoration:underline}
 .pet-tortoise.is-assisting .companion-art{animation:shell-assist .85s ease-in-out both}
 .pet-fox.is-assisting .companion-art{animation:fox-assist .85s ease-in-out both}
 .pet-cat.is-assisting .companion-art{animation:cat-assist 1.15s ease-in-out both}
+.is-assisting .companion-art{animation-delay:var(--pet-delay,0ms)}
+@keyframes companion-callout{from{opacity:0}to{opacity:1}}
 @keyframes pet-arrive{0%{opacity:0;transform:translate(-12px,5px) scale(.85)}65%{opacity:1;transform:translate(0,-5px) scale(1.03)}100%{opacity:1;transform:none}}
 @keyframes pet-cheer{0%,100%{transform:none}45%{transform:translateY(-9px) rotate(-5deg)}70%{transform:translateY(-3px) rotate(4deg)}}
 @keyframes owl-assist{0%,100%{transform:none}30%{transform:translate(calc(var(--pet-hop)*.4),-40px) rotate(-12deg)}50%{transform:translate(var(--pet-hop),-23px) rotate(13deg)}75%{transform:translate(12px,-14px) rotate(-5deg)}}
@@ -1057,16 +1060,16 @@ button.hashtag:hover{text-decoration:underline}
 @keyframes fox-assist{0%,100%{transform:none}25%{transform:translate(calc(var(--pet-hop)*.2),-8px) rotate(-8deg)}45%{transform:translate(var(--pet-hop),-4px) rotate(8deg)}65%{transform:translate(calc(var(--pet-hop)*.4),-12px) rotate(-5deg)}}
 @keyframes cat-assist{0%,100%{transform:none}30%,65%{transform:translateY(-14px) rotate(-5deg)}80%{transform:translateY(-6px) rotate(3deg)}}
 .combat-pet-effect{position:absolute;inset:0 0 68px;pointer-events:none;z-index:5;color:var(--pet-color)}
-.pet-projectile{position:absolute;left:9%;top:74%;width:56px;height:56px;overflow:visible;filter:drop-shadow(0 0 7px var(--pet-color));animation:pet-flight .4s ease-in both}
-.pet-impact{position:absolute;left:77%;top:55%;width:112px;height:112px;overflow:visible;opacity:0;transform:translate(-50%,-50%);filter:drop-shadow(0 0 7px var(--pet-color))}
-.pet-effect-guard .pet-impact{left:27%;top:63%;width:112px;height:124px;transform:translate(-50%,-50%) scale(.8);opacity:.5}
-.pet-effect-deflect .pet-impact{left:23%;top:63%;width:145px;height:145px;opacity:.4;animation:pet-leaf-charge .4s ease-out both}
+.pet-projectile{position:absolute;left:9%;top:74%;width:56px;height:56px;overflow:visible;filter:drop-shadow(0 0 7px var(--pet-color));animation:pet-flight var(--pet-flight,.4s) ease-in var(--pet-delay,0ms) both}
+.pet-impact{position:absolute;left:77%;top:72%;width:112px;height:112px;overflow:visible;opacity:0;transform:translate(-50%,-50%);filter:drop-shadow(0 0 7px var(--pet-color))}
+.pet-effect-guard .pet-impact{left:18%;top:76%;width:112px;height:124px;transform:translate(-50%,-50%) scale(.8);opacity:.5}
+.pet-effect-deflect .pet-impact{left:23%;top:63%;width:145px;height:145px;opacity:.4;animation:pet-leaf-charge var(--pet-flight,.4s) ease-out var(--pet-delay,0ms) both}
 .pet-effect-heal .pet-projectile{width:45px;height:45px;animation-name:pet-heal-flight}
 .pet-effect-heal .pet-impact{left:23%;top:63%;width:130px;height:130px}
-.impacted .pet-impact{animation:pet-burst .75s ease-out both}
-.impacted .pet-effect-guard .pet-impact{animation:shell-flash .8s ease-out both}
-.impacted .pet-effect-deflect .pet-impact{animation:pet-leaf-burst .8s ease-out both}
-@keyframes pet-flight{0%{opacity:0;left:9%;top:74%;transform:translate(-50%,-50%) scale(.45) rotate(-15deg)}20%,80%{opacity:1}100%{opacity:0;left:77%;top:55%;transform:translate(-50%,-50%) scale(1.1) rotate(20deg)}}
+.impacted .pet-impact{animation:pet-burst .75s ease-out var(--pet-impact-delay,0ms) forwards}
+.impacted .pet-effect-guard .pet-impact{animation:shell-flash .8s ease-out var(--pet-impact-delay,0ms) forwards}
+.impacted .pet-effect-deflect .pet-impact{animation:pet-leaf-burst .8s ease-out var(--pet-impact-delay,0ms) forwards}
+@keyframes pet-flight{0%{opacity:0;left:9%;top:74%;transform:translate(-50%,-50%) scale(.45) rotate(-15deg)}20%,80%{opacity:1}100%{opacity:0;left:77%;top:72%;transform:translate(-50%,-50%) scale(1.1) rotate(20deg)}}
 @keyframes pet-heal-flight{0%{opacity:0;left:9%;top:74%;transform:translate(-50%,-50%) scale(.5)}20%,85%{opacity:1}100%{opacity:0;left:23%;top:52%;transform:translate(-50%,-50%) scale(1.15)}}
 @keyframes pet-burst{0%{opacity:1;transform:translate(-50%,-50%) scale(.4)}40%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}}
 @keyframes shell-flash{0%{opacity:.9;transform:translate(-50%,-50%) scale(.85)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.04)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.15)}}
@@ -1075,6 +1078,9 @@ button.hashtag:hover{text-decoration:underline}
 @media(max-width:560px){.battle-companion{--pet-hop:24px;left:-7px;bottom:0;width:68px;height:81px}.companion-art{bottom:12px}.companion-name{font-size:8px;letter-spacing:-.15px}.companion-callout{max-width:108px;padding:5px 7px}.companion-callout strong{font-size:10px}.companion-callout>span{font-size:9px}.pet-projectile{width:40px;height:40px}.pet-effect-heal .pet-projectile{width:35px;height:35px}.pet-impact,.pet-effect-heal .pet-impact{width:86px;height:86px}.pet-effect-guard .pet-impact{width:80px;height:92px}.pet-effect-deflect .pet-impact{width:106px;height:106px}}
 @media(prefers-reduced-motion:reduce){.battle-companion *{animation:none!important;transition:none!important}.pet-projectile{display:none}.pet-effect-deflect .pet-impact{animation:none;opacity:.4}.impacted .pet-impact{animation:none!important;opacity:.7}}
 :root[data-motion=reduced] .battle-companion *{animation:none!important;transition:none!important}:root[data-motion=reduced] .pet-projectile{display:none}:root[data-motion=reduced] .pet-effect-deflect .pet-impact{animation:none;opacity:.4}:root[data-motion=reduced] .impacted .pet-impact{animation:none!important;opacity:.7}
+
+/* The replay clock advances these animations together, including after a slow frame or sleep. */
+.battle-stage[data-playback],.battle-stage[data-playback] *,.battle-stage[data-playback]::before,.battle-stage[data-playback]::after,.battle-stage[data-playback] *::before,.battle-stage[data-playback] *::after{animation-play-state:paused!important}
 
 /* Keep the brand, date, and every control readable on the narrowest phones. */
 @media(max-width:400px){.topbar{height:auto;min-height:90px;padding-top:10px;padding-bottom:10px;flex-direction:column;align-items:stretch;gap:5px}.topbar-brand{width:100%;justify-content:space-between;flex-shrink:0}.topbar-date{max-width:none;white-space:nowrap;padding-left:0;border-left:0;font-size:9px;text-align:right}.topbar-actions{align-self:flex-end}}
@@ -1428,7 +1434,15 @@ function renderModal() {
   document.body.classList.add('modal-open');
   const same = shownModal === app.modal,
     kept = same ? KEEP_SCROLL.map(sel => [sel, $(`#overlay ${sel}`)?.scrollTop || 0, $(`#overlay ${sel}`)?.scrollLeft || 0]) : [];
+  // Keep the static voxel SVGs between combat turns. Rebuilding their hundreds of
+  // faces caused avoidable parsing/layout work just as the next attack began.
+  const models = same && app.modal.type === 'battle' && !app.modal.finished
+    ? [...document.querySelectorAll('#overlay [data-battle-model]')].map(el => [el.dataset.battleModel, el.firstElementChild]).filter(([, model]) => model)
+    : [];
+  app.modal.reuseBattleModels = models.map(([key]) => key);
   $('#overlay').innerHTML = modals[app.modal.type]?.() ?? '';
+  for (const [key, model] of models) $(`#overlay [data-battle-model="${key}"]`)?.replaceChildren(model);
+  delete app.modal.reuseBattleModels;
   shownModal = app.modal;
   if (same) $('#overlay .modal')?.classList.add('redrawn');
   for (const [sel, top, left] of kept) {
@@ -4703,7 +4717,7 @@ function variantsFor(name, options) {
 const COMBO_SOUNDS = new Set(['check', 'xp', 'reward', 'note']);
 const COMBO_STEPS = PENTATONIC.length - 2;
 const prepareQueue = [], preparationJobs = new Map();
-let preparing = false, preparationEpoch = 0;
+let preparing = false, preparationEpoch = 0, preparationHolds = 0;
 const idle = cb => typeof window !== 'undefined' && window.requestIdleCallback ? window.requestIdleCallback(cb, { timeout: 1500 }) : setTimeout(cb, 30);
 function queuePreparation(job) {
   job.state = 'queued';
@@ -4716,11 +4730,11 @@ function resumePrepared() {
   drainPrepared();
 }
 function drainPrepared() {
-  if (preparing || !prepareQueue.length || isMuted()) return;
+  if (preparing || preparationHolds || !prepareQueue.length || isMuted()) return;
   preparing = true;
   const step = () => {
     // Keep queued work while muted so unmuting resumes the same bank, including combat sounds.
-    if (isMuted()) { preparing = false; return; }
+    if (isMuted() || preparationHolds) { preparing = false; return; }
     const job = prepareQueue.shift();
     if (!job) { preparing = false; return; }
     job.state = 'rendering';
@@ -4734,12 +4748,12 @@ function drainPrepared() {
   idle(step);
 }
 // Queue sounds for the media bank: [[name, options], ...]. Elsewhere (live Web Audio) it does nothing.
-function prepareSfx(entries) {
+function prepareSfx(entries, { variants = VARIANTS } = {}) {
   if (!mediaPlayer) return;
   for (const [name, options = {}] of entries) {
     if (!SOUNDS[name]) continue;
     const combos = COMBO_SOUNDS.has(name) ? Array.from({ length: COMBO_STEPS }, (_, i) => i) : [null];
-    for (const combo of combos) for (let variant = 0; variant < variantsFor(name, options); variant++) {
+    for (const combo of combos) for (let variant = 0; variant < Math.min(variants, variantsFor(name, options)); variant++) {
       const key = JSON.stringify([name, options, combo, variant]);
       let job = preparationJobs.get(key);
       if (job && job.state !== 'failed') continue;
@@ -4751,6 +4765,26 @@ function prepareSfx(entries) {
     }
   }
   drainPrepared();
+}
+// Warm and retain only the effects the recorded encounter actually uses. The
+// silent setup also works when muted, so unmuting mid-fight needs no new renders.
+function prepareBattleSfx(entries) {
+  if (!mediaPlayer) return { ready: Promise.resolve(), start() {}, release() {} };
+  const plans = [...new Map(entries.filter(([name]) => SOUNDS[name]).map(([name, options = {}]) => {
+    const plan = recordPlan(name, options, 0); return [JSON.stringify(plan), plan];
+  })).values()];
+  preparationHolds++;
+  const releaseClips = mediaPlayer.retain(plans);
+  let started = false, released = false;
+  const ready = (async () => {
+    for (const plan of plans) {
+      if (started || released) break;
+      await mediaPlayer.prepare(plan);
+    }
+  })();
+  return { ready, start() { started = true; }, release() {
+    if (released) return; released = true; releaseClips(); preparationHolds--; drainPrepared();
+  } };
 }
 // Everyday sounds outside combat; combat prepares its own set before a fight.
 const EVERYDAY = [
@@ -4852,9 +4886,11 @@ function playSfx(name, options = {}) {
     lastWind = asked;
   }
   if (mediaPlayer) {
-    const plan = recordPlan(name, options, Math.floor(Math.random() * variantsFor(name, options)));
+    const plan = recordPlan(name, options, group === 'battle' ? 0 : Math.floor(Math.random() * variantsFor(name, options)));
+    // A cold or interrupted clip must not stall the visuals or arrive on a later turn.
+    if (group === 'battle' && !mediaPlayer.has(plan)) return;
     mixableSession();
-    mediaPlayer.play(plan, { ...options, maxAge: name === 'wind' ? 150 : 800 });
+    mediaPlayer.play(plan, { ...options, maxAge: name === 'wind' ? 150 : group === 'battle' ? 120 : 800 });
     return;
   }
   const allGeneration = globalCancel;
@@ -4862,7 +4898,7 @@ function playSfx(name, options = {}) {
     unlockSfx();
     const play = context => {
       if (!context || context !== ctx || context.state !== 'running' || isMuted() || allGeneration !== globalCancel ||
-          (cancelled.get(group) || 0) !== generation || performance.now() - asked >= (name === 'wind' ? 150 : 800)) return;
+          (cancelled.get(group) || 0) !== generation || performance.now() - asked >= (name === 'wind' ? 150 : group === 'battle' ? 120 : 800)) return;
       try {
         channel = group;
         SOUNDS[name](context.currentTime + 0.01 + (options.delay || 0), options);
@@ -4892,7 +4928,7 @@ const SOUND_NAMES = Object.keys(SOUNDS);
 // Size of the pre-rendered bank (Safari path), or null with live Web Audio.
 const sfxBankStats = () => mediaPlayer?.stats() ?? null;
 
-Object.assign(exports,{configureSfx,prepareSfx,unlockSfx,playSfx,stopSfx,SOUND_NAMES,sfxBankStats});
+Object.assign(exports,{configureSfx,prepareSfx,prepareBattleSfx,unlockSfx,playSfx,stopSfx,SOUND_NAMES,sfxBankStats});
 },
 "sfx-media.js":function(require,exports){
 // Safari can lose a tab's live Web Audio output until the window is closed, even after reload.
@@ -4937,7 +4973,7 @@ function trimmedBuffer(buffer, { threshold = .001, fade = .02 } = {}) {
 }
 
 function createMediaSoundPlayer({ render, muted, createAudio, now = () => performance.now(), wallNow = () => Date.now(), voices = 12, cacheBytes = 8 * 1024 * 1024, maxClips = 160 }) {
-  const pool = [], clips = new Map(), cancelled = new Map(), pending = new Set();
+  const pool = [], clips = new Map(), cancelled = new Map(), pending = new Set(), retained = new Map();
   let epoch = 0, bytes = 0;
   let lastUse = wallNow();
   const valid = request => request.epoch === epoch && request.generation === (cancelled.get(request.channel) || 0) &&
@@ -4946,7 +4982,7 @@ function createMediaSoundPlayer({ render, muted, createAudio, now = () => perfor
   function trim() {
     for (const [key, clip] of clips) {
       if (clips.size <= maxClips && bytes <= cacheBytes) break;
-      if (!clip.url || clip.users) continue;
+      if (!clip.url || clip.users || retained.has(key)) continue;
       URL.revokeObjectURL(clip.url); bytes -= clip.bytes; clips.delete(key);
     }
   }
@@ -5067,10 +5103,23 @@ function createMediaSoundPlayer({ render, muted, createAudio, now = () => perfor
     for (const slot of pool) { slot.audio.src = ''; try { slot.audio.load(); } catch {} }
     pool.length = 0;
     for (const clip of clips.values()) clip.ready.then(c => URL.revokeObjectURL(c.url)).catch(() => {});
-    clips.clear(); bytes = 0;
+    clips.clear(); retained.clear(); bytes = 0;
   }
+  // An encounter holds its small set of clips until it ends. Ordinary UI sounds
+  // cannot evict them and force an offline render in the middle of an attack.
+  function retain(plans) {
+    const keys = [...new Set(plans.map(plan => JSON.stringify(plan)))];
+    for (const key of keys) retained.set(key, (retained.get(key) || 0) + 1);
+    let released = false;
+    return () => {
+      if (released) return; released = true;
+      for (const key of keys) { const count = retained.get(key) - 1; if (count) retained.set(key, count); else retained.delete(key); }
+      trim();
+    };
+  }
+  const has = plan => !!clips.get(JSON.stringify(plan))?.url;
   const stats = () => ({ clips: clips.size, bytes });
-  return { unlock, prepare, play, stop, wake, dispose, stats };
+  return { unlock, prepare, play, stop, wake, dispose, stats, retain, has };
 }
 
 Object.assign(exports,{audioBufferWav,trimmedBuffer,createMediaSoundPlayer});
@@ -7284,7 +7333,8 @@ const { avatarArt, monsterArt, monsterName, itemArt, petArt }=require("art.js");
 const { combatSpellCue, describeCombatEvent }=require("combat-presentation.js");
 const { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile }=require("combat-attack-art.js");
 const { combatPetArt, combatPetCue, PET_COMBAT }=require("combat-pet-art.js");
-const { playSfx, prepareSfx, stopSfx, unlockSfx }=require("sfx.js");
+const { playSfx, prepareSfx, prepareBattleSfx, stopSfx, unlockSfx }=require("sfx.js");
+const { createCombatClock, combatTurnTiming }=require("combat-playback.js");
 const { burst, confetti, countUp, motionOK }=require("ui-effects.js");
 const { $, app, esc, icon, modalShell, persist, today, view }=require("ui-core.js");
 const { announceBadges, commit }=require("ui-modal.js");
@@ -7314,7 +7364,7 @@ function prepareBattleSounds() {
     ...powers.map(power => ['weaponPower', { power }]),
     ...(pet ? [['petCall', { pet: pet.id }], ['petImpact', { pet: pet.id }]] : []),
     ...(spell ? ['attack', 'guard'].flatMap(mode => [['spellCast', { spell: spell.id, mode }], ['spellImpact', { spell: spell.id, mode }]]) : []),
-  ]);
+  ], { variants: 1 });
 }
 function updateOdds() {
   prepareBattleSounds();
@@ -7344,10 +7394,10 @@ function spellAnimation(cue) {
   return `<div class="combat-spell spell-${cue.id} spell-${cue.mode}" aria-hidden="true"><div class="spell-charge"></div>${cue.mode === 'attack' ? `<svg class="spell-projectile" viewBox="0 0 108 108">${projectiles[cue.id] || ''}</svg>` : `<svg class="spell-ward-shield" viewBox="0 0 120 120"><path d="M60 6 104 24v40L90 86l-30 28-30-28-14-22V24Z" fill="var(--panel)" fill-opacity=".8" stroke="currentColor" stroke-width="4"/>${cue.id === 'starfall' ? star : '<path d="M40 33h40v15H40ZM31 53h25v16H31Zm33 0h25v16H64ZM45 74h30v15H45Z" fill="currentColor"/>'}</svg>`}<svg class="spell-impact" viewBox="0 0 120 120"><circle cx="60" cy="60" r="30" fill="none" stroke="currentColor" stroke-width="3"/><path d="M55 4h10v14H55Zm0 98h10v14H55ZM4 55h14v10H4Zm98 0h14v10h-14ZM19 19h11v11H19Zm71 0h11v11H90ZM19 90h11v11H19Zm71 0h11v11H90Z" fill="currentColor"/><path d="m60 38 6 16 16 6-16 6-6 16-6-16-16-6 16-6Z" fill="#fff8df"/></svg></div>`;
 }
 const stepContent = ({ title, detail, badges = [] }) => `<div class="battle-step-content"><strong>${esc(title)}</strong><p>${esc(detail)}</p><div class="combat-badges">${badges.map(b => `<span class="combat-badge ${b.tone}">${esc(b.label)}</span>`).join('')}</div></div>`;
-function companionScene(pet, hat, cue, { ready, finished, won }) {
+function companionScene(pet, hat, cue, { ready, finished, won, art }) {
   if (!pet || !PET_COMBAT[pet.id]) return '';
   const state = cue ? 'is-assisting' : ready ? 'companion-enter' : finished ? won ? 'companion-victory' : 'companion-rest' : '';
-  return `<div class="battle-companion pet-${pet.id} ${state}" style="--pet-color:${PET_COMBAT[pet.id].color}" role="img" aria-label="${esc(pet.name + (cue ? ` · ${cue.label} · ${cue.reward}` : ' · at your side'))}"><span class="companion-ground" aria-hidden="true"></span><span class="companion-art" aria-hidden="true">${petArt(pet, hat)}</span><span class="companion-name" aria-hidden="true">${pet.name}</span>${cue ? `<span class="companion-callout" aria-hidden="true"><strong>${cue.label}</strong><span>${cue.reward}</span></span>` : ''}</div>`;
+  return `<div class="battle-companion pet-${pet.id} ${state}" style="--pet-color:${PET_COMBAT[pet.id].color}" role="img" aria-label="${esc(pet.name + (cue ? ` · ${cue.label} · ${cue.reward}` : ' · at your side'))}"><span class="companion-ground" aria-hidden="true"></span><span class="companion-art" data-battle-model="pet" aria-hidden="true">${app.modal.reuseBattleModels?.includes('pet') ? '' : art || petArt(pet, hat)}</span><span class="companion-name" aria-hidden="true">${pet.name}</span>${cue ? `<span class="companion-callout" aria-hidden="true"><strong>${cue.label}</strong><span>${cue.reward}</span></span>` : ''}</div>`;
 }
 function renderBattleModal() {
   const r = app.modal.result,
@@ -7403,13 +7453,21 @@ function renderBattleModal() {
     title: r.won ? `${monsterName(r.monster)} defeated` : 'Your adventurer falls',
     detail: app.modal.replay ? 'This is a replay. Health and rewards stay unchanged.' : r.won ? 'Loot collected. Your next opponent arrives tomorrow.' : 'Reflect to recover HP, then try again when you feel ready.',
   } : step || readyStep;
-  const reservedSteps = finished ? '' : `<div class="battle-step-reserve" aria-hidden="true" inert>${[...new Set([stepContent(readyStep), ...r.events.map(e => stepContent(describeCombatEvent(e, context)))])].join('')}</div>`;
+  const visual = app.modal.visualCache ||= {
+    player: avatarArt(weapon, armor, false, { appearance: r.appearance || app.state.appearance, helmet, shield, boots }),
+    monster: monsterArt(r.monster), defeated: r.won ? monsterArt(r.monster, true) : '',
+    pet: pet ? petArt(pet, petHat) : '',
+    reserve: `<div class="battle-step-reserve" aria-hidden="true" inert>${[...new Set([stepContent(readyStep), ...r.events.map(e => stepContent(describeCombatEvent(e, context)))])].join('')}</div>`,
+  };
+  const model = key => app.modal.reuseBattleModels?.includes(key) ? '' : visual[key];
+  const timing = app.modal.timing || combatTurnTiming({ duration: step?.duration, spell: spellCue, pet: petCue });
+  const reservedSteps = finished ? '' : visual.reserve;
   const round = event?.round || Math.floor(Math.max(0, index) / 2) + 1;
   const stageClass = (finished
     ? `outcome ${r.won ? 'victory' : 'defeat'}`
     : event
       ? `event-${event.type}${event.enemy === 0 ? ' finishing-strike' : ''}${event.hp === 0 ? ' fatal-hit' : ''}${isHeavy(event, r.monster) ? ' heavy-blow' : ''}`
-      : 'ready') + (attackCue ? ` actor-${attackCue.side} motion-${attackCue.profile.motion} style-${attackCue.profile.id}${attackCue.twin ? ' quick-strike' : ''}` : '');
+      : 'ready') + (attackCue ? ` actor-${attackCue.side} motion-${attackCue.profile.motion} style-${attackCue.profile.id}${attackCue.twin ? ' quick-strike' : ''}` : '') + (app.modal.impact && !finished ? ' impacted' : '');
   const effect = side =>
     !finished && step?.target === side
       ? `<div class="combat-float ${step.tone}">${esc(step.float)}</div>${event.type === 'hit' && event.blocked ? `<div class="combat-block">${icon('shield')}BLOCKED ${event.blocked}</div>` : ''}${event.type === 'deflect' ? `<div class="deflect-ring">${icon('soul')}</div>` : ''}${event.type === 'rally' ? '<div class="healing-ring"></div>' : ''}`
@@ -7449,10 +7507,10 @@ function renderBattleModal() {
     finished ? (r.won ? 'Victory!' : 'Defeated') : `Encounter · ${monsterName(r.monster)}`,
     `<div class="battle-body">
     <div class="battle-toolbar"><span>${finished ? `${round} rounds` : `${index < 0 ? 'GET READY' : `ROUND ${round} · ${event?.type === 'attack' ? 'YOUR TURN' : event?.type === 'rally' ? 'RECOVERY' : 'MONSTER’S TURN'}`}`}</span><div>${app.modal.replay ? '<span class="replay-label">REPLAY</span>' : ''}<span>${finished ? 'Encounter complete' : `Step ${Math.max(0, index + 1)} / ${r.events.length}`}</span><button class="icon-button" data-action="battle-mute" title="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}" aria-label="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}">${icon(app.state.settings.muted ? 'mute' : 'sound')}</button></div></div>
-    <div class="battle-stage ${stageClass} ${pet ? 'has-companion' : ''}" id="battle-stage"${attackCue ? ` style="--attack-color:${attackCue.profile.color}"` : ''}>${combatAttackArt(attackCue)}${spellAnimation(spellCue)}${combatPetArt(petCue)}${finished && r.won ? '<div class="victory-banner" aria-hidden="true"><span class="victory-rays"></span><strong>VICTORY</strong></div>' : ''}
-      <div class="battle-fighter player"><div class="fighter-scene"><div class="fighter-motion">${avatarArt(weapon, armor, false, { appearance: r.appearance || app.state.appearance, helmet, shield, boots })}</div>${effect('player')}${companionScene(pet, petHat, petCue, { ready: index < 0, finished, won: r.won })}</div><strong>${esc(r.playerName || app.state.name)}</strong><div class="health-bar" role="progressbar" aria-label="Adventurer health" aria-valuemin="0" aria-valuemax="${maximum}" aria-valuenow="${hp}" id="battle-player-bar"><div style="width:${(hp / maximum) * 100}%"></div></div><small id="battle-player-hp">${hp} / ${maximum} HP</small></div>
+    <div class="battle-stage ${stageClass} ${pet ? 'has-companion' : ''}" id="battle-stage" ${!finished && app.modal.playback ? 'data-playback="true"' : ''} data-step="${index}" style="--attack-color:${attackCue?.profile.color || 'var(--accent)'};--spell-delay:${timing.spellStart}ms;--spell-flight:${(timing.spellImpact ?? timing.impact) - timing.spellStart}ms;--spell-impact-delay:${Math.max(0, (timing.spellImpact ?? timing.impact) - timing.impact)}ms;--pet-delay:${timing.petStart}ms;--pet-flight:${(timing.petImpact ?? timing.impact) - timing.petStart}ms;--pet-impact-delay:${Math.max(0, (timing.petImpact ?? timing.impact) - timing.impact)}ms">${combatAttackArt(attackCue)}${spellAnimation(spellCue)}${combatPetArt(petCue)}${finished && r.won ? '<div class="victory-banner" aria-hidden="true"><span class="victory-rays"></span><strong>VICTORY</strong></div>' : ''}
+      <div class="battle-fighter player"><div class="fighter-scene"><div class="fighter-motion" data-battle-model="player">${model('player')}</div>${effect('player')}${companionScene(pet, petHat, petCue, { ready: index < 0, finished, won: r.won, art: visual.pet })}</div><strong>${esc(r.playerName || app.state.name)}</strong><div class="health-bar" role="progressbar" aria-label="Adventurer health" aria-valuemin="0" aria-valuemax="${maximum}" aria-valuenow="${hp}" id="battle-player-bar"><div style="width:${(hp / maximum) * 100}%"></div></div><small id="battle-player-hp">${hp} / ${maximum} HP</small></div>
       <div class="battle-divider"><span>VS</span><i></i></div>
-      <div class="battle-fighter monster"><div class="fighter-scene"><div class="fighter-motion">${monsterArt(r.monster, finished && r.won)}</div>${effect('monster')}</div><strong>${monsterName(r.monster)}</strong><div class="health-bar enemy" role="progressbar" aria-label="Monster health" aria-valuemin="0" aria-valuemax="${enemyMax}" aria-valuenow="${enemy}" id="battle-enemy-bar"><div style="width:${(enemy / enemyMax) * 100}%"></div></div><small id="battle-enemy-hp">${enemy} / ${enemyMax} HP</small></div>
+      <div class="battle-fighter monster"><div class="fighter-scene"><div class="fighter-motion" data-battle-model="monster">${finished && r.won ? visual.defeated : model('monster')}</div>${effect('monster')}</div><strong>${monsterName(r.monster)}</strong><div class="health-bar enemy" role="progressbar" aria-label="Monster health" aria-valuemin="0" aria-valuemax="${enemyMax}" aria-valuenow="${enemy}" id="battle-enemy-bar"><div style="width:${(enemy / enemyMax) * 100}%"></div></div><small id="battle-enemy-hp">${enemy} / ${enemyMax} HP</small></div>
     </div>
     <div class="battle-step ${finished ? (r.won ? 'won' : 'lost') : step?.tone || 'ready'}">${reservedSteps}<div class="battle-step-current" aria-live="polite">${stepContent(currentStep)}</div></div>
     ${finished ? `<div class="battle-result">${r.won ? `<div class="loot-box loot-reveal">${r.loot.type === 'gold' ? icon('coin') + `<strong>+${r.loot.amount} gold</strong>` : itemArt(E.SHOP.find(i => i.id === r.loot.id)) + `<strong>${E.SHOP.find(i => i.id === r.loot.id).name}</strong>`}<span>${app.modal.replay ? 'Previously earned' : r.loot.type === 'gold' ? 'Added to your pouch' : 'Added to your equipment'}</span></div><button class="button primary wide" data-action="close-modal">Back to dashboard</button>` : `${!app.modal.replay ? `<button class="button primary wide" data-action="recover">${icon('pencil')}Reflect & recover</button>` : ''}<button class="button secondary wide" data-action="close-modal">Back to dashboard</button>`}</div>` : ''}
@@ -7476,6 +7534,23 @@ function renderBattleModal() {
   );
 }
 const battleTimers = new Set();
+let battleClock = null, battleSoundScene = null;
+const battleAnimations = new Map();
+function captureBattleAnimations() {
+  if (!battleClock) return;
+  const current = new Set($('#battle-stage')?.getAnimations({ subtree: true }) || []);
+  for (const animation of battleAnimations.keys()) if (!current.has(animation)) battleAnimations.delete(animation);
+  for (const animation of current) if (!battleAnimations.has(animation)) {
+    animation.pause(); battleAnimations.set(animation, battleClock.elapsed);
+  }
+}
+function updateBattleAnimations(elapsed) {
+  for (const [animation, start] of battleAnimations) animation.currentTime = elapsed - start;
+}
+document.addEventListener('visibilitychange', () => {
+  battleClock?.resetFrame();
+  if (document.hidden) battleAudio.stop();
+});
 const battleAudio = {
   unlock: unlockSfx,
   play: (name, options) => playSfx(name, { ...options, channel: 'battle' }),
@@ -7510,6 +7585,8 @@ function scheduleBattle(fn, delay) {
   battleTimers.add(timer);
 }
 function stopBattlePlayback() {
+  battleClock?.stop(); battleClock = null; battleAnimations.clear();
+  battleSoundScene?.release(); battleSoundScene = null;
   for (const timer of battleTimers) clearTimeout(timer);
   battleTimers.clear();
   battleAudio.stop();
@@ -7529,80 +7606,89 @@ function finishBattlePlayback(playSound = true) {
     app.pendingBadges = [];
   }
 }
+function turnPlan(event, result, reduced) {
+  const spell = combatSpellCue(event, E.SHOP.find(i => i.id === result.spell));
+  const pet = combatPetCue(event, E.SHOP.find(i => i.id === result.pet));
+  const attack = combatAttackCue(event, { weapon: E.SHOP.find(i => i.id === (result.loadout || app.state.equipped).weapon), monster: result.monster });
+  const heavy = isHeavy(event, result.monster), finishing = event.type === 'attack' && event.enemy === 0;
+  const launch = event.type === 'attack' ? [['weaponSwing', { voice: attack.profile.voice, pitch: attack.profile.pitch }]]
+    : ['hit', 'deflect'].includes(event.type) ? [['creatureAttack', { voice: attack.profile.voice, pitch: attack.profile.pitch }]] : [];
+  const impact = [], grunt = [];
+  if (event.type === 'attack') {
+    impact.push([finishing ? 'finisher' : 'impact', { target: 'monster', heavy }]);
+    grunt.push(['grunt', { who: 'monster' }]);
+    for (const power of ['venom', 'critical', 'sunder', 'drain']) if (attack[power]) impact.push(['weaponPower', { power }]);
+  } else if (event.type === 'hit') {
+    if (event.blocked) impact.push(['block']);
+    impact.push(['impact', { target: 'player', heavy }]); grunt.push(['grunt', { who: 'player' }]);
+  } else if (event.type === 'deflect') impact.push(['deflect']);
+  else if (event.type === 'stagger') impact.push(['weaponPower', { power: attack.profile.id === 'frostbite' ? 'freeze' : 'stagger' }]);
+  else if (event.type === 'rally') impact.push(['heal']);
+  return { event, spell, pet, launch, impact, grunt, finishing,
+    timing: combatTurnTiming({ duration: describeCombatEvent(event).duration, spell, pet, reduced }) };
+}
 function animateBattle(result, initialHP, replay = false) {
   stopBattlePlayback();
   battleAudio.unlock();
-  app.busy = true;
-  app.modal = { type: 'battle', result, index: -1, initialHP, finished: false, impact: false, replay };
-  view.render();
-  scheduleBattle(() => battleAudio.play('start'), 250);
-  if (result.pet) scheduleBattle(() => battleAudio.play('petCall', { pet: result.pet }), 500);
   const reduced = app.state.settings.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const turns = result.events.map(event => turnPlan(event, result, reduced));
+  const entries = [['start'], [result.won ? 'victory' : 'defeat'], ...(result.pet ? [['petCall', { pet: result.pet }]] : [])];
+  for (const turn of turns) {
+    entries.push(...turn.launch, ...turn.impact, ...turn.grunt);
+    if (turn.spell) for (const name of ['spellCast', 'spellImpact']) entries.push([name, { spell: turn.spell.id, mode: turn.spell.mode }]);
+    if (turn.pet) for (const name of ['petCall', 'petImpact']) entries.push([name, { pet: turn.pet.id }]);
+  }
+  const audio = battleSoundScene = prepareBattleSfx(entries);
+  app.busy = true;
+  app.modal = { type: 'battle', result, index: -1, initialHP, finished: false, impact: false, replay, playback: true };
+  view.render();
+  const clock = battleClock = createCombatClock({ requestFrame: fn => requestAnimationFrame(fn), cancelFrame: id => cancelAnimationFrame(id), hidden: () => document.hidden, onFrame: updateBattleAnimations });
+  captureBattleAnimations();
+  const play = sounds => { for (const [name, options] of sounds) battleAudio.play(name, options); };
   const advance = () => {
-    if (app.modal?.type !== 'battle') return;
-    app.modal.index++;
-    app.modal.impact = false;
-    if (app.modal.index >= result.events.length) {
-      finishBattlePlayback();
-      return;
-    }
-    const event = result.events[app.modal.index],
-      description = describeCombatEvent(event),
-      spellCue = combatSpellCue(event, E.SHOP.find(i => i.id === result.spell)),
-      petCue = combatPetCue(event, E.SHOP.find(i => i.id === result.pet)),
-      attackCue = combatAttackCue(event, { weapon: E.SHOP.find(i => i.id === (result.loadout || app.state.equipped).weapon), monster: result.monster });
-    view.renderModal();
-    const heavy = isHeavy(event, result.monster),
-      finishing = event.type === 'attack' && event.enemy === 0;
-    if (spellCue) battleAudio.play('spellCast', { spell: spellCue.id, mode: spellCue.mode });
-    if (petCue) battleAudio.play('petCall', { pet: petCue.id });
-    if (event.type === 'attack') scheduleBattle(() => battleAudio.play('weaponSwing', { voice: attackCue.profile.voice, pitch: attackCue.profile.pitch }), 120);
-    if (event.type === 'hit' || event.type === 'deflect')
-      scheduleBattle(() => battleAudio.play('creatureAttack', { voice: attackCue.profile.voice, pitch: attackCue.profile.pitch }), 120);
-    scheduleBattle(
-      () => {
-        if (app.modal?.type !== 'battle') return;
-        app.modal.impact = true;
-        $('#battle-stage')?.classList.add('impacted');
-        if (spellCue) battleAudio.play('spellImpact', { spell: spellCue.id, mode: spellCue.mode });
-        if (petCue) battleAudio.play('petImpact', { pet: petCue.id });
-        const maximum = result.maxHP || E.maxHP(app.state),
-          enemyMax = E.monsterStats(result.monster).hp;
-        const player = $('#battle-player-bar'),
-          enemy = $('#battle-enemy-bar');
-        if (player) {
-          player.firstElementChild.style.width = (event.hp / maximum) * 100 + '%';
-          player.setAttribute('aria-valuenow', event.hp);
-          $('#battle-player-hp').textContent = `${event.hp} / ${maximum} HP`;
-        }
-        if (enemy) {
-          enemy.firstElementChild.style.width = (event.enemy / enemyMax) * 100 + '%';
-          enemy.setAttribute('aria-valuenow', event.enemy);
-          $('#battle-enemy-hp').textContent = `${event.enemy} / ${enemyMax} HP`;
-        }
-        if (event.type === 'attack') {
-          battleAudio.play(finishing ? 'finisher' : 'impact', { target: 'monster', heavy });
-          scheduleBattle(() => battleAudio.play('grunt', { who: 'monster' }), finishing ? 140 : 80);
-          if (attackCue.venom) battleAudio.play('weaponPower', { power: 'venom' });
-          if (attackCue.critical) battleAudio.play('weaponPower', { power: 'critical' });
-          if (attackCue.sunder) battleAudio.play('weaponPower', { power: 'sunder' });
-          if (attackCue.drain) battleAudio.play('weaponPower', { power: 'drain' });
-        }
-        if (event.type === 'hit') {
-          if (event.blocked) battleAudio.play('block');
-          battleAudio.play('impact', { target: 'player', heavy });
-          scheduleBattle(() => battleAudio.play('grunt', { who: 'player' }), 80);
-        }
-        if (event.type === 'deflect') battleAudio.play('deflect');
-        if (event.type === 'stagger') battleAudio.play('weaponPower', { power: attackCue.profile.id === 'frostbite' ? 'freeze' : 'stagger' });
-        if (event.type === 'rally') battleAudio.play('heal');
-      },
-      reduced ? 100 : 400,
-    );
-    scheduleBattle(advance, reduced ? Math.max(1200, description.duration - 200) : description.duration);
+    if (battleClock !== clock || app.modal?.type !== 'battle') return;
+    app.modal.index++; app.modal.impact = false;
+    if (app.modal.index >= turns.length) { finishBattlePlayback(); return; }
+    const turn = turns[app.modal.index], { event, timing, spell, pet } = turn;
+    app.modal.timing = timing;
+    battleAnimations.clear();
+    view.renderModal(); captureBattleAnimations();
+    $('#battle-stage').dataset.phase = 'windup';
+    clock.after(reduced ? 40 : 120, () => play(turn.launch));
+    if (spell) clock.after(timing.spellStart, () => battleAudio.play('spellCast', { spell: spell.id, mode: spell.mode }));
+    if (pet) clock.after(timing.petStart, () => battleAudio.play('petCall', { pet: pet.id }));
+    clock.after(timing.impact, () => {
+      app.modal.impact = true;
+      const stage = $('#battle-stage'); stage?.classList.add('impacted'); if (stage) stage.dataset.phase = 'impact';
+      const maximum = result.maxHP || E.maxHP(app.state), enemyMax = E.monsterStats(result.monster).hp;
+      for (const [side, hp, max] of [['player', event.hp, maximum], ['enemy', event.enemy, enemyMax]]) {
+        const bar = $('#battle-' + side + '-bar');
+        if (bar) { bar.firstElementChild.style.width = (hp / max) * 100 + '%'; bar.setAttribute('aria-valuenow', hp); $('#battle-' + side + '-hp').textContent = `${hp} / ${max} HP`; }
+      }
+      play(turn.impact);
+      if (turn.grunt.length) clock.after(turn.finishing ? 140 : 80, () => play(turn.grunt));
+      captureBattleAnimations();
+      // Chain the rest from the painted impact, rather than racing an independent next-turn timeout.
+      clock.after(timing.duration - timing.impact, advance);
+    });
+    if (spell) clock.after(timing.spellImpact, () => {
+      $('#battle-stage')?.classList.add('spell-landed'); battleAudio.play('spellImpact', { spell: spell.id, mode: spell.mode });
+    });
+    if (pet) clock.after(timing.petImpact, () => {
+      $('#battle-stage')?.classList.add('pet-landed'); battleAudio.play('petImpact', { pet: pet.id });
+    });
   };
-  scheduleBattle(advance, 1000);
+  let begun = false;
+  const begin = () => {
+    if (begun || battleClock !== clock) return; begun = true; audio.start();
+    clock.after(0, () => battleAudio.play('start'));
+    if (result.pet) clock.after(250, () => battleAudio.play('petCall', { pet: result.pet }));
+    clock.after(Math.max(350, 1000 - clock.elapsed), advance);
+  };
+  audio.ready.then(begin);
+  scheduleBattle(begin, 1800); // Slow or unavailable audio never holds the visual replay indefinitely.
 }
+
 const modals = {
   battle() {
     return renderBattleModal();
@@ -7794,6 +7880,52 @@ function combatAttackArt(cue) {
 }
 
 Object.assign(exports,{WEAPON_ATTACKS,MONSTER_ATTACKS,weaponAttackProfile,monsterAttackProfile,combatAttackCue,combatAttackArt});
+},
+"combat-playback.js":function(require,exports){
+// A visible-time clock for combat. A slow frame stretches the replay instead of
+// skipping an impact; nothing catches up while the window is hidden or asleep.
+function createCombatClock({ requestFrame, cancelFrame, hidden = () => false, onFrame = () => {}, maxFrame = 50 }) {
+  let elapsed = 0, last = null, nextId = 0, frame = null, stopped = false;
+  const jobs = new Map();
+  function tick(timestamp) {
+    frame = null;
+    if (stopped) return;
+    if (hidden()) last = null;
+    else {
+      elapsed += last === null ? 0 : Math.max(0, Math.min(maxFrame, timestamp - last));
+      last = timestamp;
+      // Jobs scheduled by a callback wait for another frame, even with zero delay.
+      const due = [...jobs].filter(([, job]) => job.at <= elapsed);
+      for (const [id, job] of due) {
+        if (stopped) break;
+        if (jobs.delete(id)) job.run();
+      }
+      if (!stopped) onFrame(elapsed);
+    }
+    if (!stopped) frame = requestFrame(tick);
+  }
+  frame = requestFrame(tick);
+  return {
+    get elapsed() { return elapsed; },
+    after(delay, run) { if (stopped) return; const id = ++nextId; jobs.set(id, { at: elapsed + Math.max(0, delay), run }); return id; },
+    resetFrame() { last = null; },
+    stop() { stopped = true; jobs.clear(); if (frame !== null) cancelFrame(frame); frame = null; },
+  };
+}
+// Weapon impact first, then the spell and companion get distinct readable beats.
+// Durations also leave room for the complete burst, recovery motion, and caption.
+function combatTurnTiming({ duration = 1650, spell, pet, reduced = false } = {}) {
+  const impact = reduced ? 100 : 400;
+  const spellStart = !reduced && spell?.mode === 'attack' ? 150 : 0;
+  const spellImpact = spell ? reduced ? 220 : spell.mode === 'attack' ? 600 : 400 : null;
+  const petStart = pet ? reduced ? 80 : spell ? 350 : 150 : 0;
+  const petImpact = pet ? reduced ? 340 : petStart + 450 : null;
+  const lastImpact = Math.max(impact, spellImpact || 0, petImpact || 0);
+  return { impact, spellStart, spellImpact, petStart, petImpact,
+    duration: Math.max(reduced ? Math.max(1200, duration - 200) : duration, lastImpact + (reduced ? 700 : 1000)) };
+}
+
+Object.assign(exports,{createCombatClock,combatTurnTiming});
 },
 "ui-collection.js":function(require,exports){
 // Achievements and the bestiary.

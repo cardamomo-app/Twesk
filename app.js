@@ -1,28 +1,28 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.42.0';
-import { flameArt } from './brand-art.js?v=0.42.0';
-import { avatarFaceArt } from './art.js?v=0.42.0';
-import { awardAchievements } from './achievements.js?v=0.42.0';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.42.0';
-import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.42.0';
-import { closeModal, openModal } from './ui-modal.js?v=0.42.0';
-import * as tasks from './ui-tasks.js?v=0.42.0';
-import * as quest from './ui-quest.js?v=0.42.0';
-import * as habits from './ui-habits.js?v=0.42.0';
-import * as vault from './ui-vault.js?v=0.42.0';
-import { vaultArt } from './vault-art.js?v=0.42.0';
-import * as character from './ui-character.js?v=0.42.0';
-import * as shop from './ui-shop.js?v=0.42.0';
-import * as battle from './ui-battle.js?v=0.42.0';
-import * as collection from './ui-collection.js?v=0.42.0';
-import * as settings from './ui-settings.js?v=0.42.0';
-import * as sync from './ui-sync.js?v=0.42.0';
-import * as history from './ui-history.js?v=0.42.0';
-import { installDelights, renderAmbience } from './ui-delights.js?v=0.42.0';
-import { installTagSuggest } from './ui-tag-suggest.js?v=0.42.0';
-import { installTaskOrder } from './ui-task-order.js?v=0.42.0';
-import * as fullscreen from './ui-fullscreen.js?v=0.42.0';
-import * as weather from './ui-weather.js?v=0.42.0';
+import * as E from './engine.js?v=0.42.1';
+import { flameArt } from './brand-art.js?v=0.42.1';
+import { avatarFaceArt } from './art.js?v=0.42.1';
+import { awardAchievements } from './achievements.js?v=0.42.1';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.42.1';
+import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.42.1';
+import { closeModal, openModal } from './ui-modal.js?v=0.42.1';
+import * as tasks from './ui-tasks.js?v=0.42.1';
+import * as quest from './ui-quest.js?v=0.42.1';
+import * as habits from './ui-habits.js?v=0.42.1';
+import * as vault from './ui-vault.js?v=0.42.1';
+import { vaultArt } from './vault-art.js?v=0.42.1';
+import * as character from './ui-character.js?v=0.42.1';
+import * as shop from './ui-shop.js?v=0.42.1';
+import * as battle from './ui-battle.js?v=0.42.1';
+import * as collection from './ui-collection.js?v=0.42.1';
+import * as settings from './ui-settings.js?v=0.42.1';
+import * as sync from './ui-sync.js?v=0.42.1';
+import * as history from './ui-history.js?v=0.42.1';
+import { installDelights, renderAmbience } from './ui-delights.js?v=0.42.1';
+import { installTagSuggest } from './ui-tag-suggest.js?v=0.42.1';
+import { installTaskOrder } from './ui-task-order.js?v=0.42.1';
+import * as fullscreen from './ui-fullscreen.js?v=0.42.1';
+import * as weather from './ui-weather.js?v=0.42.1';
 
 const features = [tasks, quest, habits, vault, character, shop, battle, collection, settings, history, sync, fullscreen, weather];
 const modals = Object.assign({}, ...features.map(f => f.modals));
@@ -120,7 +120,15 @@ function renderModal() {
   document.body.classList.add('modal-open');
   const same = shownModal === app.modal,
     kept = same ? KEEP_SCROLL.map(sel => [sel, $(`#overlay ${sel}`)?.scrollTop || 0, $(`#overlay ${sel}`)?.scrollLeft || 0]) : [];
+  // Keep the static voxel SVGs between combat turns. Rebuilding their hundreds of
+  // faces caused avoidable parsing/layout work just as the next attack began.
+  const models = same && app.modal.type === 'battle' && !app.modal.finished
+    ? [...document.querySelectorAll('#overlay [data-battle-model]')].map(el => [el.dataset.battleModel, el.firstElementChild]).filter(([, model]) => model)
+    : [];
+  app.modal.reuseBattleModels = models.map(([key]) => key);
   $('#overlay').innerHTML = modals[app.modal.type]?.() ?? '';
+  for (const [key, model] of models) $(`#overlay [data-battle-model="${key}"]`)?.replaceChildren(model);
+  delete app.modal.reuseBattleModels;
   shownModal = app.modal;
   if (same) $('#overlay .modal')?.classList.add('redrawn');
   for (const [sel, top, left] of kept) {

@@ -2,7 +2,7 @@
 // Most browsers use a shared Web Audio mix; Safari plays offline-rendered WAVs through media elements.
 // Repeated sounds draw from random variants, and quick successive rewards climb
 // a pentatonic scale so a run of completed tasks sounds increasingly triumphant.
-import { audioBufferWav, createMediaSoundPlayer, trimmedBuffer } from './sfx-media.js?v=0.42.0';
+import { audioBufferWav, createMediaSoundPlayer, trimmedBuffer } from './sfx-media.js?v=0.42.1';
 let ctx, master, reverbIn, noiseBuf, clock = null, stale = false, recovering = null;
 let recording = null, offlineRendering = false;
 // Setting localStorage 'twesk.sfx-media' to '1' forces the media path in any browser, for testing.
@@ -751,7 +751,7 @@ function variantsFor(name, options) {
 const COMBO_SOUNDS = new Set(['check', 'xp', 'reward', 'note']);
 const COMBO_STEPS = PENTATONIC.length - 2;
 const prepareQueue = [], preparationJobs = new Map();
-let preparing = false, preparationEpoch = 0;
+let preparing = false, preparationEpoch = 0, preparationHolds = 0;
 const idle = cb => typeof window !== 'undefined' && window.requestIdleCallback ? window.requestIdleCallback(cb, { timeout: 1500 }) : setTimeout(cb, 30);
 function queuePreparation(job) {
   job.state = 'queued';
@@ -764,11 +764,11 @@ function resumePrepared() {
   drainPrepared();
 }
 function drainPrepared() {
-  if (preparing || !prepareQueue.length || isMuted()) return;
+  if (preparing || preparationHolds || !prepareQueue.length || isMuted()) return;
   preparing = true;
   const step = () => {
     // Keep queued work while muted so unmuting resumes the same bank, including combat sounds.
-    if (isMuted()) { preparing = false; return; }
+    if (isMuted() || preparationHolds) { preparing = false; return; }
     const job = prepareQueue.shift();
     if (!job) { preparing = false; return; }
     job.state = 'rendering';
@@ -782,12 +782,12 @@ function drainPrepared() {
   idle(step);
 }
 // Queue sounds for the media bank: [[name, options], ...]. Elsewhere (live Web Audio) it does nothing.
-export function prepareSfx(entries) {
+export function prepareSfx(entries, { variants = VARIANTS } = {}) {
   if (!mediaPlayer) return;
   for (const [name, options = {}] of entries) {
     if (!SOUNDS[name]) continue;
     const combos = COMBO_SOUNDS.has(name) ? Array.from({ length: COMBO_STEPS }, (_, i) => i) : [null];
-    for (const combo of combos) for (let variant = 0; variant < variantsFor(name, options); variant++) {
+    for (const combo of combos) for (let variant = 0; variant < Math.min(variants, variantsFor(name, options)); variant++) {
       const key = JSON.stringify([name, options, combo, variant]);
       let job = preparationJobs.get(key);
       if (job && job.state !== 'failed') continue;
@@ -799,6 +799,26 @@ export function prepareSfx(entries) {
     }
   }
   drainPrepared();
+}
+// Warm and retain only the effects the recorded encounter actually uses. The
+// silent setup also works when muted, so unmuting mid-fight needs no new renders.
+export function prepareBattleSfx(entries) {
+  if (!mediaPlayer) return { ready: Promise.resolve(), start() {}, release() {} };
+  const plans = [...new Map(entries.filter(([name]) => SOUNDS[name]).map(([name, options = {}]) => {
+    const plan = recordPlan(name, options, 0); return [JSON.stringify(plan), plan];
+  })).values()];
+  preparationHolds++;
+  const releaseClips = mediaPlayer.retain(plans);
+  let started = false, released = false;
+  const ready = (async () => {
+    for (const plan of plans) {
+      if (started || released) break;
+      await mediaPlayer.prepare(plan);
+    }
+  })();
+  return { ready, start() { started = true; }, release() {
+    if (released) return; released = true; releaseClips(); preparationHolds--; drainPrepared();
+  } };
 }
 // Everyday sounds outside combat; combat prepares its own set before a fight.
 const EVERYDAY = [
@@ -900,9 +920,11 @@ export function playSfx(name, options = {}) {
     lastWind = asked;
   }
   if (mediaPlayer) {
-    const plan = recordPlan(name, options, Math.floor(Math.random() * variantsFor(name, options)));
+    const plan = recordPlan(name, options, group === 'battle' ? 0 : Math.floor(Math.random() * variantsFor(name, options)));
+    // A cold or interrupted clip must not stall the visuals or arrive on a later turn.
+    if (group === 'battle' && !mediaPlayer.has(plan)) return;
     mixableSession();
-    mediaPlayer.play(plan, { ...options, maxAge: name === 'wind' ? 150 : 800 });
+    mediaPlayer.play(plan, { ...options, maxAge: name === 'wind' ? 150 : group === 'battle' ? 120 : 800 });
     return;
   }
   const allGeneration = globalCancel;
@@ -910,7 +932,7 @@ export function playSfx(name, options = {}) {
     unlockSfx();
     const play = context => {
       if (!context || context !== ctx || context.state !== 'running' || isMuted() || allGeneration !== globalCancel ||
-          (cancelled.get(group) || 0) !== generation || performance.now() - asked >= (name === 'wind' ? 150 : 800)) return;
+          (cancelled.get(group) || 0) !== generation || performance.now() - asked >= (name === 'wind' ? 150 : group === 'battle' ? 120 : 800)) return;
       try {
         channel = group;
         SOUNDS[name](context.currentTime + 0.01 + (options.delay || 0), options);

@@ -1,7 +1,7 @@
-import { $, app, esc, icon, modalShell, view } from './ui-core.js?v=0.42.0';
-import { createWeatherController, searchWeatherPlaces, weatherCondition, weatherTemperature, weatherDayHours } from './weather.js?v=0.42.0';
-import { weatherArt, headerWeatherArt, temperatureArt } from './weather-art.js?v=0.42.0';
-import { openModal } from './ui-modal.js?v=0.42.0';
+import { $, app, esc, icon, modalShell, view } from './ui-core.js?v=0.42.1';
+import { createWeatherController, searchWeatherPlaces, weatherCondition, weatherTemperature, weatherDayHours } from './weather.js?v=0.42.1';
+import { weatherArt, headerWeatherArt, temperatureArt } from './weather-art.js?v=0.42.1';
+import { openModal } from './ui-modal.js?v=0.42.1';
 
 const locateIcon = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>';
 let storage; try { storage = localStorage; } catch {}

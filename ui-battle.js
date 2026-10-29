@@ -5,7 +5,7 @@ import { combatSpellCue, describeCombatEvent } from './combat-presentation.js?v=
 import { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile } from './combat-attack-art.js?v=0.42.3';
 import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.42.3';
 import { playSfx, prepareSfx, prepareBattleSfx, stopSfx, unlockSfx } from './sfx.js?v=0.42.3';
-import { createCombatClock, combatTurnTiming, syncCombatAnimation, recordCombatAnimationFrame } from './combat-playback.js?v=0.42.3';
+import { createCombatClock, combatTurnTiming, syncCombatAnimation } from './combat-playback.js?v=0.42.3';
 import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.42.3';
 import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.42.3';
 import { announceBadges, commit } from './ui-modal.js?v=0.42.3';
@@ -218,16 +218,13 @@ function captureBattleAnimations({ measure = false } = {}) {
   const current = new Set(stage?.getAnimations({ subtree: true }) || []);
   for (const animation of battleAnimations.keys()) if (!current.has(animation)) battleAnimations.delete(animation);
   for (const animation of current) if (!battleAnimations.has(animation)) {
-    const record = { start: battleClock.elapsed, end: animation.effect?.getComputedTiming().endTime ?? Infinity, painted: animation.currentTime ?? 0 };
+    const record = { start: battleClock.elapsed, end: animation.effect?.getComputedTiming().endTime ?? Infinity };
     battleAnimations.set(animation, record);
     syncCombatAnimation(animation, record, battleClock.elapsed);
   }
 }
 function resyncBattleAnimations(elapsed, paused = false) {
   for (const [animation, record] of battleAnimations) syncCombatAnimation(animation, record, elapsed, paused);
-}
-function recordBattleFrame() {
-  for (const [animation, record] of battleAnimations) recordCombatAnimationFrame(animation, record);
 }
 document.addEventListener('visibilitychange', () => {
   battleClock?.resetFrame();
@@ -327,7 +324,7 @@ function animateBattle(result, initialHP, replay = false) {
   app.busy = true;
   app.modal = { type: 'battle', result, index: -1, initialHP, finished: false, impact: false, replay, playback: true };
   view.render();
-  const clock = battleClock = createCombatClock({ requestFrame: fn => requestAnimationFrame(fn), cancelFrame: id => cancelAnimationFrame(id), hidden: () => document.hidden, onResync: resyncBattleAnimations, onFrame: recordBattleFrame });
+  const clock = battleClock = createCombatClock({ requestFrame: fn => requestAnimationFrame(fn), cancelFrame: id => cancelAnimationFrame(id), hidden: () => document.hidden, onResync: resyncBattleAnimations });
   captureBattleAnimations();
   const play = sounds => { for (const [name, options] of sounds) battleAudio.play(name, options); };
   const advance = () => {

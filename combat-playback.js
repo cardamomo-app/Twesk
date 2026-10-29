@@ -43,21 +43,15 @@ export function combatTurnTiming({ duration = 1650, spell, pet, reduced = false 
     duration: Math.max(reduced ? Math.max(1200, duration - 200) : duration, lastImpact + (reduced ? 700 : 1000)) };
 }
 
-// Remember the frames actually shown, without seeking or restarting native motion.
-export function recordCombatAnimationFrame(animation, record) {
-  if (animation.playState === 'idle') return;
-  record.painted = Math.max(record.painted ?? 0, animation.currentTime ?? 0);
-  record.finished ||= animation.playState === 'finished' || record.painted >= record.end;
-}
-// A stall can advance native time without painting it. Recover those unseen frames,
-// but never go behind a frame already shown or replay a completed damage number.
+// Native animations keep painting on the compositor even when the replay clock
+// stalls. Never seek backward: that repeats a swing or a floating damage number.
 export function syncCombatAnimation(animation, record, elapsed, paused = false) {
   if (animation.playState === 'idle') return; // A replaced CSS effect was cancelled.
   const current = animation.currentTime ?? 0;
-  const time = Math.min(record.end, Math.max(record.painted ?? current, elapsed - record.start, 0));
-  record.finished ||= time >= record.end;
-  if (time !== current) animation.currentTime = time;
+  const time = Math.min(record.end, Math.max(current, elapsed - record.start, 0));
+  record.finished ||= animation.playState === 'finished' || time >= record.end;
+  if (time > current) animation.currentTime = time;
   if (paused || record.finished) {
     if (animation.playState !== 'paused') animation.pause();
-  } else if (animation.playState !== 'running') animation.play();
+  } else if (animation.playState === 'paused') animation.play();
 }

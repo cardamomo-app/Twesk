@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombatClock, combatTurnTiming, syncCombatAnimation, recordCombatAnimationFrame } from '../combat-playback.js';
+import { createCombatClock, combatTurnTiming, syncCombatAnimation } from '../combat-playback.js';
 function harness(options = {}) {
   let callback, timestamp = 0, hidden = false;
   const frames = [];
@@ -59,30 +59,25 @@ function nativeAnimation(time, state = 'running') {
 }
 test('stall corrections never rewind an attack or damage number that is ahead of the clock', () => {
   const animation = nativeAnimation(950), record = { start: 400, end: 1150 };
-  recordCombatAnimationFrame(animation, record);
   syncCombatAnimation(animation, record, 1000);
   assert.equal(animation.currentTime, 950);
   assert.equal(animation.plays, 0, 'a running native animation needs no play command');
   animation.currentTime = 1150; animation.playState = 'finished';
-  recordCombatAnimationFrame(animation, record);
   for (const elapsed of [1050, 1100, 1500, 1800]) syncCombatAnimation(animation, record, elapsed);
   assert.equal(animation.currentTime, 1150);
   assert.equal(animation.plays, 0, 'a finished effect stays finished through later corrections');
   const rounded = nativeAnimation(1149.999, 'finished'), roundedRecord = { start: 400, end: 1150 };
-  recordCombatAnimationFrame(rounded, roundedRecord);
   syncCombatAnimation(rounded, roundedRecord, 1000);
   syncCombatAnimation(rounded, roundedRecord, 1100);
   assert.equal(rounded.plays, 0, 'completion remains final even with fractional native timing');
 });
 test('hiding and resuming preserve native progress even when the replay clock is behind', () => {
   const animation = nativeAnimation(900), record = { start: 0, end: 1300 };
-  recordCombatAnimationFrame(animation, record);
   syncCombatAnimation(animation, record, 500, true);
   assert.equal(animation.currentTime, 900); assert.equal(animation.playState, 'paused');
   syncCombatAnimation(animation, record, 500);
   assert.equal(animation.currentTime, 900); assert.equal(animation.plays, 1);
   animation.currentTime = 1300; animation.playState = 'finished';
-  recordCombatAnimationFrame(animation, record);
   syncCombatAnimation(animation, record, 700, true);
   syncCombatAnimation(animation, record, 700);
   assert.equal(animation.currentTime, 1300); assert.equal(animation.plays, 1, 'resume never restarts a completed attack');
@@ -95,16 +90,12 @@ test('new effects may advance to their cue while cancelled effects stay cancelle
   syncCombatAnimation(cancelled, record, 600);
   assert.equal(cancelled.currentTime, null); assert.equal(cancelled.plays, 0);
 });
-test('a stall recovers unseen spell motion without repeating a frame already painted', () => {
-  const animation = nativeAnimation(300), record = { start: 0, end: 700 };
-  recordCombatAnimationFrame(animation, record);
-  // The browser finished during a long stall, but none of those frames were seen.
-  animation.currentTime = 700; animation.playState = 'finished';
+test('compositor motion that finishes during a stalled frame must stay finished', () => {
+  const animation = nativeAnimation(700, 'finished'), record = { start: 0, end: 700 };
   syncCombatAnimation(animation, record, 200);
-  assert.equal(animation.currentTime, 300, 'resume from the latest painted frame, even when the clock is behind');
-  recordCombatAnimationFrame(animation, record);
-  animation.currentTime = 450; animation.playState = 'running';
-  recordCombatAnimationFrame(animation, record);
-  syncCombatAnimation(animation, record, 250);
-  assert.equal(animation.currentTime, 450, 'later corrections cannot repeat the recovered motion');
+  assert.equal(animation.currentTime, 700);
+  assert.equal(animation.plays, 0);
+  syncCombatAnimation(animation, record, 300);
+  assert.equal(animation.currentTime, 700);
+  assert.equal(animation.plays, 0);
 });

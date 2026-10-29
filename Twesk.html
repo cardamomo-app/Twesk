@@ -7336,7 +7336,7 @@ const { combatSpellCue, describeCombatEvent }=require("combat-presentation.js");
 const { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile }=require("combat-attack-art.js");
 const { combatPetArt, combatPetCue, PET_COMBAT }=require("combat-pet-art.js");
 const { playSfx, prepareSfx, prepareBattleSfx, stopSfx, unlockSfx }=require("sfx.js");
-const { createCombatClock, combatTurnTiming, syncCombatAnimation, recordCombatAnimationFrame }=require("combat-playback.js");
+const { createCombatClock, combatTurnTiming, syncCombatAnimation }=require("combat-playback.js");
 const { burst, confetti, countUp, motionOK }=require("ui-effects.js");
 const { $, app, esc, icon, modalShell, persist, today, view }=require("ui-core.js");
 const { announceBadges, commit }=require("ui-modal.js");
@@ -7549,16 +7549,13 @@ function captureBattleAnimations({ measure = false } = {}) {
   const current = new Set(stage?.getAnimations({ subtree: true }) || []);
   for (const animation of battleAnimations.keys()) if (!current.has(animation)) battleAnimations.delete(animation);
   for (const animation of current) if (!battleAnimations.has(animation)) {
-    const record = { start: battleClock.elapsed, end: animation.effect?.getComputedTiming().endTime ?? Infinity, painted: animation.currentTime ?? 0 };
+    const record = { start: battleClock.elapsed, end: animation.effect?.getComputedTiming().endTime ?? Infinity };
     battleAnimations.set(animation, record);
     syncCombatAnimation(animation, record, battleClock.elapsed);
   }
 }
 function resyncBattleAnimations(elapsed, paused = false) {
   for (const [animation, record] of battleAnimations) syncCombatAnimation(animation, record, elapsed, paused);
-}
-function recordBattleFrame() {
-  for (const [animation, record] of battleAnimations) recordCombatAnimationFrame(animation, record);
 }
 document.addEventListener('visibilitychange', () => {
   battleClock?.resetFrame();
@@ -7658,7 +7655,7 @@ function animateBattle(result, initialHP, replay = false) {
   app.busy = true;
   app.modal = { type: 'battle', result, index: -1, initialHP, finished: false, impact: false, replay, playback: true };
   view.render();
-  const clock = battleClock = createCombatClock({ requestFrame: fn => requestAnimationFrame(fn), cancelFrame: id => cancelAnimationFrame(id), hidden: () => document.hidden, onResync: resyncBattleAnimations, onFrame: recordBattleFrame });
+  const clock = battleClock = createCombatClock({ requestFrame: fn => requestAnimationFrame(fn), cancelFrame: id => cancelAnimationFrame(id), hidden: () => document.hidden, onResync: resyncBattleAnimations });
   captureBattleAnimations();
   const play = sounds => { for (const [name, options] of sounds) battleAudio.play(name, options); };
   const advance = () => {
@@ -7943,26 +7940,20 @@ function combatTurnTiming({ duration = 1650, spell, pet, reduced = false } = {})
     duration: Math.max(reduced ? Math.max(1200, duration - 200) : duration, lastImpact + (reduced ? 700 : 1000)) };
 }
 
-// Remember the frames actually shown, without seeking or restarting native motion.
-function recordCombatAnimationFrame(animation, record) {
-  if (animation.playState === 'idle') return;
-  record.painted = Math.max(record.painted ?? 0, animation.currentTime ?? 0);
-  record.finished ||= animation.playState === 'finished' || record.painted >= record.end;
-}
-// A stall can advance native time without painting it. Recover those unseen frames,
-// but never go behind a frame already shown or replay a completed damage number.
+// Native animations keep painting on the compositor even when the replay clock
+// stalls. Never seek backward: that repeats a swing or a floating damage number.
 function syncCombatAnimation(animation, record, elapsed, paused = false) {
   if (animation.playState === 'idle') return; // A replaced CSS effect was cancelled.
   const current = animation.currentTime ?? 0;
-  const time = Math.min(record.end, Math.max(record.painted ?? current, elapsed - record.start, 0));
-  record.finished ||= time >= record.end;
-  if (time !== current) animation.currentTime = time;
+  const time = Math.min(record.end, Math.max(current, elapsed - record.start, 0));
+  record.finished ||= animation.playState === 'finished' || time >= record.end;
+  if (time > current) animation.currentTime = time;
   if (paused || record.finished) {
     if (animation.playState !== 'paused') animation.pause();
-  } else if (animation.playState !== 'running') animation.play();
+  } else if (animation.playState === 'paused') animation.play();
 }
 
-Object.assign(exports,{createCombatClock,combatTurnTiming,recordCombatAnimationFrame,syncCombatAnimation});
+Object.assign(exports,{createCombatClock,combatTurnTiming,syncCombatAnimation});
 },
 "ui-collection.js":function(require,exports){
 // Achievements and the bestiary.

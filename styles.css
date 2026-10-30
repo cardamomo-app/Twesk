@@ -1292,3 +1292,9 @@ button.hashtag:hover{text-decoration:underline}
 }
 :root[data-motion=reduced] .battle-stage .combat-float[data-impact],:root[data-motion=reduced] .battle-stage .combat-block[data-impact]{animation:none!important;opacity:0;transform:translate(-50%,0)}
 :root[data-motion=reduced] .battle-stage.impacted [data-impact=impact],:root[data-motion=reduced] .battle-stage.spell-landed [data-impact=spell],:root[data-motion=reduced] .battle-stage.pet-landed [data-impact=pet]{opacity:1}
+
+/* Assist motion starts from the preceding landing, never from a turn-wide delay. */
+.battle-stage[data-playback]:not(.spell-casting) :is(.spell-charge,.spell-projectile,.spell-ward-shield){animation:none;opacity:0}
+.battle-stage[data-playback]:not(.pet-casting) .is-assisting .companion-art{animation:none;filter:none}
+.battle-stage[data-playback]:not(.pet-casting) .is-assisting .companion-ground{box-shadow:none}
+.battle-stage[data-playback]:not(.pet-casting) .companion-callout,.battle-stage[data-playback]:not(.pet-casting) .combat-pet-effect>svg{animation:none;opacity:0}

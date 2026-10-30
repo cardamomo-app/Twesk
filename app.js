@@ -1,28 +1,28 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.42.5';
-import { flameArt } from './brand-art.js?v=0.42.5';
-import { avatarFaceArt } from './art.js?v=0.42.5';
-import { awardAchievements } from './achievements.js?v=0.42.5';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.42.5';
-import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.42.5';
-import { closeModal, openModal } from './ui-modal.js?v=0.42.5';
-import * as tasks from './ui-tasks.js?v=0.42.5';
-import * as quest from './ui-quest.js?v=0.42.5';
-import * as habits from './ui-habits.js?v=0.42.5';
-import * as vault from './ui-vault.js?v=0.42.5';
-import { vaultArt } from './vault-art.js?v=0.42.5';
-import * as character from './ui-character.js?v=0.42.5';
-import * as shop from './ui-shop.js?v=0.42.5';
-import * as battle from './ui-battle.js?v=0.42.5';
-import * as collection from './ui-collection.js?v=0.42.5';
-import * as settings from './ui-settings.js?v=0.42.5';
-import * as sync from './ui-sync.js?v=0.42.5';
-import * as history from './ui-history.js?v=0.42.5';
-import { installDelights, renderAmbience } from './ui-delights.js?v=0.42.5';
-import { installTagSuggest } from './ui-tag-suggest.js?v=0.42.5';
-import { installTaskOrder } from './ui-task-order.js?v=0.42.5';
-import * as fullscreen from './ui-fullscreen.js?v=0.42.5';
-import * as weather from './ui-weather.js?v=0.42.5';
+import * as E from './engine.js?v=0.42.6';
+import { flameArt } from './brand-art.js?v=0.42.6';
+import { avatarFaceArt } from './art.js?v=0.42.6';
+import { awardAchievements } from './achievements.js?v=0.42.6';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.42.6';
+import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.42.6';
+import { closeModal, openModal } from './ui-modal.js?v=0.42.6';
+import * as tasks from './ui-tasks.js?v=0.42.6';
+import * as quest from './ui-quest.js?v=0.42.6';
+import * as habits from './ui-habits.js?v=0.42.6';
+import * as vault from './ui-vault.js?v=0.42.6';
+import { vaultArt } from './vault-art.js?v=0.42.6';
+import * as character from './ui-character.js?v=0.42.6';
+import * as shop from './ui-shop.js?v=0.42.6';
+import * as battle from './ui-battle.js?v=0.42.6';
+import * as collection from './ui-collection.js?v=0.42.6';
+import * as settings from './ui-settings.js?v=0.42.6';
+import * as sync from './ui-sync.js?v=0.42.6';
+import * as history from './ui-history.js?v=0.42.6';
+import { installDelights, renderAmbience } from './ui-delights.js?v=0.42.6';
+import { installTagSuggest } from './ui-tag-suggest.js?v=0.42.6';
+import { installTaskOrder } from './ui-task-order.js?v=0.42.6';
+import * as fullscreen from './ui-fullscreen.js?v=0.42.6';
+import * as weather from './ui-weather.js?v=0.42.6';
 
 const features = [tasks, quest, habits, vault, character, shop, battle, collection, settings, history, sync, fullscreen, weather];
 const modals = Object.assign({}, ...features.map(f => f.modals));
@@ -135,7 +135,9 @@ function renderModal() {
     const el = $(`#overlay ${sel}`);
     if (el) Object.assign(el, { scrollTop: top, scrollLeft: left });
   }
-  syncLoops($('#overlay'));
+  // Combat uses local, finite effect timelines; scanning every SVG on each turn
+  // to synchronize idle loops forces unnecessary style work during the replay.
+  if (app.modal.type !== 'battle' || app.modal.finished) syncLoops($('#overlay'));
 }
 installTagSuggest();
 installTaskOrder();

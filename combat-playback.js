@@ -26,6 +26,7 @@ export function createCombatClock({ requestFrame, cancelFrame, hidden = () => fa
   return {
     get elapsed() { return elapsed; },
     after(delay, run) { if (stopped) return; const id = ++nextId; jobs.set(id, { at: elapsed + Math.max(0, delay), run }); return id; },
+    cancel(id) { jobs.delete(id); },
     resetFrame() { last = null; },
     stop() { stopped = true; jobs.clear(); if (frame !== null) cancelFrame(frame); frame = null; },
   };
@@ -34,14 +35,43 @@ export function createCombatClock({ requestFrame, cancelFrame, hidden = () => fa
 // Durations also leave room for the complete burst, recovery motion, and caption.
 export function combatTurnTiming({ duration = 1650, spell, pet, reduced = false } = {}) {
   const impact = reduced ? 100 : 400;
-  const spellStart = !reduced && spell?.mode === 'attack' ? 150 : 0;
+  const spellStart = spell?.mode === 'attack' ? impact : 0;
   const spellImpact = spell ? spell.mode === 'guard' ? impact : reduced ? 220 : 600 : null;
   const defendingPet = pet && ['guard', 'deflect'].includes(pet.mode);
-  const petStart = pet ? defendingPet ? 0 : reduced ? 80 : spell ? 350 : 150 : 0;
-  const petImpact = pet ? defendingPet ? impact : reduced ? 340 : petStart + 450 : null;
+  const petStart = pet ? defendingPet ? 0 : spell?.mode === 'attack' ? spellImpact : impact : 0;
+  const petImpact = pet ? defendingPet ? impact : petStart + (reduced ? 120 : 200) : null;
   const lastImpact = Math.max(impact, spellImpact || 0, petImpact || 0);
   return { impact, spellStart, spellImpact, petStart, petImpact,
     duration: Math.max(reduced ? Math.max(1200, duration - 200) : duration, lastImpact + (reduced ? 700 : 1000)) };
+}
+
+// Launch each travelling assist only after the previous hit has actually landed.
+// Native animation arrivals drive the sequence; the clock covers missing motion.
+// An early/duplicate signal cannot release future effects or compress the cascade.
+export function createCombatCascade({ clock, timing, phases, reduced = false, onLaunch, onLand, onComplete }) {
+  const launched = new Set(['impact']), ready = new Set(), pending = new Map();
+  let next = 0, stopped = false;
+  const defensive = phase => phase !== 'impact' && timing[`${phase}Impact`] === timing.impact;
+  const schedule = (phase, delay) => pending.set(phase, clock.after(delay, () => arrive(phase)));
+  const launch = phase => {
+    if (launched.has(phase)) return;
+    launched.add(phase); onLaunch(phase);
+    if (!defensive(phase)) schedule(phase, timing[`${phase}Impact`] - timing[`${phase}Start`] + (reduced ? 0 : 100));
+  };
+  function arrive(phase) {
+    if (stopped || !launched.has(phase) || ready.has(phase) || phases.indexOf(phase) < next) return;
+    ready.add(phase); clock.cancel(pending.get(phase)); pending.delete(phase);
+    while (next < phases.length && ready.has(phases[next])) {
+      onLand(phases[next++]);
+      if (next === phases.length) { stopped = true; onComplete(); return; }
+      const following = phases[next];
+      if (defensive(following)) ready.add(following);
+      else { launch(following); return; }
+    }
+  }
+  for (const phase of phases) if (defensive(phase)) launch(phase);
+  schedule('impact', timing.impact);
+  return { arrive, stop() { stopped = true; for (const id of pending.values()) clock.cancel(id); pending.clear(); } };
 }
 
 // Animation arrivals and the fallback clock share this gate. Each hit lands once,

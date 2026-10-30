@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombatClock, combatTurnTiming, syncCombatAnimation, createCombatImpactSequence, createCombatCascade } from '../combat-playback.js';
+import { createCombatClock, combatTurnTiming, syncCombatAnimation, createCombatImpactSequence, combatSoundTimeline } from '../combat-playback.js';
 function harness(options = {}) {
   let callback, timestamp = 0, hidden = false;
   const frames = [];
@@ -114,52 +114,16 @@ test('wards, shell guards, and fox deflections land with the incoming attack', (
   }
 });
 
-function cascadeHarness(options={}) {
-  const h=harness(),events=[],timing=combatTurnTiming(options);
-  const cascade=createCombatCascade({clock:h.clock,timing,reduced:options.reduced,
-    phases:['impact',...(options.spell?['spell']:[]),...(options.pet?['pet']:[])],
-    onLaunch:phase=>events.push(['launch',phase,h.clock.elapsed]),
-    onLand:phase=>events.push(['land',phase,h.clock.elapsed]),
-    onComplete:()=>events.push(['done',null,h.clock.elapsed])});
-  return {...h,cascade,events};
-}
-const assists={spell:{mode:'attack'},pet:{mode:'attack'}};
-test('a spell launches after the weapon lands and a pet launches only after the spell lands',()=>{
-  const h=cascadeHarness(assists);h.step();h.advance(400);
-  assert.deepEqual(h.events.map(e=>e.slice(0,2)),[['land','impact'],['launch','spell']]);
-  h.cascade.arrive('pet');h.advance(180);
-  assert.equal(h.events.length,2,'an early pet arrival cannot force preceding hits to land');
-  h.cascade.arrive('spell');h.advance(180);
-  assert.deepEqual(h.events.slice(2).map(e=>e.slice(0,2)),[['land','spell'],['launch','pet']]);
-  h.cascade.arrive('pet');h.cascade.arrive('pet');h.advance(2000);
-  assert.deepEqual(h.events.slice(4).map(e=>e.slice(0,2)),[['land','pet'],['done',null]]);
-  h.clock.stop();
+test('the original overlapping 450ms spell and pet flights are preserved',()=>{
+  const t=combatTurnTiming({spell:{mode:'attack'},pet:{mode:'attack'}});
+  assert.equal(t.spellStart,150);assert.equal(t.spellImpact-t.spellStart,450);
+  assert.equal(t.petStart,350);assert.equal(t.petImpact-t.petStart,450);
 });
-test('a later slow frame stretches the cascade instead of releasing spell and pet hits together',()=>{
-  const h=cascadeHarness(assists);h.step();h.advance(400);h.step(650);
-  h.cascade.arrive('spell');h.cascade.arrive('spell');
-  const spellAt=h.events.find(e=>e[0]==='land'&&e[1]==='spell')[2];
-  h.advance(180);assert.ok(!h.events.some(e=>e[0]==='land'&&e[1]==='pet'));
-  h.cascade.arrive('pet');
-  assert.ok(h.events.find(e=>e[0]==='land'&&e[1]==='pet')[2]-spellAt>=180);
-  h.clock.stop();
-});
-test('missing animation events recover promptly and cancellation removes outstanding fallbacks',()=>{
-  const h=cascadeHarness(assists);h.step();h.advance(1100);
-  assert.deepEqual(h.events.filter(e=>e[0]==='land').map(e=>e[1]),['impact','spell','pet']);
-  assert.equal(h.events.filter(e=>e[0]==='done').length,1);
-  h.advance(2000);assert.equal(h.events.length,6);h.clock.stop();
-  const stopped=cascadeHarness(assists);stopped.step();stopped.advance(400);stopped.cascade.stop();
-  stopped.advance(3000);stopped.cascade.arrive('spell');
-  assert.equal(stopped.events.length,2);stopped.clock.stop();
-});
-test('defensive assists land with the incoming hit and reduced motion keeps a separated cascade',()=>{
-  const h=cascadeHarness({spell:{mode:'guard'},pet:{mode:'guard'}});h.step();h.advance(380);
-  h.cascade.arrive('pet');assert.equal(h.events.filter(e=>e[0]==='land').length,0);
-  h.advance(20);
-  assert.deepEqual(h.events.filter(e=>e[0]==='land').map(e=>e.slice(1)),[['impact',400],['spell',400],['pet',400]]);
-  h.clock.stop();
-  const reduced=cascadeHarness({...assists,reduced:true});reduced.step();reduced.advance(340);
-  assert.deepEqual(reduced.events.filter(e=>e[0]==='land').map(e=>e.slice(1)),[['impact',100],['spell',220],['pet',340]]);
-  reduced.clock.stop();
+test('a pre-mixed turn keeps weapon, spell, pet, and grunt sounds on their hit timings',()=>{
+  const turn={timing:combatTurnTiming({spell:{mode:'attack'},pet:{mode:'attack'}}),
+    spell:{id:'starfall',mode:'attack'},pet:{id:'drake'},
+    launch:[['weaponSwing',{voice:'blade'}]],impact:[['impact',{target:'monster'}]],grunt:[['grunt',{who:'monster'}]],
+    healthPlan:{beats:['impact','spell','pet'].map(phase=>({phase,floats:[{kind:'damage',side:'monster'}]}))},finishingPhase:'pet'};
+  const events=combatSoundTimeline(turn);
+  assert.deepEqual(events.map(([at,name])=>[at,name]),[[120,'weaponSwing'],[150,'spellCast'],[350,'petCall'],[400,'impact'],[480,'grunt'],[600,'spellImpact'],[680,'grunt'],[800,'petImpact'],[800,'finisher'],[940,'grunt']]);
 });

@@ -1,15 +1,15 @@
 // The monster card, victory odds, and animated encounters.
-import * as E from './engine.js?v=0.42.6';
-import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.42.6';
-import { combatSpellCue, describeCombatEvent, combatHealthImpacts } from './combat-presentation.js?v=0.42.6';
-import { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile } from './combat-attack-art.js?v=0.42.6';
-import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.42.6';
-import { playSfx, prepareSfx, prepareBattleSfx, stopSfx, unlockSfx } from './sfx.js?v=0.42.6';
-import { createCombatClock, combatTurnTiming, createCombatCascade } from './combat-playback.js?v=0.42.6';
-import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.42.6';
-import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.42.6';
-import { announceBadges, commit } from './ui-modal.js?v=0.42.6';
-import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.42.6';
+import * as E from './engine.js?v=0.42.7';
+import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.42.7';
+import { combatSpellCue, describeCombatEvent, combatHealthImpacts } from './combat-presentation.js?v=0.42.7';
+import { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile } from './combat-attack-art.js?v=0.42.7';
+import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.42.7';
+import { playSfx, prepareSfx, prepareBattleSfx, stopSfx, unlockSfx } from './sfx.js?v=0.42.7';
+import { createCombatClock, combatTurnTiming, createCombatImpactSequence, combatSoundTimeline } from './combat-playback.js?v=0.42.7';
+import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.42.7';
+import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.42.7';
+import { announceBadges, commit } from './ui-modal.js?v=0.42.7';
+import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.42.7';
 export function renderMonster() {
   const number = app.state.monster.number,
     won = !!app.state.monster.defeatedOn,
@@ -185,7 +185,7 @@ function renderBattleModal() {
     finished ? (r.won ? 'Victory!' : 'Defeated') : `Encounter · ${monsterName(r.monster)}`,
     `<div class="battle-body">
     <div class="battle-toolbar"><span>${finished ? `${round} rounds` : `${index < 0 ? 'GET READY' : `ROUND ${round} · ${event?.type === 'attack' ? 'YOUR TURN' : event?.type === 'rally' ? 'RECOVERY' : 'MONSTER’S TURN'}`}`}</span><div>${app.modal.replay ? '<span class="replay-label">REPLAY</span>' : ''}<span>${finished ? 'Encounter complete' : `Step ${Math.max(0, index + 1)} / ${r.events.length}`}</span><button class="icon-button" data-action="battle-mute" title="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}" aria-label="${app.state.settings.muted ? 'Unmute combat' : 'Mute combat'}">${icon(app.state.settings.muted ? 'mute' : 'sound')}</button></div></div>
-    <div class="battle-stage ${stageClass} ${pet ? 'has-companion' : ''}" id="battle-stage" ${!finished && app.modal.playback ? 'data-playback="true"' : ''} data-step="${index}" style="--attack-color:${attackCue?.profile?.color || 'var(--accent)'};--spell-delay:${app.modal.playback ? 0 : timing.spellStart}ms;--spell-flight:${(timing.spellImpact ?? timing.impact) - timing.spellStart}ms;--spell-impact-delay:${Math.max(0, (timing.spellImpact ?? timing.impact) - timing.impact)}ms;--pet-delay:${app.modal.playback ? 0 : timing.petStart}ms;--pet-flight:${(timing.petImpact ?? timing.impact) - timing.petStart}ms;--pet-impact-delay:${Math.max(0, (timing.petImpact ?? timing.impact) - timing.impact)}ms">${combatAttackArt(attackCue)}${spellAnimation(spellCue)}${combatPetArt(petCue)}${finished && r.won ? '<div class="victory-banner" aria-hidden="true"><span class="victory-rays"></span><strong>VICTORY</strong></div>' : ''}
+    <div class="battle-stage ${stageClass} ${pet ? 'has-companion' : ''}" id="battle-stage" ${!finished && app.modal.playback ? 'data-playback="true"' : ''} data-step="${index}" style="--attack-color:${attackCue?.profile?.color || 'var(--accent)'};--spell-delay:${timing.spellStart}ms;--spell-flight:${(timing.spellImpact ?? timing.impact) - timing.spellStart}ms;--spell-impact-delay:${Math.max(0, (timing.spellImpact ?? timing.impact) - timing.impact)}ms;--pet-delay:${timing.petStart}ms;--pet-flight:${(timing.petImpact ?? timing.impact) - timing.petStart}ms;--pet-impact-delay:${Math.max(0, (timing.petImpact ?? timing.impact) - timing.impact)}ms">${combatAttackArt(attackCue)}${spellAnimation(spellCue)}${combatPetArt(petCue)}${finished && r.won ? '<div class="victory-banner" aria-hidden="true"><span class="victory-rays"></span><strong>VICTORY</strong></div>' : ''}
       <div class="battle-fighter player"><div class="fighter-scene"><div class="fighter-motion" data-battle-model="player">${model('player')}</div>${effect('player')}${companionScene(pet, petHat, petCue, { ready: index < 0, finished, won: r.won, art: visual.pet })}</div><strong>${esc(r.playerName || app.state.name)}</strong><div class="health-bar" role="progressbar" aria-label="Adventurer health" aria-valuemin="0" aria-valuemax="${maximum}" aria-valuenow="${hp}" id="battle-player-bar"><div style="transform:scaleX(${hp / maximum})"></div></div><small id="battle-player-hp">${hp} / ${maximum} HP</small></div>
       <div class="battle-divider"><span>VS</span><i></i></div>
       <div class="battle-fighter monster"><div class="fighter-scene"><div class="fighter-motion" data-battle-model="monster">${finished && r.won ? visual.defeated : model('monster')}</div>${effect('monster')}</div><strong>${monsterName(r.monster)}</strong><div class="health-bar enemy" role="progressbar" aria-label="Monster health" aria-valuemin="0" aria-valuemax="${enemyMax}" aria-valuenow="${enemy}" id="battle-enemy-bar"><div style="transform:scaleX(${enemy / enemyMax})"></div></div><small id="battle-enemy-hp">${enemy} / ${enemyMax} HP</small></div>
@@ -212,7 +212,7 @@ function renderBattleModal() {
   );
 }
 const battleTimers = new Set();
-let battleClock = null, battleSoundScene = null, battleCascade = null;
+let battleClock = null, battleSoundScene = null, activeBattleTurn = null;
 const pausedBattleAnimations = new Set();
 function measureBattleArena() {
   const stage = $('#battle-stage');
@@ -235,6 +235,7 @@ document.addEventListener('visibilitychange', () => {
       if (animation.effect?.target?.isConnected && animation.playState === 'paused' && animation.currentTime < animation.effect.getComputedTiming().endTime) animation.play();
     }
     pausedBattleAnimations.clear();
+    resumeBattleTrack();
   }
   if (document.hidden) battleAudio.stop();
 });
@@ -245,6 +246,11 @@ const battleAudio = {
   play: (name, options) => playSfx(name, { ...options, channel: 'battle' }),
   stop: () => stopSfx('battle'),
 };
+function resumeBattleTrack() {
+  if (!document.hidden && battleClock && activeBattleTurn?.tracked) battleSoundScene?.resumeTurn(activeBattleTurn.index, (battleClock.elapsed - activeBattleTurn.started) / 1000);
+}
+window.addEventListener('focus', resumeBattleTrack);
+window.addEventListener('pageshow', resumeBattleTrack);
 // The top quarter of attack rolls land as heavy blows: bigger sound and a stage shake.
 const isHeavy = (event, monster) =>
   event.type === 'attack'
@@ -274,7 +280,7 @@ function scheduleBattle(fn, delay) {
   battleTimers.add(timer);
 }
 function stopBattlePlayback() {
-  battleCascade?.stop(); battleCascade = null;
+  activeBattleTurn = null;
   battleClock?.stop(); battleClock = null; pausedBattleAnimations.clear();
   battleSoundScene?.release(); battleSoundScene = null;
   for (const timer of battleTimers) clearTimeout(timer);
@@ -337,7 +343,7 @@ function animateBattle(result, initialHP, replay = false) {
     if (turn.spell) for (const name of ['spellCast', 'spellImpact']) entries.push([name, { spell: turn.spell.id, mode: turn.spell.mode }]);
     if (turn.pet) for (const name of ['petCall', 'petImpact']) entries.push([name, { pet: turn.pet.id }]);
   }
-  const audio = battleSoundScene = prepareBattleSfx(entries);
+  const audio = battleSoundScene = prepareBattleSfx(entries, { turns: turns.map(turn => combatSoundTimeline(turn, { reduced })), durations: turns.map(turn => turn.timing.duration) });
   app.busy = true;
   app.modal = { type: 'battle', result, index: -1, initialHP, finished: false, impact: false, replay, playback: true };
   view.render();
@@ -351,11 +357,18 @@ function animateBattle(result, initialHP, replay = false) {
     app.modal.timing = timing;
     app.modal.healthPlan = turn.healthPlan;
     app.modal.health = turn.healthPlan.before;
-    battleCascade?.stop(); pausedBattleAnimations.clear();
+    pausedBattleAnimations.clear();
     view.renderModal(); measureBattleArena();
     const stage = $('#battle-stage'); stage.dataset.phase = 'windup';
-    clock.after(reduced ? 40 : 120, () => play(turn.launch));
-    const deliver = phase => {
+    const tracked = audio.playTurn(app.modal.index);
+    activeBattleTurn = { index: app.modal.index, started: clock.elapsed, tracked };
+    if (!tracked) {
+      clock.after(reduced ? 40 : 120, () => play(turn.launch));
+      if (spell) clock.after(timing.spellStart, () => battleAudio.play('spellCast', { spell: spell.id, mode: spell.mode }));
+      if (pet) clock.after(timing.petStart, () => battleAudio.play('petCall', { pet: pet.id }));
+    }
+    const phases = turn.healthPlan.beats.map(b => b.phase);
+    const deliver = createCombatImpactSequence(phases, phase => {
       const beat = turn.healthPlan.beats.find(b => b.phase === phase);
       if (phase === 'impact') app.modal.impact = true;
       stage.classList.add(phase === 'impact' ? 'impacted' : `${phase}-landed`); stage.dataset.phase = phase;
@@ -366,17 +379,22 @@ function animateBattle(result, initialHP, replay = false) {
         const bar = $('#battle-' + side + '-bar');
         if (bar && +bar.getAttribute('aria-valuenow') !== hp) { bar.firstElementChild.style.transform = `scaleX(${hp / max})`; bar.setAttribute('aria-valuenow', hp); $('#battle-' + side + '-hp').textContent = `${hp} / ${max} HP`; }
       }
-      if (phase === 'impact') play(turn.impact);
-      if (phase === 'spell') battleAudio.play('spellImpact', { spell: spell.id, mode: spell.mode });
-      if (phase === 'pet') battleAudio.play('petImpact', { pet: pet.id });
-      if (phase === turn.finishingPhase && phase !== 'impact') battleAudio.play('finisher', { target: 'monster', heavy: false });
-      const targets = new Set(beat.floats.filter(f => f.kind === 'damage').map(f => f.side));
-      const grunts = turn.grunt.filter(([, options]) => targets.has(options.who === 'monster' ? 'monster' : 'player'));
-      if (grunts.length) clock.after(phase === turn.finishingPhase ? 140 : 80, () => play(grunts));
-    };
-    let cascade;
+      if (!tracked) {
+        if (phase === 'impact') play(turn.impact);
+        if (phase === 'spell') battleAudio.play('spellImpact', { spell: spell.id, mode: spell.mode });
+        if (phase === 'pet') battleAudio.play('petImpact', { pet: pet.id });
+        if (phase === turn.finishingPhase && phase !== 'impact') battleAudio.play('finisher', { target: 'monster', heavy: false });
+        const targets = new Set(beat.floats.filter(f => f.kind === 'damage').map(f => f.side));
+        const grunts = turn.grunt.filter(([, options]) => targets.has(options.who === 'monster' ? 'monster' : 'player'));
+        if (grunts.length) clock.after(phase === turn.finishingPhase ? 140 : 80, () => play(grunts));
+      }
+      if (phase === phases.at(-1)) {
+        const lastImpact = Math.max(timing.impact, timing.spellImpact || 0, timing.petImpact || 0);
+        clock.after(audio.untilTurn(app.modal.index + 1) ?? timing.duration - lastImpact, advance);
+      }
+    });
     const land = phase => {
-      if (!document.hidden && battleClock === clock && $('#battle-stage') === stage) cascade?.arrive(phase);
+      if (!document.hidden && battleClock === clock && $('#battle-stage') === stage) deliver(phase);
     };
     // Actual projectile arrivals and fallback timers enter the same once-only gate.
     // Their burst, number, HP value, and bar update together in this callback.
@@ -385,18 +403,9 @@ function animateBattle(result, initialHP, replay = false) {
       else if (e.target.matches('.spell-projectile') || e.animationName === 'ward-rise') land('spell');
       else if (e.target.matches('.pet-projectile') || e.animationName === 'pet-leaf-charge') land('pet');
     });
-    cascade = battleCascade = createCombatCascade({ clock, timing, reduced, phases: turn.healthPlan.beats.map(b => b.phase),
-      onLaunch(phase) {
-        stage.classList.add(`${phase}-casting`);
-        if (phase === 'spell') battleAudio.play('spellCast', { spell: spell.id, mode: spell.mode });
-        if (phase === 'pet') battleAudio.play('petCall', { pet: pet.id });
-      },
-      onLand: deliver,
-      onComplete() {
-        const lastImpact = Math.max(timing.impact, timing.spellImpact || 0, timing.petImpact || 0);
-        clock.after(timing.duration - lastImpact, advance);
-      },
-    });
+    clock.after(timing.impact, () => land('impact'));
+    if (spell) clock.after(timing.spellImpact, () => land('spell'));
+    if (pet) clock.after(timing.petImpact, () => land('pet'));
   };
   let begun = false;
   const begin = () => {
@@ -406,7 +415,9 @@ function animateBattle(result, initialHP, replay = false) {
     clock.after(Math.max(350, 1000 - clock.elapsed), advance);
   };
   audio.ready.then(begin);
-  scheduleBattle(begin, 1800); // Slow or unavailable audio never holds the visual replay indefinitely.
+  // Never begin over an in-flight Safari render/encode. Preparation has its own
+  // bounded timeout; the deadline stops future work and lets that last job settle.
+  scheduleBattle(() => { if (!begun) { audio.start(); audio.ready.then(begin); } }, 4000);
 }
 
 export const modals = {
@@ -431,7 +442,7 @@ export const actions = {
     app.state.settings.muted = !app.state.settings.muted;
     persist();
     if (app.state.settings.muted) stopSfx(null);
-    else unlockSfx({ refresh: true });
+    else { unlockSfx({ refresh: true }); resumeBattleTrack(); }
     b.innerHTML = icon(app.state.settings.muted ? 'mute' : 'sound');
     b.setAttribute('aria-label', app.state.settings.muted ? 'Unmute combat' : 'Mute combat');
     b.title = app.state.settings.muted ? 'Unmute combat' : 'Mute combat';

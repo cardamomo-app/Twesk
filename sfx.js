@@ -2,7 +2,7 @@
 // Most browsers use a shared Web Audio mix; Safari plays offline-rendered WAVs through media elements.
 // Repeated sounds draw from random variants, and quick successive rewards climb
 // a pentatonic scale so a run of completed tasks sounds increasingly triumphant.
-import { audioBufferWav, createMediaSoundPlayer, trimmedBuffer } from './sfx-media.js?v=0.42.6';
+import { audioBufferWav, createMediaSoundPlayer, trimmedBuffer } from './sfx-media.js?v=0.42.7';
 let ctx, master, reverbIn, noiseBuf, clock = null, stale = false, recovering = null;
 let recording = null, offlineRendering = false;
 // Setting localStorage 'twesk.sfx-media' to '1' forces the media path in any browser, for testing.
@@ -802,22 +802,58 @@ export function prepareSfx(entries, { variants = VARIANTS } = {}) {
 }
 // Warm and retain only the effects the recorded encounter actually uses. The
 // silent setup also works when muted, so unmuting mid-fight needs no new renders.
-export function prepareBattleSfx(entries) {
-  if (!mediaPlayer) return { ready: Promise.resolve(), start() {}, release() {} };
-  const plans = [...new Map(entries.filter(([name]) => SOUNDS[name]).map(([name, options = {}]) => {
+export function prepareBattleSfx(entries, { turns = [], durations = [] } = {}) {
+  if (!mediaPlayer) return { ready: Promise.resolve(), start() {}, release() {}, playTurn() { return false; }, resumeTurn() {}, untilTurn() { return null; } };
+  // Ordinary encounters share one continuous soundtrack: no Safari media restarts
+  // during hits or turn changes. Very long fights use the same preloaded turn mixes.
+  const turnPlans = turns.map(events => events.flatMap(([at, name, options = {}]) =>
+    SOUNDS[name] ? recordPlan(name, options, 0).map(voice => ({ ...voice, t: voice.t + at / 1000 })) : []));
+  let duration = 0;
+  const offsets = durations.map(ms => { const start = duration; duration += ms; return start / 1000; });
+  const continuous = durations.length === turns.length && turns.length > 0 && duration <= 75000;
+  const tracks = continuous ? [turnPlans.flatMap((plan, i) => plan.map(voice => ({ ...voice, t: voice.t + offsets[i] })))] : turnPlans;
+  const standalone = turns.length ? entries.filter(([name]) => ['start', 'victory', 'defeat', 'petCall'].includes(name)) : entries;
+  const recordEntries = entries => entries.filter(([name]) => SOUNDS[name]).map(([name, options = {}]) => {
     const plan = recordPlan(name, options, 0); return [JSON.stringify(plan), plan];
-  })).values()];
+  });
+  const turnKeys = new Set(tracks.map(plan => JSON.stringify(plan)));
+  const outcome = name => ['victory', 'defeat'].includes(name);
+  const plans = [...new Map([...recordEntries(standalone.filter(([name]) => !outcome(name))),
+    ...tracks.map(plan => [JSON.stringify(plan), plan]), ...recordEntries(standalone.filter(([name]) => outcome(name)))]).values()];
   preparationHolds++;
   const releaseClips = mediaPlayer.retain(plans);
-  let started = false, released = false;
+  const unload = [];
+  let started = false, released = false, playing = false;
   const ready = (async () => {
     for (const plan of plans) {
       if (started || released) break;
       await mediaPlayer.prepare(plan);
+      if (!released && turnKeys.has(JSON.stringify(plan))) {
+        const release = await mediaPlayer.preload(plan);
+        if (released) release(); else unload.push(release);
+      }
     }
   })();
-  return { ready, start() { started = true; }, release() {
-    if (released) return; released = true; releaseClips(); preparationHolds--; drainPrepared();
+  function playTrack(index, offset = 0) {
+    const plan = tracks[continuous ? 0 : index];
+    if (!released && !isMuted() && plan && mediaPlayer.has(plan)) {
+      mixableSession(); mediaPlayer.play(plan, { channel: 'battle', maxAge: 120, offset: (continuous ? offsets[index] || 0 : 0) + offset });
+      playing = true;
+    }
+  }
+  return { ready, start() { started = true; }, playTurn(index) {
+    if (!tracks.length) return false;
+    if (!continuous || !playing) playTrack(index);
+    // An unavailable track stays silent instead of rendering or loading ten
+    // individual fallback effects in the middle of an attack.
+    return true;
+  }, resumeTurn(index, offset = 0) { playTrack(index, offset); }, untilTurn(index) {
+    if (!continuous || offsets[index] === undefined) return null;
+    const time = mediaPlayer.position(tracks[0]);
+    return time === null ? null : Math.max(0, (offsets[index] - time) * 1000);
+  }, release() {
+    if (released) return; released = true; for (const release of unload) release();
+    releaseClips(); preparationHolds--; drainPrepared();
   } };
 }
 // Everyday sounds outside combat; combat prepares its own set before a fight.

@@ -137,3 +137,15 @@ test('an encounter retains its warmed clips through cache pressure, then release
   assert.equal(h.player.has(plan('other')), false);
   release(); release(); assert.equal(h.player.has(held), false, 'releasing is idempotent and trims the cache');
 });
+
+test('preloaded media plays without reloading and releases unused encounter voices',async t=>{
+  const h=harness(t);h.player.unlock();await wait(0);
+  const a=plan('a'),b=plan('b'),releaseClips=h.player.retain([a,b]);
+  await h.player.prepare(a);await h.player.prepare(b);
+  const releaseA=await h.player.preload(a),releaseB=await h.player.preload(b);
+  assert.equal(h.played.length,0);const loads=h.audio.map(a=>a.loads);
+  await h.player.play(a,{channel:'battle',offset:.4});
+  assert.deepEqual(h.audio.map(a=>a.loads),loads);assert.equal(h.played[0].audio.currentTime,.4);
+  releaseA();releaseB();releaseClips();h.player.stop('battle');
+  assert.ok(h.audio.every(a=>a.paused));
+});

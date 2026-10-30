@@ -58,7 +58,7 @@ export function createMediaSoundPlayer({ render, muted, createAudio, now = () =>
     slot.audio.onended = null; slot.audio.onerror = null;
     try { slot.audio.pause(); } catch {}
     if (slot.clip) slot.clip.users--;
-    slot.clip = null; slot.busy = false; slot.priming = false; slot.channel = null;
+    slot.clip = null; slot.busy = false; slot.priming = false; slot.channel = null; slot.preloaded = false;
     trim();
   }
   function makePool() {
@@ -92,7 +92,7 @@ export function createMediaSoundPlayer({ render, muted, createAudio, now = () =>
     let timeout;
     clip.ready = Promise.race([
       Promise.resolve().then(() => render(plan)),
-      new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error('Sound rendering timed out.')), 2000); }),
+      new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error('Sound rendering timed out.')), plan.some(p => p.t > 8) ? 10000 : 2000); }),
     ]).then(blob => {
       if (clips.get(key) !== clip) throw new Error('An interrupted audio render was discarded.');
       clip.url = URL.createObjectURL(blob); clip.bytes = blob.size; bytes += clip.bytes;
@@ -110,8 +110,8 @@ export function createMediaSoundPlayer({ render, muted, createAudio, now = () =>
     makePool();
     // Prefer an idle element that already holds this clip: replaying it needs no reload.
     const idle = pool.filter(s => !s.busy && !s.priming);
-    const slot = idle.find(s => s.unlocked && s.loaded === clip.url) || idle.filter(s => s.unlocked).sort((a, b) => a.started - b.started)[0] ||
-      idle[0] || pool.reduce((a, b) => a.started <= b.started ? a : b);
+    const slot = idle.find(s => s.unlocked && s.loaded === clip.url) || idle.filter(s => s.unlocked && !s.preloaded).sort((a, b) => a.started - b.started)[0] ||
+      idle.find(s => !s.preloaded) || idle.at(-1) || pool.reduce((a, b) => a.started <= b.started ? a : b);
     release(slot); slot.clip = clip; slot.busy = true;
     slot.channel = request.channel; slot.started = now();
     // A new clip, or an element left idle across sleep, reloads; a warm element just rewinds.
@@ -119,7 +119,7 @@ export function createMediaSoundPlayer({ render, muted, createAudio, now = () =>
       slot.audio.src = clip.url; slot.loaded = clip.url; slot.stale = false;
       try { slot.audio.load(); } catch {}
     }
-    try { slot.audio.currentTime = 0; } catch {}
+    try { slot.audio.currentTime = request.offset; } catch {}
     const serial = slot.serial;
     slot.audio.onended = () => { if (slot.serial === serial) release(slot); };
     slot.audio.onerror = () => { if (slot.serial === serial) { slot.unlocked = false; slot.loaded = null; release(slot); } };
@@ -129,14 +129,14 @@ export function createMediaSoundPlayer({ render, muted, createAudio, now = () =>
     } catch { slot.unlocked = false; slot.loaded = null; release(slot); }
     trim();
   }
-  function play(plan, { channel = 'ui', delay = 0, maxAge = 800 } = {}) {
+  function play(plan, { channel = 'ui', delay = 0, maxAge = 800, offset = 0 } = {}) {
     if (muted() || !plan.length) return Promise.resolve(false);
     const wall = wallNow();
     // After a long rest (or a clock jump), each element reloads its clip the next time it plays.
     if (wall - lastUse > 90000 || wall < lastUse) markStale();
     lastUse = wall;
     unlock();
-    const request = { channel, delay: Math.max(0, delay * 1000), maxAge, asked: now(), epoch, generation: cancelled.get(channel) || 0 };
+    const request = { channel, delay: Math.max(0, delay * 1000), offset: Math.max(0, offset), maxAge, asked: now(), epoch, generation: cancelled.get(channel) || 0 };
     return clipFor(plan).then(clip => {
       if (!valid(request)) { clip.users--; trim(); return false; }
       const remaining = request.asked + request.delay - now();
@@ -149,6 +149,29 @@ export function createMediaSoundPlayer({ render, muted, createAudio, now = () =>
       }
       return true;
     }).catch(() => false);
+  }
+  // Load/decode encounter tracks before the fight, without playing or stealing a
+  // voice. Safari can play a whole encounter without restarting media mid-hit.
+  async function preload(plan) {
+    if (!has(plan)) return () => {};
+    const clip = await clipFor(plan); makePool();
+    const slot = pool.find(s => !s.busy && !s.priming && !s.clip);
+    if (!slot) { clip.users--; trim(); return () => {}; }
+    slot.clip = clip; slot.preloaded = true; slot.loaded = clip.url; slot.stale = false;
+    slot.audio.src = clip.url;
+    try { slot.audio.load(); } catch {}
+    if (typeof slot.audio.addEventListener === 'function' && slot.audio.readyState < 3) await new Promise(resolve => {
+      let timer;
+      const ready = () => { clearTimeout(timer); slot.audio.removeEventListener('canplaythrough', ready); slot.audio.removeEventListener('error', ready); resolve(); };
+      slot.audio.addEventListener('canplaythrough', ready, { once: true }); slot.audio.addEventListener('error', ready, { once: true });
+      timer = setTimeout(ready, 1200);
+    });
+    return () => { if (slot.preloaded && slot.clip === clip) release(slot); };
+  }
+  function position(plan) {
+    const clip = clips.get(JSON.stringify(plan));
+    const slot = pool.find(s => s.busy && s.clip === clip && !s.audio.paused);
+    return slot ? slot.audio.currentTime : null;
   }
   function stop(channel = null) {
     if (channel === null) epoch++; else cancelled.set(channel, (cancelled.get(channel) || 0) + 1);
@@ -186,5 +209,5 @@ export function createMediaSoundPlayer({ render, muted, createAudio, now = () =>
   }
   const has = plan => !!clips.get(JSON.stringify(plan))?.url;
   const stats = () => ({ clips: clips.size, bytes });
-  return { unlock, prepare, play, stop, wake, dispose, stats, retain, has };
+  return { unlock, prepare, preload, position, play, stop, wake, dispose, stats, retain, has };
 }

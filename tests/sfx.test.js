@@ -270,3 +270,48 @@ test('a muted encounter warms silently for a later unmute, and starting stops an
   const cold = slow.prepareBattleSfx([['block'], ['deflect'], ['heal']]); await wait(0); cold.start(); release(); await cold.ready;
   assert.equal(slow.contexts.length, 1, 'the startup deadline stops any remaining preparation'); cold.release();
 });
+
+test('Safari preloads turn mixes and plays one clip per turn without media reloads or per-hit rendering',async()=>{
+  const h=audioHarness({safari:true,controlledIdle:true});h.unlockSfx();await wait(0);
+  const turns=[[[120,'weaponSwing',{voice:'blade'}],[400,'impact',{target:'monster'}],[600,'spellImpact',{spell:'starfall'}],[800,'petImpact',{pet:'drake'}]],
+    [[120,'creatureAttack',{voice:'root'}],[400,'impact',{target:'player'}]]];
+  const scene=h.prepareBattleSfx([['start'],['victory']],{turns});await scene.ready;scene.start();
+  const renders=h.contexts.length,loads=h.media.reduce((n,a)=>n+(a.loads||0),0);
+  const plays=()=>h.media.reduce((n,a)=>n+a.plays.filter(src=>src.startsWith('blob:')).length,0);
+  assert.equal(plays(),0,'preloading is silent');assert.ok(loads>=2,'both turn tracks load before the fight');
+  assert.equal(scene.playTurn(0),true);await wait(0);assert.equal(plays(),1);
+  assert.equal(scene.playTurn(1),true);await wait(0);assert.equal(plays(),2);
+  assert.equal(h.contexts.length,renders,'no synth work during either turn');
+  assert.equal(h.media.reduce((n,a)=>n+(a.loads||0),0),loads,'no audio reload at any hit or turn boundary');
+  h.stopSfx('battle');scene.release();assert.ok(h.media.filter(a=>a.src.startsWith('blob:')).every(a=>a.paused));
+});
+test('turn tracks respect mute and resume at the current turn offset instead of replaying its opening',async()=>{
+  const h=audioHarness({safari:true,controlledIdle:true});let muted=false;h.configureSfx({muted:()=>muted});
+  h.unlockSfx();await wait(0);
+  const scene=h.prepareBattleSfx([],{turns:[[[400,'spellImpact',{spell:'starfall'}]]]});await scene.ready;scene.start();
+  scene.playTurn(0);await wait(0);h.stopSfx('battle');muted=true;
+  const count=()=>h.media.reduce((n,a)=>n+a.plays.filter(src=>src.startsWith('blob:')).length,0),before=count();
+  scene.playTurn(0);await wait(0);assert.equal(count(),before);
+  muted=false;scene.resumeTurn(0,.65);await wait(0);
+  assert.equal(count(),before+1);assert.equal(h.media.find(a=>!a.paused&&a.src.startsWith('blob:')).currentTime,.65);
+  h.stopSfx('battle');scene.release();
+});
+test('the regular Web Audio path keeps its existing per-effect playback',async()=>{
+  const h=audioHarness();const scene=h.prepareBattleSfx([],{turns:[[[0,'impact']]]});await scene.ready;
+  assert.equal(scene.playTurn(0),false);assert.equal(h.contexts.length,0);
+});
+
+test('a complete encounter uses one preloaded soundtrack across turns and resumes at the right point',async()=>{
+  const h=audioHarness({safari:true,controlledIdle:true});h.unlockSfx();await wait(0);
+  const scene=h.prepareBattleSfx([],{turns:[[[400,'impact',{target:'monster'}]],[[400,'spellImpact',{spell:'ward',mode:'guard'}]]],durations:[1800,1850]});
+  await scene.ready;scene.start();const renders=h.contexts.length,loads=h.media.reduce((n,a)=>n+(a.loads||0),0);
+  scene.playTurn(0);await wait(0);scene.playTurn(1);await wait(0);
+  const plays=()=>h.media.reduce((n,a)=>n+a.plays.filter(src=>src.startsWith('blob:')).length,0);
+  assert.equal(plays(),1,'turn changes do not start another audio player');
+  const active=h.media.find(a=>!a.paused&&a.src.startsWith('blob:'));active.currentTime=.6;
+  assert.ok(Math.abs(scene.untilTurn(1)-1200)<1e-8,'the next turn uses the soundtrack position');
+  h.stopSfx('battle');scene.resumeTurn(1,.3);await wait(0);
+  assert.equal(plays(),2);assert.equal(h.media.find(a=>!a.paused&&a.src.startsWith('blob:')).currentTime,2.1);
+  assert.equal(h.contexts.length,renders);assert.equal(h.media.reduce((n,a)=>n+(a.loads||0),0),loads);
+  h.stopSfx('battle');scene.release();
+});

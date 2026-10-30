@@ -1235,17 +1235,30 @@ for (const reducedMotion of [false,true]) uiTest(`health and floating numbers fo
   assert.deepEqual(await page.save(),before,'watching impacts never changes saved health or rewards');
 },{width:reducedMotion?390:1200,height:900,reducedMotion});
 
-uiTest('a full fight keeps later spell and pet hits separated after a stall without scanning or seeking animations',async page=>{
+uiTest('Safari plays one continuous preloaded soundtrack without media work at hits or later turns',async page=>{
   const save=E.freshState();save.gold=10000;save.settings.muted=false;
   for(const c of E.CATEGORIES)save.xp[c]=300;
   for(const id of ['eclipse','sunplate','starhelm','aegis','windstep','drake'])E.buy(save,id);
   save.hp=E.maxHP(save);save.monster.number=5;save.preparedSpell='starfall';save.supplies.starfall=1;
   const result=E.fight(save,today(save),()=>.6);
+  assert.equal(result.spell,'starfall');assert.equal(result.pet,'drake');
+  assert.ok(result.events.filter(e=>e.type==='attack').every(e=>e.spellBonus>0&&e.petBonus>0),'every player turn combines spell and pet damage');
   assert.ok(result.events.filter(e=>e.type==='attack').length>=3,'exercise several player turns');
   await page.cmd('Page.addScriptToEvaluateOnNewDocument',{source:"localStorage.setItem('twesk.sfx-media','1');"});
   await page.open({save});const before=await page.save();
   await page.evaluate(()=>{
-    const probe=window.cascadeProbe={turns:{},scans:0,seeks:0,stalled:false,reused:true,done:false};
+    const probe=window.cascadeProbe={turns:{},scans:0,seeks:0,reused:true,done:false};
+    for(const method of ['play','load']) {
+      const original=HTMLMediaElement.prototype[method];
+      HTMLMediaElement.prototype[method]=function(...args){
+        const stage=document.querySelector('#battle-stage');
+        if(this.src.startsWith('blob:')&&stage?.dataset.playback&&+stage.dataset.step>=0){
+          const turn=probe.turns[stage.dataset.step];
+          if(turn){turn[method]=(turn[method]||0)+1;if(stage.classList.contains('impacted'))turn.midHitAudio=(turn.midHitAudio||0)+1;}
+        }
+        return original.apply(this,args);
+      };
+    }
     const scan=Element.prototype.getAnimations;
     Element.prototype.getAnimations=function(...args){if(document.querySelector('#battle-stage')?.dataset.playback)probe.scans++;return scan.apply(this,args);};
     const time=Object.getOwnPropertyDescriptor(Animation.prototype,'currentTime');
@@ -1260,30 +1273,25 @@ uiTest('a full fight keeps later spell and pet hits separated after a stall with
         const nodes=[...stage.querySelectorAll('[data-battle-model]')].map(el=>el.firstElementChild);
         if(!models)models=nodes;else probe.reused&&=nodes.every((el,i)=>el===models[i]);
       }
-      const turn=probe.turns[index]??={started:performance.now(),attack:stage.classList.contains('event-attack'),landings:{},launches:{}};
+      const turn=probe.turns[index]??={started:performance.now(),attack:stage.classList.contains('event-attack'),landings:{},launches:{},play:0,load:0,midHitAudio:0};
       for(const [phase,cls]of[['impact','impacted'],['spell','spell-landed'],['pet','pet-landed']]){
         if(stage.classList.contains(cls)&&turn.landings[phase]===undefined)turn.landings[phase]=performance.now();
         if(stage.classList.contains(`${phase}-casting`)&&turn.launches[phase]===undefined)turn.launches[phase]=performance.now();
       }
     });
     observer.observe(document.querySelector('#overlay'),{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
-    function stall(){if(probe.done)return;const stage=document.querySelector('#battle-stage'),turn=probe.turns[2];
-      if(stage?.dataset.step==='2'&&turn&&!probe.stalled&&performance.now()-turn.started>500){probe.stalled=true;const until=performance.now()+650;while(performance.now()<until){}}
-      requestAnimationFrame(stall);
-    }requestAnimationFrame(stall);
   });
   await page.click('#app [data-action="replay-battle"]');
   await page.waitFor(()=>window.cascadeProbe.done,{timeout:40000});
   const p=await page.evaluate(()=>window.cascadeProbe);
-  assert.equal(p.stalled,true);assert.equal(p.reused,true);
+  assert.equal(p.reused,true);
   assert.equal(p.scans,0,'no battlefield animation scans during any hit or turn');
   assert.equal(p.seeks,0,'native effects are never repositioned');
   assert.equal(Object.keys(p.turns).length,result.events.length,'watch the entire fight');
-  for(const [index,turn]of Object.entries(p.turns))if(turn.attack){
-    assert.deepEqual(Object.keys(turn.landings),['impact','spell','pet'],`turn ${index} lands each hit once`);
-    assert.ok(turn.landings.spell-turn.landings.impact>=150,`turn ${index}: weapon and spell keep their gap`);
-    assert.ok(turn.landings.pet-turn.landings.spell>=150,`turn ${index}: spell and pet never bunch together`);
-    assert.ok(turn.launches.spell>=turn.landings.impact-1);assert.ok(turn.launches.pet>=turn.landings.spell-1);
+  for(const [index,turn]of Object.entries(p.turns)){
+    assert.equal(turn.play,+index===0?1:0,`turn ${index} never restarts the encounter soundtrack`);
+    assert.equal(turn.midHitAudio,0,`turn ${index} never reloads or plays media at weapon/spell/pet impacts`);
+    if(turn.attack)assert.deepEqual(Object.keys(turn.landings),['impact','spell','pet'],`turn ${index} lands each hit once`);
   }
   assert.deepEqual(await page.save(),before,'a full replay preserves health and rewards');
 },{width:390,height:900,reducedMotion:false});

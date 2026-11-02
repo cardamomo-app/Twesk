@@ -269,13 +269,29 @@ button.monster-scene:hover{background:color-mix(in srgb,var(--surface) 65%,trans
 .backup-nudge-actions{display:flex;align-items:center;gap:14px}
 .backup-nudge-actions .button{min-height:30px;padding:5px 12px;font-size:10px}
 .backup-box .backup-status{color:var(--text);font-weight:600}
+.tasks-panel{min-width:0}
+.project-filter{display:flex;align-items:center;gap:7px;min-width:0;flex-shrink:0;margin:-8px 0 16px}
+.project-rail{position:relative;min-width:0;flex:1}
 .project-chips{display:flex;flex-wrap:wrap;gap:6px;margin:-8px 0 16px}
+.project-rail>.project-chips{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:3px 2px;margin:0}
+.project-rail>.project-chips::-webkit-scrollbar{display:none}
+.project-rail>.project-chips>.project-chip{flex-shrink:0;white-space:nowrap}
+.project-scroll{position:absolute;top:0;bottom:0;z-index:1;display:flex;align-items:center;justify-content:center;width:30px;padding:0;color:var(--secondary);opacity:0;pointer-events:none;transition:opacity .15s,color .15s}
+.project-scroll[hidden]{display:none}
+.project-scroll-left{left:0;background:linear-gradient(to right,var(--panel) 65%,transparent)}
+.project-scroll-right{right:0;background:linear-gradient(to left,var(--panel) 65%,transparent)}
+.project-scroll .icon{width:14px;height:14px}
+.project-scroll-left .icon{transform:rotate(90deg)}
+.project-scroll-right .icon{transform:rotate(-90deg)}
+.project-rail:hover .project-scroll,.project-rail:focus-within .project-scroll{opacity:1;pointer-events:auto}
+.project-scroll:hover{color:var(--accent)}
+@media(hover:none){.project-scroll{opacity:.8;pointer-events:auto}}
 .project-chip{display:inline-flex;align-items:center;gap:5px;font-size:10px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--secondary)}
 .project-chip:hover{background:var(--surface-hover)}
 .project-chip.selected{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
 .project-chip span{font-size:9px;color:var(--muted)}
 .project-chip.selected span{color:var(--accent)}
-.project-manage{width:26px;height:25px;margin-left:auto;border:1px solid var(--line);border-radius:8px}
+.project-manage{width:26px;height:25px;flex-shrink:0;border:1px solid var(--line);border-radius:8px}
 .project-manage .icon{width:14px;height:14px}
 .task-tag-manager>p{font-size:12px;line-height:1.8;color:var(--secondary)}
 .task-tag-list{margin-top:18px}

@@ -283,13 +283,29 @@ button.monster-scene:hover{background:color-mix(in srgb,var(--surface) 65%,trans
 .backup-nudge-actions{display:flex;align-items:center;gap:14px}
 .backup-nudge-actions .button{min-height:30px;padding:5px 12px;font-size:10px}
 .backup-box .backup-status{color:var(--text);font-weight:600}
+.tasks-panel{min-width:0}
+.project-filter{display:flex;align-items:center;gap:7px;min-width:0;flex-shrink:0;margin:-8px 0 16px}
+.project-rail{position:relative;min-width:0;flex:1}
 .project-chips{display:flex;flex-wrap:wrap;gap:6px;margin:-8px 0 16px}
+.project-rail>.project-chips{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:3px 2px;margin:0}
+.project-rail>.project-chips::-webkit-scrollbar{display:none}
+.project-rail>.project-chips>.project-chip{flex-shrink:0;white-space:nowrap}
+.project-scroll{position:absolute;top:0;bottom:0;z-index:1;display:flex;align-items:center;justify-content:center;width:30px;padding:0;color:var(--secondary);opacity:0;pointer-events:none;transition:opacity .15s,color .15s}
+.project-scroll[hidden]{display:none}
+.project-scroll-left{left:0;background:linear-gradient(to right,var(--panel) 65%,transparent)}
+.project-scroll-right{right:0;background:linear-gradient(to left,var(--panel) 65%,transparent)}
+.project-scroll .icon{width:14px;height:14px}
+.project-scroll-left .icon{transform:rotate(90deg)}
+.project-scroll-right .icon{transform:rotate(-90deg)}
+.project-rail:hover .project-scroll,.project-rail:focus-within .project-scroll{opacity:1;pointer-events:auto}
+.project-scroll:hover{color:var(--accent)}
+@media(hover:none){.project-scroll{opacity:.8;pointer-events:auto}}
 .project-chip{display:inline-flex;align-items:center;gap:5px;font-size:10px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--secondary)}
 .project-chip:hover{background:var(--surface-hover)}
 .project-chip.selected{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
 .project-chip span{font-size:9px;color:var(--muted)}
 .project-chip.selected span{color:var(--accent)}
-.project-manage{width:26px;height:25px;margin-left:auto;border:1px solid var(--line);border-radius:8px}
+.project-manage{width:26px;height:25px;flex-shrink:0;border:1px solid var(--line);border-radius:8px}
 .project-manage .icon{width:14px;height:14px}
 .task-tag-manager>p{font-size:12px;line-height:1.8;color:var(--secondary)}
 .task-tag-list{margin-top:18px}
@@ -1385,7 +1401,7 @@ function dateLabel() {
 // Selector for the same control after a redraw, e.g. [data-action="habit"][data-id="…"].
 function controlSelector(el) {
   if (!el?.dataset?.action) return null;
-  return ['action', 'id', 'category', 'view', 'project', 'stat']
+  return ['action', 'id', 'category', 'view', 'project', 'stat', 'direction']
     .filter(key => el.dataset[key] !== undefined)
     .map(key => `[data-${key}="${CSS.escape(el.dataset[key])}"]`)
     .join('');
@@ -1403,6 +1419,7 @@ function render() {
       selector,
       $(selector)?.scrollTop || 0,
     ]),
+    projectLeft = $('#task-projects')?.scrollLeft || 0,
     pageY = window.scrollY,
     focused = $('#app').contains(document.activeElement) ? controlSelector(document.activeElement) : null;
   const day = today();
@@ -1432,6 +1449,7 @@ function render() {
       <aside class="character-column" aria-label="Your character and adventure">${character.renderCharacter()}${battle.renderMonster()}</aside>
     </div><footer class="app-footer"><button data-action="sync" class="footer-sync"><span class="local-dot"></span><span data-sync-label>${esc(sync.syncLabel())}</span></button><div class="day-summary" aria-label="Daily progress"><span>${icon('check')}<strong>${completed}</strong> tasks cleared</span><span>${icon('leaf')}<strong>${habitsDone}</strong> habits today</span></div><button data-action="vault">Open Vault <kbd>⌘ J</kbd></button></footer></main>`;
   for (const [selector, top] of scrolls) if ($(selector)) $(selector).scrollTop = top;
+  tasks.syncProjects(projectLeft);
   if (window.scrollY !== pageY) window.scrollTo(0, pageY);
   if (focused && !app.modal) $(`#app ${focused}`)?.focus({ preventScroll: true });
   syncLoops($('#app'));
@@ -5229,7 +5247,25 @@ function renderProjects() {
   const untagged = app.state.tasks.filter(t => !t.done && E.tags(t.title).length === 0).length;
   const chip = (project, label, count) =>
     `<button class="project-chip ${project?.startsWith('#') ? 'tag-colored' : ''} ${app.taskProject === project ? 'selected' : ''}" ${project?.startsWith('#') ? tagStyle(project) : ''} data-action="task-project" data-project="${esc(project || '')}" aria-pressed="${app.taskProject === project}">${esc(label)}${count === null ? '' : `<span>${count}</span>`}</button>`;
-  return `<div class="project-chips" role="group" aria-label="Filter tasks by project">${chip(null, 'All', null)}${chip(NO_TAG, 'No tag', untagged)}${[...counts].map(([tag, n]) => chip(tag, tag, n)).join('')}${counts.size ? `<button class="icon-button project-manage" data-action="manage-task-tags" aria-label="Manage task tags" title="Manage task tags">${icon('tag')}</button>` : ''}</div>`;
+  return `<div class="project-filter"><div class="project-rail"><div class="project-chips" id="task-projects" role="group" aria-label="Filter tasks by project">${chip(null, 'All', null)}${chip(NO_TAG, 'No tag', untagged)}${[...counts].map(([tag, n]) => chip(tag, tag, n)).join('')}</div>${['left', 'right'].map(direction => `<button class="project-scroll project-scroll-${direction}" data-action="scroll-task-tags" data-direction="${direction}" aria-label="Show ${direction === 'left' ? 'previous' : 'more'} task tags" aria-controls="task-projects" hidden>${icon('chevron')}</button>`).join('')}</div>${counts.size ? `<button class="icon-button project-manage" data-action="manage-task-tags" aria-label="Manage task tags" title="Manage task tags">${icon('tag')}</button>` : ''}</div>`;
+}
+let projectObserver;
+// Keep the rail's edges accurate after scrolling, filtering, and resizing the dashboard.
+function syncProjects(left = 0) {
+  projectObserver?.disconnect();
+  const rail = $('#task-projects');
+  if (!rail) return;
+  const update = () => {
+    if (!rail.isConnected) return;
+    const end = rail.scrollWidth - rail.clientWidth;
+    $('.project-scroll-left').hidden = rail.scrollLeft <= 2;
+    $('.project-scroll-right').hidden = rail.scrollLeft >= end - 2;
+  };
+  rail.scrollLeft = left;
+  rail.addEventListener('scroll', update, { passive: true });
+  projectObserver = new ResizeObserver(update);
+  projectObserver.observe(rail);
+  update();
 }
 function dueLabel(due) {
   const days = E.daysBetween(today(), due);
@@ -5328,6 +5364,10 @@ function celebrateToggle(r, sourceRect, id, day) {
   );
 }
 const actions = {
+  'scroll-task-tags'(b) {
+    const rail = $('#task-projects');
+    rail?.scrollBy({ left: Math.max(100, rail.clientWidth * .7) * (b.dataset.direction === 'left' ? -1 : 1), behavior: motionOK() ? 'smooth' : 'instant' });
+  },
   'task-steps'(b, { id }) {
     if (app.openTaskSteps.has(id)) app.openTaskSteps.delete(id); else app.openTaskSteps.add(id);
     view.render();
@@ -5455,7 +5495,7 @@ const forms = {
   },
 };
 
-Object.assign(exports,{renderProjects,renderTasks,modals,actions,forms});
+Object.assign(exports,{renderProjects,syncProjects,renderTasks,modals,actions,forms});
 },
 "ui-quest.js":function(require,exports){
 // One task, a little trail, and a device-local focus timer.

@@ -71,3 +71,33 @@ test('odds with powered gear agree with real fights, and plain gear keeps exact 
   }
   const plain=funded();E.buy(plain,'twig');assert.equal(E.estimateOdds(E.oddsInput(plain)),E.victoryOdds(plain));
 });
+
+test('late upgrades and healing improve readiness, and fights record the scaled gear contributions', () => {
+  const state = funded();
+  for (const stat of E.CATEGORIES) state.xp[stat] = 1800;
+  for (const id of ['star', 'moon', 'starhelm', 'thornwall', 'windstep', 'drake', 'starfall', 'potion']) E.buy(state, id);
+  E.prepareSpell(state, 'starfall');
+  state.hp = 158;
+  state.monster.number = 16;
+  assert.equal(E.combatStats(state).attack, 24 + 5 + 5 + 4);
+  assert.equal(E.combatStats(state).armor, 5 + 2);
+
+  state.monster.number = 64;
+  const odds = s => E.estimateOdds(E.oddsInput(s));
+  const baseline = odds(state);
+  const upgraded = id => E.withItem(state, E.SHOP.find(i => i.id === id));
+  assert.ok(odds(upgraded('dawn')) - baseline > .07, 'a sword upgrade still makes a difference');
+  assert.ok(odds(upgraded('sunplate')) - baseline > .10, 'an armor upgrade still makes a difference');
+  const healed = structuredClone(state);
+  assert.equal(E.usePotion(healed), 48);
+  assert.ok(odds(healed) - baseline > .13, 'a potion still makes a difference');
+
+  const result = E.fight(state, day, () => .6);
+  const [attack, hit] = result.events;
+  assert.equal(attack.weaponBonus, 11);
+  assert.equal(attack.amount, attack.baseDamage + 11 + 24 + 4 + 5);
+  assert.equal(hit.armorBonus, 11);
+  assert.equal(hit.amount, hit.rawDamage - 11 - 2);
+  checkChain(result);
+  assert.doesNotThrow(() => E.validateState(state));
+});

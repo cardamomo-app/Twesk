@@ -1,8 +1,8 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.42.9';
-import {validHabitIcon} from './habit-icons.js?v=0.42.9';
-import {rememberTagColors,validTagColors} from './tag-colors.js?v=0.42.9';
-export {tagHue,setTagColor} from './tag-colors.js?v=0.42.9';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.43.0';
+import {validHabitIcon} from './habit-icons.js?v=0.43.0';
+import {rememberTagColors,validTagColors} from './tag-colors.js?v=0.43.0';
+export {tagHue,setTagColor} from './tag-colors.js?v=0.43.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -624,6 +624,14 @@ export const monsterGold = number => 8+2*Math.min(number-1,16);
 export function monsterStats(number) {
   return { hp: Math.round(112*(1+.06*(number-1))), attack: 24+Math.floor(.8*(number-1)+.5) };
 }
+// Keep the first two chapters intact. Beyond them, flat gear bonuses gain
+// another copy of their base value per 40 encounters, rounded to whole points.
+export function gearBonus(item, encounterNumber) {
+  if (!item) return 0;
+  if (item.type !== 'weapon' && item.type !== 'armor') return item.bonus;
+  const progress = Math.max(0, encounterNumber - 16);
+  return Math.round(item.bonus * (40 + progress) / 40);
+}
 // Bonuses from the prepared spell, active tonic, and companion, by source and in total.
 export function boostSources(s) {
   return { spell: preparedSpell(s)?.boosts || {}, tonic: activeTonic(s)?.boosts || {}, pet: activePetItem(s)?.boosts || {} };
@@ -631,9 +639,12 @@ export function boostSources(s) {
 const boostTotal = (s,key) => Object.values(boostSources(s)).reduce((n,b)=>n+(b[key]||0),0);
 const dodgeChance = (s, bonus) => Math.min(.75, soulDeflect(level(s,'soul'))+bonus+(SHOP.find(i => i.id === s.equipped.boots)?.bonus || 0)/100);
 export function combatStats(s) {
+  const number = s.monster.number;
+  const weapon = SHOP.find(i => i.id === s.equipped.weapon);
+  const armor = SHOP.find(i => i.id === s.equipped.armor);
   return {
-    hp: s.hp, max: maxHP(s), attack: 4*(level(s,'mind')-1)+(SHOP.find(i => i.id === s.equipped.weapon)?.bonus || 0)+boostTotal(s,'attack'),
-    armor: (SHOP.find(i => i.id === s.equipped.armor)?.bonus || 0)+boostTotal(s,'armor'),
+    hp: s.hp, max: maxHP(s), attack: 4*(level(s,'mind')-1)+gearBonus(weapon,number)+boostTotal(s,'attack'),
+    armor: gearBonus(armor,number)+boostTotal(s,'armor'),
     dodge: dodgeChance(s,boostTotal(s,'dodge')), rally: 15*(level(s,'heart')-1)+boostTotal(s,'rally'),
   };
 }
@@ -740,7 +751,7 @@ export function fight(s,today,rng=Math.random) {
   const spell=preparedSpell(s), tonic=activeTonic(s), pet=activePetItem(s), boosts=boostSources(s);
   if(spell) { s.supplies[spell.id]--;s.preparedSpell=null; }
   if(tonic) s.tonic=null;
-  const weaponBonus=SHOP.find(i=>i.id===s.equipped.weapon)?.bonus||0;
+  const weaponBonus=gearBonus(SHOP.find(i=>i.id===s.equipped.weapon),s.monster.number);
   const detail={weaponBonus,mindBonus:4*(level(s,'mind')-1),spellBonus:boosts.spell.attack||0,petBonus:boosts.pet.attack||0,spellArmor:boosts.spell.armor||0,petArmor:boosts.pet.armor||0,petDodge:boosts.pet.dodge||0,nonPetDodge:dodgeChance(s,(boosts.spell.dodge||0)+(boosts.tonic.dodge||0)),petRally:boosts.pet.rally||0,soulLevel:level(s,'soul'),heartLevel:level(s,'heart')};
   const {hp,enemy}=encounter(p,m,gearPowers(s),rng,events,detail);
   s.hp=hp; let loot=null;

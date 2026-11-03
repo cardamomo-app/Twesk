@@ -1,10 +1,10 @@
 // The adventurer: dashboard card, rotatable model, appearance studio.
-import * as E from './engine.js?v=0.42.9';
+import * as E from './engine.js?v=0.43.0';
 import { APPEARANCE, APPEARANCE_LABELS, appearanceOption } from './appearance.js';
-import { avatarArt, itemArt, petArt } from './art.js?v=0.42.9';
-import { $, $$, app, coin, esc, icon, modalShell, view } from './ui-core.js?v=0.42.9';
-import { commit, openModal } from './ui-modal.js?v=0.42.9';
-import { burst, sound } from './ui-effects.js?v=0.42.9';
+import { avatarArt, itemArt, petArt } from './art.js?v=0.43.0';
+import { $, $$, app, coin, equipmentDescription, esc, icon, modalShell, view } from './ui-core.js?v=0.43.0';
+import { commit, openModal } from './ui-modal.js?v=0.43.0';
+import { burst, sound } from './ui-effects.js?v=0.43.0';
 export function petCompanion() {
   const pet = E.SHOP.find(i => i.id === app.state.activePet);
   const hat = E.SHOP.find(i => i.id === app.state.petHat);
@@ -131,9 +131,10 @@ function renderAvatarModal() {
   const { weapon, armor, helmet, shield, boots } = gear(),
     pet = E.activePetItem(app.state),
     look = shownLook();
+  const encounter = app.state.monster.number + Number(!!app.state.monster.defeatedOn);
   const wearing = [
-    [weapon, 'sword', 'Unarmed', 'No weapon equipped', i => (i.power ? i.description : `+${i.bonus} attack`)],
-    [armor, 'armor', 'No armor', 'Clothing only', i => `${i.bonus} damage blocked`],
+    [weapon, 'sword', 'Unarmed', 'No weapon equipped', i => i.power ? equipmentDescription(i, encounter) : `+${E.gearBonus(i, encounter)} attack`],
+    [armor, 'armor', 'No armor', 'Clothing only', i => `${E.gearBonus(i, encounter)} damage blocked`],
     [helmet, 'helmet', 'No helmet', 'Bare-headed', i => `+${i.bonus} max HP`],
     [shield, 'shield', 'No shield', 'A free left hand', i => i.description],
     [boots, 'boot', 'Everyday boots', 'No bonus', i => `+${i.bonus}% deflect`],

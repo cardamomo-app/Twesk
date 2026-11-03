@@ -1,13 +1,13 @@
 // Shop and inventory: buying, equipping, potions, spells, and pets.
-import * as E from './engine.js?v=0.42.9';
-import { avatarFaceArt, itemArt, monsterName, petArt } from './art.js?v=0.42.9';
+import * as E from './engine.js?v=0.43.0';
+import { avatarFaceArt, itemArt, monsterName, petArt } from './art.js?v=0.43.0';
 import { APPEARANCE, APPEARANCE_LABELS } from './appearance.js';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.42.9';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.42.9';
-import { burst, countUp, sound } from './ui-effects.js?v=0.42.9';
-import { potionCount } from './ui-character.js?v=0.42.9';
-import { playDelight } from './ui-delights.js?v=0.42.9';
-import { percent, requestOdds } from './ui-odds.js?v=0.42.9';
+import { $, app, coin, equipmentDescription, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.43.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.43.0';
+import { burst, countUp, sound } from './ui-effects.js?v=0.43.0';
+import { potionCount } from './ui-character.js?v=0.43.0';
+import { playDelight } from './ui-delights.js?v=0.43.0';
+import { percent, requestOdds } from './ui-odds.js?v=0.43.0';
 // Odds are compared against the next opponent, at full health when currently at 0 HP.
 function comparisonBase() {
   const s = app.state;
@@ -57,10 +57,10 @@ function currentFor(item) {
   );
 }
 // What changes if this item replaces the current one in its slot: every stat it touches, plus win odds.
-function comparison(item) {
+function comparison(item, base) {
   if (!['weapon', 'armor', 'helmet', 'shield', 'boots', 'spell', 'pet'].includes(item.type) && !item.tonic) return '';
-  const now = E.combatStats(app.state),
-    then = E.combatStats(E.withItem(app.state, item)),
+  const now = E.combatStats(base),
+    then = E.combatStats(E.withItem(base, item)),
     selected = inUse(item);
   const changes = STAT_LABELS.filter(([key]) => Math.abs(then[key] - now[key]) > 1e-9).map(
     ([key, unit, format]) => {
@@ -74,8 +74,7 @@ function comparison(item) {
   const detail = selected
     ? `<strong>${item.tonic ? 'Active for your next fight' : item.type === 'spell' ? 'Prepared' : item.type === 'pet' ? 'Your companion' : 'Equipped'}</strong>`
     : `${changes.join(' · ') || '<strong>No change</strong>'} <small>vs ${esc(currentFor(item))}</small>`;
-  const base = comparisonBase(),
-    foe = monsterName(base.monster.number);
+  const foe = monsterName(base.monster.number);
   return `<div class="item-compare" data-compare="${item.id}"><span>${detail}</span><span class="item-odds">Win vs ${esc(foe)}${app.state.hp ? '' : ' at full HP'}: ${selected ? '<strong data-odds="now">…</strong>' : '<span data-odds="now">…</span> → <strong data-odds="with">…</strong>'}</span></div>`;
 }
 // Fill in odds after the dialog renders; results arrive from the worker.
@@ -145,6 +144,7 @@ function renderStyle(inventory) {
 }
 function renderShop(inventory) {
   queueMicrotask(fillComparisons);
+  const base = comparisonBase();
   const items = E.SHOP.filter(
     i =>
       tabGroups().includes(i.type) &&
@@ -152,9 +152,9 @@ function renderShop(inventory) {
   ).sort((a, b) => typeOrder(a) - typeOrder(b) || a.price - b.price);
   const labels = {
     weapon:
-      'One weapon at a time. Swords hit hardest; daggers and axes trade a little attack for a power. New weapons fill an empty slot automatically.',
+      'Swords give the most attack. Daggers and axes trade some attack for a power. Weapon attack grows as later opponents get stronger.',
     armor:
-      'One of each piece at a time: armor blocks damage, a raised shield halves a hit, helmets raise maximum HP (shifting current HP with it), and boots add deflect. New pieces fill an empty slot automatically.',
+      'Body armor blocks more damage as later opponents get stronger. A raised shield halves a hit, helmets raise maximum HP, and boots add deflect.',
     potion:
       'Healing potions are used right away, capped at your maximum HP. Tonics last for your next fight, one at a time, alongside a spell.',
     spell:
@@ -227,7 +227,7 @@ function renderShop(inventory) {
                         E.SHOP.find(h => h.id === app.state.petHat),
                       )
                     : itemArt(i)
-                }</div><div class="item-copy"><span class="item-tier">${i.type === 'pethat' ? 'PET HAT' : i.type === 'pet' ? `COMPANION · ${i.tier.toUpperCase()}` : i.type === 'spell' || i.tonic ? 'ONE FIGHT' : i.tier.toUpperCase()}</span><h3>${esc(i.name)}</h3><p>${esc(i.description)}</p></div>${comparison(i)}${!inventory ? `<button class="button secondary" data-action="buy" data-id="${i.id}" aria-label="${owned ? esc(i.name) + ' owned' : 'Buy ' + esc(i.name) + ' for ' + i.price + ' gold'}" ${owned || app.state.gold < i.price ? 'disabled' : ''}>${owned ? icon('check') + 'Owned' : `Buy ${coin(i.price, true)}`}</button>` : ''}${count ? `<button class="button ${inventory ? 'primary' : 'item-use'}" data-action="${action}" data-id="${i.id}" aria-label="${i.type === 'delight' ? 'Set off' : i.type === 'potion' ? 'Use' : i.type === 'spell' ? (selected ? 'Put away' : 'Prepare') : selected ? 'Remove' : 'Equip'} ${esc(i.name)}" ${(i.type === 'delight' ? !!delightBlocked : i.tonic ? !!app.state.tonic : i.type === 'potion' && app.state.hp === E.maxHP(app.state)) ? 'disabled' : ''}>${!i.tonic && i.type === 'potion' && app.state.hp === E.maxHP(app.state) ? 'Full health' : useLabel}</button>` : ''}</article>`;
+                }</div><div class="item-copy"><span class="item-tier">${i.type === 'pethat' ? 'PET HAT' : i.type === 'pet' ? `COMPANION · ${i.tier.toUpperCase()}` : i.type === 'spell' || i.tonic ? 'ONE FIGHT' : i.tier.toUpperCase()}</span><h3>${esc(i.name)}</h3><p>${esc(equipmentDescription(i, base.monster.number))}</p></div>${comparison(i, base)}${!inventory ? `<button class="button secondary" data-action="buy" data-id="${i.id}" aria-label="${owned ? esc(i.name) + ' owned' : 'Buy ' + esc(i.name) + ' for ' + i.price + ' gold'}" ${owned || app.state.gold < i.price ? 'disabled' : ''}>${owned ? icon('check') + 'Owned' : `Buy ${coin(i.price, true)}`}</button>` : ''}${count ? `<button class="button ${inventory ? 'primary' : 'item-use'}" data-action="${action}" data-id="${i.id}" aria-label="${i.type === 'delight' ? 'Set off' : i.type === 'potion' ? 'Use' : i.type === 'spell' ? (selected ? 'Put away' : 'Prepare') : selected ? 'Remove' : 'Equip'} ${esc(i.name)}" ${(i.type === 'delight' ? !!delightBlocked : i.tonic ? !!app.state.tonic : i.type === 'potion' && app.state.hp === E.maxHP(app.state)) ? 'disabled' : ''}>${!i.tonic && i.type === 'potion' && app.state.hp === E.maxHP(app.state) ? 'Full health' : useLabel}</button>` : ''}</article>`;
               })
               .join('')
           : `<div class="empty-state"><span class="empty-symbol">${icon(shopTabs.find(t => t[0] === app.shopCategory)[2])}</span><h3>No ${shopTabs.find(t => t[0] === app.shopCategory)[1].toLowerCase()} in inventory</h3><button class="button primary" data-action="shop">Browse shop</button></div>`

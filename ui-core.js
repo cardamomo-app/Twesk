@@ -1,7 +1,7 @@
 // Shared interface foundation: the app store, saving, small HTML helpers, and toasts.
-import * as E from './engine.js?v=0.42.9';
-import { goldArt } from './art.js?v=0.42.9';
-import { HABIT_ICONS } from './habit-icons.js?v=0.42.9';
+import * as E from './engine.js?v=0.43.0';
+import { goldArt } from './art.js?v=0.43.0';
+import { HABIT_ICONS } from './habit-icons.js?v=0.43.0';
 export const $ = s => document.querySelector(s);
 export const $$ = s => [...document.querySelectorAll(s)];
 export const esc = v =>
@@ -11,6 +11,14 @@ export const esc = v =>
   );
 export const KEY = 'twesk.v1';
 export const tagStyle = tag => `style="--tag-hue:${E.tagHue(app.state, tag)}"`;
+export function equipmentDescription(item, encounterNumber) {
+  if (item.type !== 'weapon' && item.type !== 'armor') return item.description;
+  const bonus = E.gearBonus(item, encounterNumber);
+  if (bonus === item.bonus) return item.description;
+  const detail = item.description.split(' · ').slice(1);
+  const stat = item.type === 'weapon' ? `+${bonus} attack` : `Reduce each hit by ${bonus}`;
+  return [stat, ...detail].join(' · ');
+}
 
 // View state that resets with a new adventure.
 export function viewDefaults() {

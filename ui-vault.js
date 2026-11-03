@@ -1,11 +1,12 @@
 // The Vault: notes, journal entries, quick capture, and recovery reflections.
-import * as E from './engine.js?v=0.42.8';
-import { $, app, coin, esc, icon, modalShell, tagStyle, toast, today, view } from './ui-core.js?v=0.42.8';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.42.8';
-import { isJournalExport, notesToText } from './notes-export.js?v=0.42.8';
-import { rewardEffect, sound } from './ui-effects.js?v=0.42.8';
-import { vaultArt } from './vault-art.js?v=0.42.8';
-import { VAULT_SECTIONS, inVaultSection, needsReview, vaultTone } from './vault-model.js?v=0.42.8';
+import * as E from './engine.js?v=0.42.9';
+import { $, app, coin, esc, icon, modalShell, tagStyle, toast, today, view } from './ui-core.js?v=0.42.9';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.42.9';
+import { isJournalExport, notesToText } from './notes-export.js?v=0.42.9';
+import { rewardEffect, sound } from './ui-effects.js?v=0.42.9';
+import { renderTagRail, syncTagRail } from './ui-tag-rail.js?v=0.42.9';
+import { vaultArt } from './vault-art.js?v=0.42.9';
+import { VAULT_SECTIONS, inVaultSection, needsReview, vaultTone } from './vault-model.js?v=0.42.9';
 const noteDate = n =>
   new Intl.DateTimeFormat('en', {
     month: 'short',
@@ -27,15 +28,20 @@ function renderTagChips() {
     for (const tag of E.tags(n.text)) counts.set(tag, (counts.get(tag) || 0) + 1);
   if (app.vaultTag && !counts.has(app.vaultTag)) counts.set(app.vaultTag, 0);
   if (!counts.size) return '';
-  return `<div class="project-chips vault-tag-chips" role="group" aria-label="Filter notes by hashtag">${[
-    ...counts,
-  ]
+  const chips = [...counts]
     .sort((a, b) => b[1] - a[1])
     .map(
       ([tag, n]) =>
         `<button class="project-chip tag-colored ${app.vaultTag === tag ? 'selected' : ''}" ${tagStyle(tag)} data-action="vault-tag" data-tag="${esc(tag)}" aria-pressed="${app.vaultTag === tag}">${esc(tag)}<span>${n}</span></button>`,
     )
-    .join('')}</div>`;
+    .join('');
+  return renderTagRail({
+    id: 'vault-projects',
+    label: 'Filter notes by hashtag',
+    item: 'Vault',
+    chips,
+    className: 'vault-tag-chips',
+  });
 }
 const visibleNotes = () =>
   app.state.notes
@@ -111,7 +117,9 @@ const refreshVault = () => {
   // Notes hidden by a new search or filter drop out of the selection, so downloads match what is shown.
   const shown = new Set(visibleNotes().map(n => n.id));
   for (const id of app.vaultSelected) if (!shown.has(id)) app.vaultSelected.delete(id);
+  const tagScrollLeft = $('#vault-projects')?.scrollLeft || 0;
   $('#vault-tags').innerHTML = renderTagChips();
+  syncTagRail('vault-projects', tagScrollLeft);
   $('#vault-results').innerHTML = renderNotes();
   refreshDownload();
 };

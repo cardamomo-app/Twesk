@@ -1,9 +1,10 @@
 // Task list, project filter, task dialog, and task actions.
-import * as E from './engine.js?v=0.42.8';
-import { $, app, coin, esc, icon, iconButton, modalShell, tagStyle, toast, today, view } from './ui-core.js?v=0.42.8';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.42.8';
-import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.42.8';
-import { TAG_COLORS } from './tag-colors.js?v=0.42.8';
+import * as E from './engine.js?v=0.42.9';
+import { $, app, coin, esc, icon, iconButton, modalShell, tagStyle, toast, today, view } from './ui-core.js?v=0.42.9';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.42.9';
+import { burst, motionOK, rewardEffect, sound } from './ui-effects.js?v=0.42.9';
+import { renderTagRail } from './ui-tag-rail.js?v=0.42.9';
+import { TAG_COLORS } from './tag-colors.js?v=0.42.9';
 
 const NO_TAG = '__untagged__';
 const inProject = t => !app.taskProject || (app.taskProject === NO_TAG ? E.tags(t.title).length === 0 : E.tags(t.title).includes(app.taskProject));
@@ -21,25 +22,13 @@ export function renderProjects() {
   const untagged = app.state.tasks.filter(t => !t.done && E.tags(t.title).length === 0).length;
   const chip = (project, label, count) =>
     `<button class="project-chip ${project?.startsWith('#') ? 'tag-colored' : ''} ${app.taskProject === project ? 'selected' : ''}" ${project?.startsWith('#') ? tagStyle(project) : ''} data-action="task-project" data-project="${esc(project || '')}" aria-pressed="${app.taskProject === project}">${esc(label)}${count === null ? '' : `<span>${count}</span>`}</button>`;
-  return `<div class="project-filter"><div class="project-rail"><div class="project-chips" id="task-projects" role="group" aria-label="Filter tasks by project">${chip(null, 'All', null)}${chip(NO_TAG, 'No tag', untagged)}${[...counts].map(([tag, n]) => chip(tag, tag, n)).join('')}</div>${['left', 'right'].map(direction => `<button class="project-scroll project-scroll-${direction}" data-action="scroll-task-tags" data-direction="${direction}" aria-label="Show ${direction === 'left' ? 'previous' : 'more'} task tags" aria-controls="task-projects" hidden>${icon('chevron')}</button>`).join('')}</div>${counts.size ? `<button class="icon-button project-manage" data-action="manage-task-tags" aria-label="Manage task tags" title="Manage task tags">${icon('tag')}</button>` : ''}</div>`;
-}
-let projectObserver;
-// Keep the rail's edges accurate after scrolling, filtering, and resizing the dashboard.
-export function syncProjects(left = 0) {
-  projectObserver?.disconnect();
-  const rail = $('#task-projects');
-  if (!rail) return;
-  const update = () => {
-    if (!rail.isConnected) return;
-    const end = rail.scrollWidth - rail.clientWidth;
-    $('.project-scroll-left').hidden = rail.scrollLeft <= 2;
-    $('.project-scroll-right').hidden = rail.scrollLeft >= end - 2;
-  };
-  rail.scrollLeft = left;
-  rail.addEventListener('scroll', update, { passive: true });
-  projectObserver = new ResizeObserver(update);
-  projectObserver.observe(rail);
-  update();
+  const chips = chip(null, 'All', null) + chip(NO_TAG, 'No tag', untagged) +
+    [...counts].map(([tag, n]) => chip(tag, tag, n)).join('');
+  const rail = renderTagRail({ id: 'task-projects', label: 'Filter tasks by project', item: 'task', chips });
+  const manage = counts.size
+    ? `<button class="icon-button project-manage" data-action="manage-task-tags" aria-label="Manage task tags" title="Manage task tags">${icon('tag')}</button>`
+    : '';
+  return `<div class="project-filter">${rail}${manage}</div>`;
 }
 function dueLabel(due) {
   const days = E.daysBetween(today(), due);
@@ -138,10 +127,6 @@ function celebrateToggle(r, sourceRect, id, day) {
   );
 }
 export const actions = {
-  'scroll-task-tags'(b) {
-    const rail = $('#task-projects');
-    rail?.scrollBy({ left: Math.max(100, rail.clientWidth * .7) * (b.dataset.direction === 'left' ? -1 : 1), behavior: motionOK() ? 'smooth' : 'instant' });
-  },
   'task-steps'(b, { id }) {
     if (app.openTaskSteps.has(id)) app.openTaskSteps.delete(id); else app.openTaskSteps.add(id);
     view.render();

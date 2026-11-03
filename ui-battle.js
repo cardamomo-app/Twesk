@@ -1,15 +1,15 @@
 // The monster card, victory odds, and animated encounters.
-import * as E from './engine.js?v=0.42.8';
-import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.42.8';
-import { combatSpellCue, describeCombatEvent, combatHealthImpacts } from './combat-presentation.js?v=0.42.8';
-import { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile } from './combat-attack-art.js?v=0.42.8';
-import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.42.8';
-import { playSfx, prepareSfx, prepareBattleSfx, stopSfx, unlockSfx } from './sfx.js?v=0.42.8';
-import { createCombatClock, combatTurnTiming, createCombatImpactSequence, combatSoundTimeline } from './combat-playback.js?v=0.42.8';
-import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.42.8';
-import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.42.8';
-import { announceBadges, commit } from './ui-modal.js?v=0.42.8';
-import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.42.8';
+import * as E from './engine.js?v=0.42.9';
+import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.42.9';
+import { combatSpellCue, describeCombatEvent, combatHealthImpacts } from './combat-presentation.js?v=0.42.9';
+import { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile } from './combat-attack-art.js?v=0.42.9';
+import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.42.9';
+import { playSfx, prepareSfx, prepareBattleSfx, stopSfx, unlockSfx } from './sfx.js?v=0.42.9';
+import { createCombatClock, combatTurnTiming, createCombatImpactSequence, combatSoundTimeline } from './combat-playback.js?v=0.42.9';
+import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.42.9';
+import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.42.9';
+import { announceBadges, commit } from './ui-modal.js?v=0.42.9';
+import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.42.9';
 export function renderMonster() {
   const number = app.state.monster.number,
     won = !!app.state.monster.defeatedOn,

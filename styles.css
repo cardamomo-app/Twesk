@@ -272,8 +272,7 @@ button.monster-scene:hover{background:color-mix(in srgb,var(--surface) 65%,trans
 .tasks-panel{min-width:0}
 .project-filter{display:flex;align-items:center;gap:7px;min-width:0;flex-shrink:0;margin:-8px 0 16px}
 .project-rail{position:relative;min-width:0;flex:1}
-.project-chips{display:flex;flex-wrap:wrap;gap:6px;margin:-8px 0 16px}
-.project-rail>.project-chips{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:3px 2px;margin:0}
+.project-rail>.project-chips{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:3px 2px}
 .project-rail>.project-chips::-webkit-scrollbar{display:none}
 .project-rail>.project-chips>.project-chip{flex-shrink:0;white-space:nowrap}
 .project-scroll{position:absolute;top:0;bottom:0;z-index:1;display:flex;align-items:center;justify-content:center;width:30px;padding:0;color:var(--secondary);opacity:0;pointer-events:none;transition:opacity .15s,color .15s}

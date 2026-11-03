@@ -286,8 +286,7 @@ button.monster-scene:hover{background:color-mix(in srgb,var(--surface) 65%,trans
 .tasks-panel{min-width:0}
 .project-filter{display:flex;align-items:center;gap:7px;min-width:0;flex-shrink:0;margin:-8px 0 16px}
 .project-rail{position:relative;min-width:0;flex:1}
-.project-chips{display:flex;flex-wrap:wrap;gap:6px;margin:-8px 0 16px}
-.project-rail>.project-chips{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:3px 2px;margin:0}
+.project-rail>.project-chips{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:3px 2px}
 .project-rail>.project-chips::-webkit-scrollbar{display:none}
 .project-rail>.project-chips>.project-chip{flex-shrink:0;white-space:nowrap}
 .project-scroll{position:absolute;top:0;bottom:0;z-index:1;display:flex;align-items:center;justify-content:center;width:30px;padding:0;color:var(--secondary);opacity:0;pointer-events:none;transition:opacity .15s,color .15s}
@@ -1370,6 +1369,7 @@ const sync=require("ui-sync.js");
 const history=require("ui-history.js");
 const { installDelights, renderAmbience }=require("ui-delights.js");
 const { installTagSuggest }=require("ui-tag-suggest.js");
+const { scrollTagRail, syncTagRail }=require("ui-tag-rail.js");
 const { installTaskOrder }=require("ui-task-order.js");
 const fullscreen=require("ui-fullscreen.js");
 const weather=require("ui-weather.js");
@@ -1449,7 +1449,7 @@ function render() {
       <aside class="character-column" aria-label="Your character and adventure">${character.renderCharacter()}${battle.renderMonster()}</aside>
     </div><footer class="app-footer"><button data-action="sync" class="footer-sync"><span class="local-dot"></span><span data-sync-label>${esc(sync.syncLabel())}</span></button><div class="day-summary" aria-label="Daily progress"><span>${icon('check')}<strong>${completed}</strong> tasks cleared</span><span>${icon('leaf')}<strong>${habitsDone}</strong> habits today</span></div><button data-action="vault">Open Vault <kbd>⌘ J</kbd></button></footer></main>`;
   for (const [selector, top] of scrolls) if ($(selector)) $(selector).scrollTop = top;
-  tasks.syncProjects(projectLeft);
+  syncTagRail('task-projects', projectLeft);
   if (window.scrollY !== pageY) window.scrollTo(0, pageY);
   if (focused && !app.modal) $(`#app ${focused}`)?.focus({ preventScroll: true });
   syncLoops($('#app'));
@@ -1460,11 +1460,12 @@ function render() {
 // Redrawing the same dialog (after buying or equipping, say) keeps its scroll positions and skips the
 // arrival animation; a newly opened dialog starts at the top.
 let shownModal = null;
-const KEEP_SCROLL = ['.modal', '.shop-tabs'];
+const KEEP_SCROLL = ['.modal', '.shop-tabs', '#vault-projects'];
 function renderModal() {
   $('#app').inert = !!app.modal;
   if (!app.modal) {
     $('#overlay').innerHTML = '';
+    syncTagRail('vault-projects');
     document.body.classList.remove('modal-open');
     shownModal = null;
     return;
@@ -1487,6 +1488,7 @@ function renderModal() {
     const el = $(`#overlay ${sel}`);
     if (el) Object.assign(el, { scrollTop: top, scrollLeft: left });
   }
+  syncTagRail('vault-projects');
   // Combat uses local, finite effect timelines; scanning every SVG on each turn
   // to synchronize idle loops forces unnecessary style work during the replay.
   if (app.modal.type !== 'battle' || app.modal.finished) syncLoops($('#overlay'));
@@ -1509,6 +1511,7 @@ function handleClick(event) {
   if (app.taskDragging) return;
   if (a === 'close-modal' || a === 'dismiss') return closeModal();
   if (a === 'stat-info') return toggleStatTooltip(b);
+  if (a === 'scroll-tags') return scrollTagRail(b);
   actions[a]?.(b, { a, id, sourceRect });
 }
 $('#app').addEventListener('click', handleClick);
@@ -5229,6 +5232,7 @@ const E=require("engine.js");
 const { $, app, coin, esc, icon, iconButton, modalShell, tagStyle, toast, today, view }=require("ui-core.js");
 const { closeModal, commit, openModal }=require("ui-modal.js");
 const { burst, motionOK, rewardEffect, sound }=require("ui-effects.js");
+const { renderTagRail }=require("ui-tag-rail.js");
 const { TAG_COLORS }=require("tag-colors.js");
 
 const NO_TAG = '__untagged__';
@@ -5247,25 +5251,13 @@ function renderProjects() {
   const untagged = app.state.tasks.filter(t => !t.done && E.tags(t.title).length === 0).length;
   const chip = (project, label, count) =>
     `<button class="project-chip ${project?.startsWith('#') ? 'tag-colored' : ''} ${app.taskProject === project ? 'selected' : ''}" ${project?.startsWith('#') ? tagStyle(project) : ''} data-action="task-project" data-project="${esc(project || '')}" aria-pressed="${app.taskProject === project}">${esc(label)}${count === null ? '' : `<span>${count}</span>`}</button>`;
-  return `<div class="project-filter"><div class="project-rail"><div class="project-chips" id="task-projects" role="group" aria-label="Filter tasks by project">${chip(null, 'All', null)}${chip(NO_TAG, 'No tag', untagged)}${[...counts].map(([tag, n]) => chip(tag, tag, n)).join('')}</div>${['left', 'right'].map(direction => `<button class="project-scroll project-scroll-${direction}" data-action="scroll-task-tags" data-direction="${direction}" aria-label="Show ${direction === 'left' ? 'previous' : 'more'} task tags" aria-controls="task-projects" hidden>${icon('chevron')}</button>`).join('')}</div>${counts.size ? `<button class="icon-button project-manage" data-action="manage-task-tags" aria-label="Manage task tags" title="Manage task tags">${icon('tag')}</button>` : ''}</div>`;
-}
-let projectObserver;
-// Keep the rail's edges accurate after scrolling, filtering, and resizing the dashboard.
-function syncProjects(left = 0) {
-  projectObserver?.disconnect();
-  const rail = $('#task-projects');
-  if (!rail) return;
-  const update = () => {
-    if (!rail.isConnected) return;
-    const end = rail.scrollWidth - rail.clientWidth;
-    $('.project-scroll-left').hidden = rail.scrollLeft <= 2;
-    $('.project-scroll-right').hidden = rail.scrollLeft >= end - 2;
-  };
-  rail.scrollLeft = left;
-  rail.addEventListener('scroll', update, { passive: true });
-  projectObserver = new ResizeObserver(update);
-  projectObserver.observe(rail);
-  update();
+  const chips = chip(null, 'All', null) + chip(NO_TAG, 'No tag', untagged) +
+    [...counts].map(([tag, n]) => chip(tag, tag, n)).join('');
+  const rail = renderTagRail({ id: 'task-projects', label: 'Filter tasks by project', item: 'task', chips });
+  const manage = counts.size
+    ? `<button class="icon-button project-manage" data-action="manage-task-tags" aria-label="Manage task tags" title="Manage task tags">${icon('tag')}</button>`
+    : '';
+  return `<div class="project-filter">${rail}${manage}</div>`;
 }
 function dueLabel(due) {
   const days = E.daysBetween(today(), due);
@@ -5364,10 +5356,6 @@ function celebrateToggle(r, sourceRect, id, day) {
   );
 }
 const actions = {
-  'scroll-task-tags'(b) {
-    const rail = $('#task-projects');
-    rail?.scrollBy({ left: Math.max(100, rail.clientWidth * .7) * (b.dataset.direction === 'left' ? -1 : 1), behavior: motionOK() ? 'smooth' : 'instant' });
-  },
   'task-steps'(b, { id }) {
     if (app.openTaskSteps.has(id)) app.openTaskSteps.delete(id); else app.openTaskSteps.add(id);
     view.render();
@@ -5495,7 +5483,52 @@ const forms = {
   },
 };
 
-Object.assign(exports,{renderProjects,syncProjects,renderTasks,modals,actions,forms});
+Object.assign(exports,{renderProjects,renderTasks,modals,actions,forms});
+},
+"ui-tag-rail.js":function(require,exports){
+// Shared horizontal tag filters for Tasks and the Vault.
+const { $, esc, icon }=require("ui-core.js");
+const { motionOK }=require("ui-effects.js");
+
+function renderTagRail({ id, label, item, chips, className = '' }) {
+  const arrows = [['left', 'previous'], ['right', 'more']].map(([direction, word]) =>
+    `<button class="project-scroll project-scroll-${direction}" data-action="scroll-tags" data-direction="${direction}" aria-label="Show ${word} ${esc(item)} tags" aria-controls="${id}" hidden>${icon('chevron')}</button>`,
+  ).join('');
+  return `<div class="project-rail ${className}"><div class="project-chips" id="${id}" role="group" aria-label="${esc(label)}">${chips}</div>${arrows}</div>`;
+}
+
+const observers = new Map();
+function syncTagRail(id, left) {
+  observers.get(id)?.disconnect();
+  observers.delete(id);
+  const rail = $(`#${id}`);
+  if (!rail) return;
+  const wrapper = rail.parentElement;
+  const previous = wrapper.querySelector('.project-scroll-left');
+  const next = wrapper.querySelector('.project-scroll-right');
+  const update = () => {
+    const end = rail.scrollWidth - rail.clientWidth;
+    previous.hidden = rail.scrollLeft <= 2;
+    next.hidden = rail.scrollLeft >= end - 2;
+  };
+  if (left !== undefined) rail.scrollLeft = left;
+  rail.addEventListener('scroll', update, { passive: true });
+  const observer = new ResizeObserver(update);
+  observer.observe(rail);
+  observers.set(id, observer);
+  update();
+}
+
+function scrollTagRail(button) {
+  const rail = button.closest('.project-rail').querySelector('.project-chips');
+  const distance = Math.max(100, rail.clientWidth * .7);
+  rail.scrollBy({
+    left: button.dataset.direction === 'left' ? -distance : distance,
+    behavior: motionOK() ? 'smooth' : 'instant',
+  });
+}
+
+Object.assign(exports,{renderTagRail,syncTagRail,scrollTagRail});
 },
 "ui-quest.js":function(require,exports){
 // One task, a little trail, and a device-local focus timer.
@@ -6041,6 +6074,7 @@ const { $, app, coin, esc, icon, modalShell, tagStyle, toast, today, view }=requ
 const { closeModal, commit, openModal }=require("ui-modal.js");
 const { isJournalExport, notesToText }=require("notes-export.js");
 const { rewardEffect, sound }=require("ui-effects.js");
+const { renderTagRail, syncTagRail }=require("ui-tag-rail.js");
 const { vaultArt }=require("vault-art.js");
 const { VAULT_SECTIONS, inVaultSection, needsReview, vaultTone }=require("vault-model.js");
 const noteDate = n =>
@@ -6064,15 +6098,20 @@ function renderTagChips() {
     for (const tag of E.tags(n.text)) counts.set(tag, (counts.get(tag) || 0) + 1);
   if (app.vaultTag && !counts.has(app.vaultTag)) counts.set(app.vaultTag, 0);
   if (!counts.size) return '';
-  return `<div class="project-chips vault-tag-chips" role="group" aria-label="Filter notes by hashtag">${[
-    ...counts,
-  ]
+  const chips = [...counts]
     .sort((a, b) => b[1] - a[1])
     .map(
       ([tag, n]) =>
         `<button class="project-chip tag-colored ${app.vaultTag === tag ? 'selected' : ''}" ${tagStyle(tag)} data-action="vault-tag" data-tag="${esc(tag)}" aria-pressed="${app.vaultTag === tag}">${esc(tag)}<span>${n}</span></button>`,
     )
-    .join('')}</div>`;
+    .join('');
+  return renderTagRail({
+    id: 'vault-projects',
+    label: 'Filter notes by hashtag',
+    item: 'Vault',
+    chips,
+    className: 'vault-tag-chips',
+  });
 }
 const visibleNotes = () =>
   app.state.notes
@@ -6148,7 +6187,9 @@ const refreshVault = () => {
   // Notes hidden by a new search or filter drop out of the selection, so downloads match what is shown.
   const shown = new Set(visibleNotes().map(n => n.id));
   for (const id of app.vaultSelected) if (!shown.has(id)) app.vaultSelected.delete(id);
+  const tagScrollLeft = $('#vault-projects')?.scrollLeft || 0;
   $('#vault-tags').innerHTML = renderTagChips();
+  syncTagRail('vault-projects', tagScrollLeft);
   $('#vault-results').innerHTML = renderNotes();
   refreshDownload();
 };

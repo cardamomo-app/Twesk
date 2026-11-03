@@ -1,28 +1,29 @@
 // Twesk interface entry: page layout, dialog routing, event wiring, and startup.
-import * as E from './engine.js?v=0.42.8';
-import { flameArt } from './brand-art.js?v=0.42.8';
-import { avatarFaceArt } from './art.js?v=0.42.8';
-import { awardAchievements } from './achievements.js?v=0.42.8';
-import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.42.8';
-import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.42.8';
-import { closeModal, openModal } from './ui-modal.js?v=0.42.8';
-import * as tasks from './ui-tasks.js?v=0.42.8';
-import * as quest from './ui-quest.js?v=0.42.8';
-import * as habits from './ui-habits.js?v=0.42.8';
-import * as vault from './ui-vault.js?v=0.42.8';
-import { vaultArt } from './vault-art.js?v=0.42.8';
-import * as character from './ui-character.js?v=0.42.8';
-import * as shop from './ui-shop.js?v=0.42.8';
-import * as battle from './ui-battle.js?v=0.42.8';
-import * as collection from './ui-collection.js?v=0.42.8';
-import * as settings from './ui-settings.js?v=0.42.8';
-import * as sync from './ui-sync.js?v=0.42.8';
-import * as history from './ui-history.js?v=0.42.8';
-import { installDelights, renderAmbience } from './ui-delights.js?v=0.42.8';
-import { installTagSuggest } from './ui-tag-suggest.js?v=0.42.8';
-import { installTaskOrder } from './ui-task-order.js?v=0.42.8';
-import * as fullscreen from './ui-fullscreen.js?v=0.42.8';
-import * as weather from './ui-weather.js?v=0.42.8';
+import * as E from './engine.js?v=0.42.9';
+import { flameArt } from './brand-art.js?v=0.42.9';
+import { avatarFaceArt } from './art.js?v=0.42.9';
+import { awardAchievements } from './achievements.js?v=0.42.9';
+import { $, $$, KEY, app, esc, icon, iconButton, persist, toast, today, view } from './ui-core.js?v=0.42.9';
+import { dismissStatTooltip, hideStatTooltip, toggleStatTooltip } from './ui-stat-tooltip.js?v=0.42.9';
+import { closeModal, openModal } from './ui-modal.js?v=0.42.9';
+import * as tasks from './ui-tasks.js?v=0.42.9';
+import * as quest from './ui-quest.js?v=0.42.9';
+import * as habits from './ui-habits.js?v=0.42.9';
+import * as vault from './ui-vault.js?v=0.42.9';
+import { vaultArt } from './vault-art.js?v=0.42.9';
+import * as character from './ui-character.js?v=0.42.9';
+import * as shop from './ui-shop.js?v=0.42.9';
+import * as battle from './ui-battle.js?v=0.42.9';
+import * as collection from './ui-collection.js?v=0.42.9';
+import * as settings from './ui-settings.js?v=0.42.9';
+import * as sync from './ui-sync.js?v=0.42.9';
+import * as history from './ui-history.js?v=0.42.9';
+import { installDelights, renderAmbience } from './ui-delights.js?v=0.42.9';
+import { installTagSuggest } from './ui-tag-suggest.js?v=0.42.9';
+import { scrollTagRail, syncTagRail } from './ui-tag-rail.js?v=0.42.9';
+import { installTaskOrder } from './ui-task-order.js?v=0.42.9';
+import * as fullscreen from './ui-fullscreen.js?v=0.42.9';
+import * as weather from './ui-weather.js?v=0.42.9';
 
 const features = [tasks, quest, habits, vault, character, shop, battle, collection, settings, history, sync, fullscreen, weather];
 const modals = Object.assign({}, ...features.map(f => f.modals));
@@ -99,7 +100,7 @@ function render() {
       <aside class="character-column" aria-label="Your character and adventure">${character.renderCharacter()}${battle.renderMonster()}</aside>
     </div><footer class="app-footer"><button data-action="sync" class="footer-sync"><span class="local-dot"></span><span data-sync-label>${esc(sync.syncLabel())}</span></button><div class="day-summary" aria-label="Daily progress"><span>${icon('check')}<strong>${completed}</strong> tasks cleared</span><span>${icon('leaf')}<strong>${habitsDone}</strong> habits today</span></div><button data-action="vault">Open Vault <kbd>⌘ J</kbd></button></footer></main>`;
   for (const [selector, top] of scrolls) if ($(selector)) $(selector).scrollTop = top;
-  tasks.syncProjects(projectLeft);
+  syncTagRail('task-projects', projectLeft);
   if (window.scrollY !== pageY) window.scrollTo(0, pageY);
   if (focused && !app.modal) $(`#app ${focused}`)?.focus({ preventScroll: true });
   syncLoops($('#app'));
@@ -110,11 +111,12 @@ function render() {
 // Redrawing the same dialog (after buying or equipping, say) keeps its scroll positions and skips the
 // arrival animation; a newly opened dialog starts at the top.
 let shownModal = null;
-const KEEP_SCROLL = ['.modal', '.shop-tabs'];
+const KEEP_SCROLL = ['.modal', '.shop-tabs', '#vault-projects'];
 function renderModal() {
   $('#app').inert = !!app.modal;
   if (!app.modal) {
     $('#overlay').innerHTML = '';
+    syncTagRail('vault-projects');
     document.body.classList.remove('modal-open');
     shownModal = null;
     return;
@@ -137,6 +139,7 @@ function renderModal() {
     const el = $(`#overlay ${sel}`);
     if (el) Object.assign(el, { scrollTop: top, scrollLeft: left });
   }
+  syncTagRail('vault-projects');
   // Combat uses local, finite effect timelines; scanning every SVG on each turn
   // to synchronize idle loops forces unnecessary style work during the replay.
   if (app.modal.type !== 'battle' || app.modal.finished) syncLoops($('#overlay'));
@@ -159,6 +162,7 @@ function handleClick(event) {
   if (app.taskDragging) return;
   if (a === 'close-modal' || a === 'dismiss') return closeModal();
   if (a === 'stat-info') return toggleStatTooltip(b);
+  if (a === 'scroll-tags') return scrollTagRail(b);
   actions[a]?.(b, { a, id, sourceRect });
 }
 $('#app').addEventListener('click', handleClick);

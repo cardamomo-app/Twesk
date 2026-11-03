@@ -1,14 +1,14 @@
 // One task, a little trail, and a device-local focus timer.
-import * as E from './engine.js?v=0.42.8';
-import * as T from './quest-timer.js?v=0.42.8';
-import { goldArt } from './art.js?v=0.42.8';
-import { avatarJourneyArt } from './avatar-model.js?v=0.42.8';
-import { petJourneyArt } from './equipment-art.js?v=0.42.8';
-import { resolvedHabitIcon } from './habit-icons.js?v=0.42.8';
-import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.42.8';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.42.8';
-import { rewardEffect, sound } from './ui-effects.js?v=0.42.8';
-import { unlockSfx } from './sfx.js?v=0.42.8';
+import * as E from './engine.js?v=0.42.9';
+import * as T from './quest-timer.js?v=0.42.9';
+import { goldArt } from './art.js?v=0.42.9';
+import { avatarJourneyArt } from './avatar-model.js?v=0.42.9';
+import { petJourneyArt } from './equipment-art.js?v=0.42.9';
+import { resolvedHabitIcon } from './habit-icons.js?v=0.42.9';
+import { $, app, coin, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.42.9';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.42.9';
+import { rewardEffect, sound } from './ui-effects.js?v=0.42.9';
+import { unlockSfx } from './sfx.js?v=0.42.9';
 
 const TIMER_KEY = 'twesk.quest-timer.v1';
 let timer = T.freshTimer(), dialDrag = null, owed = 0;

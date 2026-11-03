@@ -1,17 +1,19 @@
 // Opening and closing dialogs, saving changes as transactions, and seal notifications.
-import { awardAchievements } from './achievements.js?v=0.43.1';
-import { badgeArt } from './badge-art.js?v=0.43.1';
-import { $, app, esc, persist, toast, today, view } from './ui-core.js?v=0.43.1';
-import { burst, motionOK, sound } from './ui-effects.js?v=0.43.1';
-import { hideStatTooltip } from './ui-stat-tooltip.js?v=0.43.1';
-import * as E from './engine.js?v=0.43.1';
+import { awardAchievements } from './achievements.js?v=0.44.0';
+import { badgeArt } from './badge-art.js?v=0.44.0';
+import { $, app, esc, persist, toast, today, view } from './ui-core.js?v=0.44.0';
+import { burst, motionOK, sound } from './ui-effects.js?v=0.44.0';
+import { hideStatTooltip } from './ui-stat-tooltip.js?v=0.44.0';
+import * as E from './engine.js?v=0.44.0';
 export function commit(fn, { deferBadges = false } = {}) {
   if (app.busy) return;
   // Only commit a complete successful transaction.
   const previous = structuredClone(app.state);
   try {
+    const day = today();
+    if (app.state.monster.defeatedOn && app.state.monster.defeatedOn < day) E.rollover(app.state, day);
     const result = fn(),
-      newBadges = awardAchievements(app.state, today());
+      newBadges = awardAchievements(app.state, day);
     view.render();
     persist();
     if (deferBadges) app.pendingBadges.push(...newBadges);

@@ -1,20 +1,20 @@
 // Shop and inventory: buying, equipping, potions, spells, and pets.
-import * as E from './engine.js?v=0.43.1';
-import { avatarFaceArt, itemArt, monsterName, petArt } from './art.js?v=0.43.1';
+import * as E from './engine.js?v=0.44.0';
+import { avatarFaceArt, itemArt, monsterName, petArt } from './art.js?v=0.44.0';
 import { APPEARANCE, APPEARANCE_LABELS } from './appearance.js';
-import { $, app, coin, equipmentDescription, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.43.1';
-import { closeModal, commit, openModal } from './ui-modal.js?v=0.43.1';
-import { burst, countUp, sound } from './ui-effects.js?v=0.43.1';
-import { potionCount } from './ui-character.js?v=0.43.1';
-import { playDelight } from './ui-delights.js?v=0.43.1';
-import { percent, requestOdds } from './ui-odds.js?v=0.43.1';
+import { $, app, coin, equipmentDescription, esc, icon, modalShell, toast, today, view } from './ui-core.js?v=0.44.0';
+import { closeModal, commit, openModal } from './ui-modal.js?v=0.44.0';
+import { burst, countUp, sound } from './ui-effects.js?v=0.44.0';
+import { potionCount } from './ui-character.js?v=0.44.0';
+import { playDelight } from './ui-delights.js?v=0.44.0';
+import { percent, requestOdds } from './ui-odds.js?v=0.44.0';
 // Odds are compared against the next opponent, at full health when currently at 0 HP.
 function comparisonBase() {
   const s = app.state;
   return {
     ...s,
     hp: s.hp || E.maxHP(s),
-    monster: { number: s.monster.number + (s.monster.defeatedOn ? 1 : 0) },
+    monster: s.monster.defeatedOn ? E.nextMonster(s) : s.monster,
   };
 }
 const inUse = item =>
@@ -75,7 +75,7 @@ function comparison(item, base) {
     ? `<strong>${item.tonic ? 'Active for your next fight' : item.type === 'spell' ? 'Prepared' : item.type === 'pet' ? 'Your companion' : 'Equipped'}</strong>`
     : `${changes.join(' · ') || '<strong>No change</strong>'} <small>vs ${esc(currentFor(item))}</small>`;
   const foe = monsterName(base.monster.number);
-  return `<div class="item-compare" data-compare="${item.id}"><span>${detail}</span><span class="item-odds">Win vs ${esc(foe)}${app.state.hp ? '' : ' at full HP'}: ${selected ? '<strong data-odds="now">…</strong>' : '<span data-odds="now">…</span> → <strong data-odds="with">…</strong>'}</span></div>`;
+  return `<div class="item-compare" data-compare="${item.id}"><span>${detail}</span><span class="item-odds">${app.state.monster.defeatedOn ? 'Projected win vs' : 'Win vs'} ${esc(foe)}${app.state.hp ? '' : ' at full HP'}: ${selected ? '<strong data-odds="now">…</strong>' : '<span data-odds="now">…</span> → <strong data-odds="with">…</strong>'}</span></div>`;
 }
 // Fill in odds after the dialog renders; results arrive from the worker.
 function fillComparisons() {

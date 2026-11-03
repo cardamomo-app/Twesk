@@ -1,8 +1,8 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.43.1';
-import {validHabitIcon} from './habit-icons.js?v=0.43.1';
-import {rememberTagColors,validTagColors} from './tag-colors.js?v=0.43.1';
-export {tagHue,setTagColor} from './tag-colors.js?v=0.43.1';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.44.0';
+import {validHabitIcon} from './habit-icons.js?v=0.44.0';
+import {rememberTagColors,validTagColors} from './tag-colors.js?v=0.44.0';
+export {tagHue,setTagColor} from './tag-colors.js?v=0.44.0';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -615,14 +615,28 @@ export function usePotion(s,id='potion') {
 }
 export function rollover(s,today) {
   reopenTasks(s,today);
-  if (s.monster.defeatedOn && s.monster.defeatedOn < today) { s.monster.number++; s.monster.defeatedOn = null; }
+  if (s.monster.defeatedOn && s.monster.defeatedOn < today) s.monster = nextMonster(s);
+}
+const LAST_STANDARD_ENCOUNTER = 24;
+function difficultyCap(number) {
+  return Math.min(Math.floor(number * .45), 2 * Math.max(0, number - LAST_STANDARD_ENCOUNTER));
+}
+// Only permanent stat levels inform the floor. Store the result at unlock so
+// later level-ups, gear swaps, and preparation all help against the same foe.
+export function nextMonster(s) {
+  const number = s.monster.number + 1;
+  const averageLevel = CATEGORIES.reduce((sum, stat) => sum + level(s, stat), 0) / CATEGORIES.length;
+  const floor = 1 + Math.round(10 * (averageLevel - 1));
+  const extra = Math.min(difficultyCap(number), Math.max(0, floor - number));
+  return { number, defeatedOn: null, ...(extra ? { difficulty: number + extra } : {}) };
 }
 // Soul deflect chance rises quickly at first and levels off below 50%, so late fights stay real.
 export const soulDeflect = soulLevel => .5*(1-.76**(soulLevel-1));
 // Gold loot grows with each monster until #17, then holds at a quest-sized 40.
 export const monsterGold = number => 8+2*Math.min(number-1,16);
-export function monsterStats(number) {
-  return { hp: Math.round(112*(1+.06*(number-1))), attack: 24+Math.floor(.8*(number-1)+.5) };
+export function monsterStats(number, difficulty = number) {
+  const steps = difficulty - 1;
+  return { hp: Math.round(112*(1+.06*steps)), attack: 24+Math.floor(.8*steps+.5) };
 }
 // Keep the first two chapters intact. Beyond them, flat gear bonuses gain
 // another copy of their base value per 40 encounters, rounded to whole points.
@@ -649,7 +663,7 @@ export function combatStats(s) {
   };
 }
 export function victoryOdds(s) {
-  const p = combatStats(s), m = monsterStats(s.monster.number);
+  const p = combatStats(s), m = monsterStats(s.monster.number, s.monster.difficulty);
   if (p.hp <= 0) return 0;
   // Exact odds cover the plain rules; weapon and shield powers are sampled with the same encounter code as a fight.
   if (Object.keys(gearPowers(s)).length) return sampleOdds(s);
@@ -676,12 +690,12 @@ export function victoryOdds(s) {
 }
 // Exact odds for early encounters; a fixed-seed sample of the same rules keeps larger ones responsive.
 export function estimateOdds(s) {
-  const p=combatStats(s), m=monsterStats(s.monster.number);
+  const p=combatStats(s), m=monsterStats(s.monster.number, s.monster.difficulty);
   if(p.max<200 && m.hp<200 && !Object.keys(gearPowers(s)).length) return victoryOdds(s);
   return sampleOdds(s);
 }
 function sampleOdds(s) {
-  const p=combatStats(s), m=monsterStats(s.monster.number), powers=gearPowers(s);
+  const p=combatStats(s), m=monsterStats(s.monster.number, s.monster.difficulty), powers=gearPowers(s);
   if (p.hp<=0) return 0;
   let wins=0, seed=123456789;
   const rng=()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};
@@ -697,7 +711,7 @@ export function withItem(s,item) {
   else { next.equipped[item.type]=item.id; if(item.type==='helmet') next.hp=Math.min(maxHP(next),s.hp+maxHP(next)-maxHP(s)); }
   return next;
 }
-export const oddsInput = s => ({hp:s.hp,xp:s.xp,equipped:s.equipped,preparedSpell:s.preparedSpell,tonic:s.tonic??null,activePet:s.activePet??null,monster:{number:s.monster.number}});
+export const oddsInput = s => ({hp:s.hp,xp:s.xp,equipped:s.equipped,preparedSpell:s.preparedSpell,tonic:s.tonic??null,activePet:s.activePet??null,monster:{number:s.monster.number,difficulty:s.monster.difficulty}});
 // One encounter under the full rules. Fights record each step in `events`; odds sampling passes none.
 // Randomness is drawn in a fixed order, and only for powers that are equipped, so plain gear keeps
 // the same rolls as before powers existed.
@@ -747,7 +761,8 @@ function encounter(p,m,w,rng,events=null,d={}) {
 export function fight(s,today,rng=Math.random) {
   if (!s.hp) throw new Error('Recover some HP before fighting.');
   if (s.monster.defeatedOn) throw new Error('Your next opponent arrives tomorrow.');
-  const p=combatStats(s), m=monsterStats(s.monster.number), events=[];
+  const {number, difficulty} = s.monster;
+  const p=combatStats(s), m=monsterStats(number, difficulty), events=[];
   const spell=preparedSpell(s), tonic=activeTonic(s), pet=activePetItem(s), boosts=boostSources(s);
   if(spell) { s.supplies[spell.id]--;s.preparedSpell=null; }
   if(tonic) s.tonic=null;
@@ -765,7 +780,7 @@ export function fight(s,today,rng=Math.random) {
       else { const item=choices[Math.floor(rng()*choices.length)]; s.inventory.push(item.id); loot={type:'equipment',id:item.id}; }
     }
   } else s.pendingRecovery=true;
-  const result={id:uid(),day:today,monster:s.monster.number,won:enemy===0,loot,hp,events,spell:spell?.id||null,tonic:tonic?.id||null,pet:pet?.id||null,petHat:pet?s.petHat:null,initialHP:p.hp,maxHP:p.max,playerName:s.name,appearance:{...(s.appearance||DEFAULT_APPEARANCE)},loadout:{...s.equipped},levels:Object.fromEntries(CATEGORIES.map(c=>[c,level(s,c)]))};
+  const result={id:uid(),day:today,monster:number,...(difficulty === undefined ? {} : {difficulty}),won:enemy===0,loot,hp,events,spell:spell?.id||null,tonic:tonic?.id||null,pet:pet?.id||null,petHat:pet?s.petHat:null,initialHP:p.hp,maxHP:p.max,playerName:s.name,appearance:{...(s.appearance||DEFAULT_APPEARANCE)},loadout:{...s.equipped},levels:Object.fromEntries(CATEGORIES.map(c=>[c,level(s,c)]))};
   s.battles.unshift(result); s.battles=s.battles.slice(0,50); return result;
 }
 
@@ -794,6 +809,8 @@ export function validateState(value) {
   s.settings.lastBackup ??= null; s.settings.backupNudge ??= null;
   if (![s.settings.lastBackup,s.settings.backupNudge].every(v=>v===null||date(v))) fail();
   if (!s.monster||!integer(s.monster.number,1,500)||(s.monster.defeatedOn!==null&&!date(s.monster.defeatedOn))) fail();
+  const validDifficulty = (difficulty, number) => difficulty === undefined || integer(difficulty, number, number + difficultyCap(number));
+  if (!validDifficulty(s.monster.difficulty, s.monster.number)) fail();
   if (!integer(s.potions)||typeof s.pendingRecovery!=='boolean'||!s.noteGold||typeof s.noteGold!=='object'||Array.isArray(s.noteGold)) fail();
   if (!Object.entries(s.noteGold).every(([k,v])=>date(k)&&integer(v,0,6))||!s.reviewDates.every(date)) fail();
   s.supplies ??= {};s.ambience ??= null;s.petHat ??= null;s.preparedSpell ??= null;s.activePet ??= null;s.tonic ??= null;s.wardrobe ??= [];if(s.equipped)for(const slot of ['helmet','shield','boots'])s.equipped[slot]??=null;
@@ -828,6 +845,7 @@ export function validateState(value) {
   for(const n of s.notes)if(n.taskSteps!==undefined&&!validSteps(n.taskSteps))fail();
   for(const battle of s.battles) {
     if(!id(battle.id)||!date(battle.day)||!integer(battle.monster,1,500)||typeof battle.won!=='boolean'||!integer(battle.hp)||!array(battle.events,2000)||!battle.events.length) fail();
+    if(!validDifficulty(battle.difficulty, battle.monster)) fail();
     for(const event of battle.events) {
       if(!event||!['attack','hit','deflect','rally','stagger'].includes(event.type)||!integer(event.amount)||!integer(event.hp)||!integer(event.enemy)) fail();
       for(const key of ['round','actualDamage','baseDamage','weaponBonus','mindBonus','spellBonus','spellBlock','petBonus','petBlock','petHeal','critBonus','venomBonus','healed','sunder','shieldBlock','thorns','hpBefore','enemyBefore','rawDamage','blocked','armorBonus','soulLevel','heartLevel']) if(event[key]!==undefined&&!integer(event[key])) fail();

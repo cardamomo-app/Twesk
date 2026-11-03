@@ -1,15 +1,15 @@
 // The monster card, victory odds, and animated encounters.
-import * as E from './engine.js?v=0.43.1';
-import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.43.1';
-import { combatSpellCue, describeCombatEvent, combatHealthImpacts } from './combat-presentation.js?v=0.43.1';
-import { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile } from './combat-attack-art.js?v=0.43.1';
-import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.43.1';
-import { playSfx, prepareSfx, prepareBattleSfx, stopSfx, unlockSfx } from './sfx.js?v=0.43.1';
-import { createCombatClock, combatTurnTiming, createCombatImpactSequence, combatSoundTimeline } from './combat-playback.js?v=0.43.1';
-import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.43.1';
-import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.43.1';
-import { announceBadges, commit } from './ui-modal.js?v=0.43.1';
-import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.43.1';
+import * as E from './engine.js?v=0.44.0';
+import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.44.0';
+import { combatSpellCue, describeCombatEvent, combatHealthImpacts } from './combat-presentation.js?v=0.44.0';
+import { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile } from './combat-attack-art.js?v=0.44.0';
+import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.44.0';
+import { playSfx, prepareSfx, prepareBattleSfx, stopSfx, unlockSfx } from './sfx.js?v=0.44.0';
+import { createCombatClock, combatTurnTiming, createCombatImpactSequence, combatSoundTimeline } from './combat-playback.js?v=0.44.0';
+import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.44.0';
+import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.44.0';
+import { announceBadges, commit } from './ui-modal.js?v=0.44.0';
+import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.44.0';
 export function renderMonster() {
   const number = app.state.monster.number,
     won = !!app.state.monster.defeatedOn,
@@ -76,7 +76,8 @@ function renderBattleModal() {
     index = app.modal.index ?? -1;
   const event = index >= 0 ? r.events[Math.min(index, r.events.length - 1)] : null;
   const previous = index > 0 ? r.events[index - 1] : null,
-    enemyMax = E.monsterStats(r.monster).hp;
+    enemyStats = E.monsterStats(r.monster, r.difficulty),
+    enemyMax = enemyStats.hp;
   const maximum = r.maxHP || E.maxHP(app.state),
     initial = r.initialHP ?? app.modal.initialHP;
   const hp = finished
@@ -142,7 +143,7 @@ function renderBattleModal() {
   const stageClass = (finished
     ? `outcome ${r.won ? 'victory' : 'defeat'}`
     : event
-      ? `event-${event.type}${app.modal.impact && (app.modal.health?.enemy ?? event.enemy) === 0 ? ' finishing-strike' : ''}${event.hp === 0 ? ' fatal-hit' : ''}${isHeavy(event, r.monster) ? ' heavy-blow' : ''}`
+      ? `event-${event.type}${app.modal.impact && (app.modal.health?.enemy ?? event.enemy) === 0 ? ' finishing-strike' : ''}${event.hp === 0 ? ' fatal-hit' : ''}${isHeavy(event, enemyStats.attack) ? ' heavy-blow' : ''}`
       : 'ready') + (attackCue ? ` actor-${attackCue.side} motion-${attackCue.profile.motion} style-${attackCue.profile.id}${attackCue.twin ? ' quick-strike' : ''}` : '') + (app.modal.impact && !finished ? ' impacted' : '');
   const effect = side => {
     if (finished) return '';
@@ -256,10 +257,10 @@ function resumeBattleTrack() {
 window.addEventListener('focus', resumeBattleTrack);
 window.addEventListener('pageshow', resumeBattleTrack);
 // The top quarter of attack rolls land as heavy blows: bigger sound and a stage shake.
-const isHeavy = (event, monster) =>
+const isHeavy = (event, enemyAttack) =>
   event.type === 'attack'
     ? event.baseDamage >= 30
-    : event.type === 'hit' && event.rawDamage >= E.monsterStats(monster).attack + 6;
+    : event.type === 'hit' && event.rawDamage >= enemyAttack + 6;
 // Victory: confetti, a stamped banner, a glowing loot reveal, and a gold count-up.
 function celebrateOutcome(r) {
   if (!r.won) return;
@@ -306,14 +307,14 @@ export function finishBattlePlayback(playSound = true) {
     app.pendingBadges = [];
   }
 }
-function turnPlan(event, result, reduced, before) {
+function turnPlan(event, result, reduced, before, enemyAttack) {
   const spellItem = E.SHOP.find(i => i.id === result.spell), petItem = E.SHOP.find(i => i.id === result.pet);
   const spell = combatSpellCue(event, spellItem);
   const pet = combatPetCue(event, petItem);
   const healthPlan = combatHealthImpacts(event, { ...before, spell: spellItem, pet: petItem });
   const finishingPhase = healthPlan.before.enemy > 0 && event.enemy === 0 ? healthPlan.beats.find(b => b.enemy === 0)?.phase : null;
   const attack = combatAttackCue(event, { weapon: E.SHOP.find(i => i.id === (result.loadout || app.state.equipped).weapon), monster: result.monster });
-  const heavy = isHeavy(event, result.monster);
+  const heavy = isHeavy(event, enemyAttack);
   const launch = event.type === 'attack' ? [['weaponSwing', { voice: attack.profile.voice, pitch: attack.profile.pitch }]]
     : ['hit', 'deflect'].includes(event.type) ? [['creatureAttack', { voice: attack.profile.voice, pitch: attack.profile.pitch }]] : [];
   const impact = [], grunt = [];
@@ -335,11 +336,12 @@ function animateBattle(result, initialHP, replay = false) {
   stopBattlePlayback();
   battleAudio.unlock();
   const reduced = app.state.settings.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const enemyStats = E.monsterStats(result.monster, result.difficulty);
   const turns = result.events.map((event, index) => turnPlan(event, result, reduced, {
     hpBefore: result.events[index - 1]?.hp ?? initialHP,
-    enemyBefore: result.events[index - 1]?.enemy ?? E.monsterStats(result.monster).hp,
+    enemyBefore: result.events[index - 1]?.enemy ?? enemyStats.hp,
     previousAttack: result.events[index - 1],
-  }));
+  }, enemyStats.attack));
   const entries = [['start'], [result.won ? 'victory' : 'defeat'], ...(result.pet ? [['petCall', { pet: result.pet }]] : [])];
   for (const turn of turns) {
     entries.push(...turn.launch, ...turn.impact, ...turn.grunt);
@@ -378,7 +380,7 @@ function animateBattle(result, initialHP, replay = false) {
       stage.classList.add(phase === 'impact' ? 'impacted' : `${phase}-landed`); stage.dataset.phase = phase;
       if (phase === turn.finishingPhase) stage.classList.add('finishing-strike');
       app.modal.health = { hp: beat.hp, enemy: beat.enemy };
-      const maximum = result.maxHP || E.maxHP(app.state), enemyMax = E.monsterStats(result.monster).hp;
+      const maximum = result.maxHP || E.maxHP(app.state), enemyMax = enemyStats.hp;
       for (const [side, hp, max] of [['player', beat.hp, maximum], ['enemy', beat.enemy, enemyMax]]) {
         const bar = $('#battle-' + side + '-bar');
         if (bar && +bar.getAttribute('aria-valuenow') !== hp) { bar.firstElementChild.style.transform = `scaleX(${hp / max})`; bar.setAttribute('aria-valuenow', hp); $('#battle-' + side + '-hp').textContent = `${hp} / ${max} HP`; }

@@ -1,6 +1,6 @@
 // Shared horizontal tag filters for Tasks and the Vault.
-import { $, esc, icon } from './ui-core.js?v=0.43.0';
-import { motionOK } from './ui-effects.js?v=0.43.0';
+import { $, esc, icon } from './ui-core.js?v=0.43.1';
+import { motionOK } from './ui-effects.js?v=0.43.1';
 
 export function renderTagRail({ id, label, item, chips, className = '' }) {
   const arrows = [['left', 'previous'], ['right', 'more']].map(([direction, word]) =>

@@ -1,8 +1,8 @@
 import {APPEARANCE,DEFAULT_APPEARANCE,appearanceOption,validAppearance} from './appearance.js';
-import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.43.0';
-import {validHabitIcon} from './habit-icons.js?v=0.43.0';
-import {rememberTagColors,validTagColors} from './tag-colors.js?v=0.43.0';
-export {tagHue,setTagColor} from './tag-colors.js?v=0.43.0';
+import {createProgress,ensureProgress,awardAchievements,ACHIEVEMENTS} from './achievements.js?v=0.43.1';
+import {validHabitIcon} from './habit-icons.js?v=0.43.1';
+import {rememberTagColors,validTagColors} from './tag-colors.js?v=0.43.1';
+export {tagHue,setTagColor} from './tag-colors.js?v=0.43.1';
 export const CATEGORIES = ['body', 'mind', 'soul', 'heart'];
 export const TASK_GOLD = { quick: 4, standard: 10, hard: 18, quest: 40 };
 export const CATEGORY_META = {
@@ -507,11 +507,11 @@ export const SHOP = [
   { id: 'bearded', name: 'Bearded axe', type: 'weapon', kind: 'axe', tier: 'large', price: 140, bonus: 0, power: { sunder: 4 }, description: 'No attack bonus · each strike dents the monster: −1 to its attacks, up to −4' },
   { id: 'nightshade', name: 'Nightshade dirk', type: 'weapon', kind: 'dagger', tier: 'special', price: 260, bonus: 2, power: { crit: .2 }, description: '+2 attack · 20% chance of a critical hit that doubles your roll' },
   { id: 'frostbite', name: 'Frostbite axe', type: 'weapon', kind: 'axe', tier: 'special', price: 270, bonus: 2, power: { stagger: .14 }, description: '+2 attack · 14% chance to freeze the monster for a turn' },
-  { id: 'eclipse', name: 'Eclipse fang', type: 'weapon', kind: 'dagger', tier: 'legendary', price: 600, bonus: 4, power: { twin: .2, drain: .1 }, description: '+4 attack · 20% chance of a second strike · heals you for 10% of damage dealt' },
+  { id: 'eclipse', name: 'Eclipse fang', type: 'weapon', kind: 'dagger', tier: 'legendary', price: 600, bonus: 4, power: { twin: .2, drain: .05 }, description: '+4 attack · 20% chance of a second strike · heals you for 5% of damage dealt' },
   { id: 'buckler', name: 'Oak buckler', type: 'shield', tier: 'basic', price: 40, bonus: 15, power: { block: .15 }, description: '15% chance to raise your shield and halve a hit' },
   { id: 'kite', name: 'Ironbound kite shield', type: 'shield', tier: 'large', price: 130, bonus: 25, power: { block: .25 }, description: '25% chance to raise your shield and halve a hit' },
   { id: 'thornwall', name: 'Thornwall shield', type: 'shield', tier: 'special', price: 260, bonus: 25, power: { block: .25, thorns: 6 }, description: '25% chance to halve a hit · blocked attackers take 6 damage' },
-  { id: 'aegis', name: 'Sunward aegis', type: 'shield', tier: 'legendary', price: 600, bonus: 35, power: { block: .35, thorns: 8 }, description: '35% chance to halve a hit · blocked attackers take 8 damage' },
+  { id: 'aegis', name: 'Sunward aegis', type: 'shield', tier: 'legendary', price: 600, bonus: 25, power: { block: .25, thorns: 8 }, description: '25% chance to halve a hit · blocked attackers take 8 damage' },
   { id: 'trailboots', name: 'Trail boots', type: 'boots', tier: 'basic', price: 30, bonus: 3, description: '+3% deflect chance · broken in and comfy' },
   { id: 'rangerboots', name: 'Ranger boots', type: 'boots', tier: 'large', price: 110, bonus: 6, description: '+6% deflect chance · quiet on every path' },
   { id: 'windstep', name: 'Windstep boots', type: 'boots', tier: 'special', price: 240, bonus: 9, description: '+9% deflect chance · little wings at the heel' },

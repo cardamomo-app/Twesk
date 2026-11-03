@@ -61,6 +61,21 @@ test('raised shields halve a hit after armor, and thorned shields strike back',(
   results.forEach(checkChain);
   assert.match(describeCombatEvent(raised[0],{shield:E.SHOP.find(i=>i.id==='thornwall')}).badges.map(b=>b.label).join(),/Thornwall shield raised.*thorns/);
 });
+test('legendary drain and block use their revised rates in a late fight', () => {
+  for (const [blockRoll, raised] of [[.24, true], [.25, false], [.30, false]]) {
+    const state = funded();
+    for (const id of ['eclipse', 'sunplate', 'aegis']) E.buy(state, id);
+    state.monster.number = 64;
+    state.hp = 75;
+    const rolls = [.5, .75, .5, blockRoll]; // Strike, twin strike check, monster hit, shield check.
+    const [attack, hit] = E.fight(state, day, () => rolls.shift() ?? .5).events;
+    assert.equal(attack.weaponBonus, 9);
+    assert.equal(attack.healed, 2, '5% of the 31 damage dealt, rounded');
+    assert.equal(hit.armorBonus, 18);
+    assert.equal(hit.amount, raised ? 28 : 56);
+    assert.equal(hit.thorns ?? 0, raised ? 8 : 0);
+  }
+});
 test('odds with powered gear agree with real fights, and plain gear keeps exact odds',()=>{
   for(const id of ['fang','hatchet','kite']){
     const s=funded();E.buy(s,id);const expected=E.estimateOdds(E.oddsInput(s));

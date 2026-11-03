@@ -1,15 +1,15 @@
 // The monster card, victory odds, and animated encounters.
-import * as E from './engine.js?v=0.43.0';
-import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.43.0';
-import { combatSpellCue, describeCombatEvent, combatHealthImpacts } from './combat-presentation.js?v=0.43.0';
-import { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile } from './combat-attack-art.js?v=0.43.0';
-import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.43.0';
-import { playSfx, prepareSfx, prepareBattleSfx, stopSfx, unlockSfx } from './sfx.js?v=0.43.0';
-import { createCombatClock, combatTurnTiming, createCombatImpactSequence, combatSoundTimeline } from './combat-playback.js?v=0.43.0';
-import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.43.0';
-import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.43.0';
-import { announceBadges, commit } from './ui-modal.js?v=0.43.0';
-import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.43.0';
+import * as E from './engine.js?v=0.43.1';
+import { avatarArt, monsterArt, monsterName, itemArt, petArt } from './art.js?v=0.43.1';
+import { combatSpellCue, describeCombatEvent, combatHealthImpacts } from './combat-presentation.js?v=0.43.1';
+import { combatAttackArt, combatAttackCue, monsterAttackProfile, weaponAttackProfile } from './combat-attack-art.js?v=0.43.1';
+import { combatPetArt, combatPetCue, PET_COMBAT } from './combat-pet-art.js?v=0.43.1';
+import { playSfx, prepareSfx, prepareBattleSfx, stopSfx, unlockSfx } from './sfx.js?v=0.43.1';
+import { createCombatClock, combatTurnTiming, createCombatImpactSequence, combatSoundTimeline } from './combat-playback.js?v=0.43.1';
+import { burst, confetti, countUp, motionOK } from './ui-effects.js?v=0.43.1';
+import { $, app, esc, icon, modalShell, persist, today, view } from './ui-core.js?v=0.43.1';
+import { announceBadges, commit } from './ui-modal.js?v=0.43.1';
+import { oddsKey, percent, requestOdds } from './ui-odds.js?v=0.43.1';
 export function renderMonster() {
   const number = app.state.monster.number,
     won = !!app.state.monster.defeatedOn,
@@ -154,6 +154,8 @@ function renderBattleModal() {
   };
   const historyEnd = finished ? r.events.length : Math.max(0, index);
   const history = r.events.slice(Math.max(0, historyEnd - 4), historyEnd);
+  // Replays store each block, but do not store the chance it was rolled against.
+  const shieldBlock = shield && (app.modal.replay ? 'shield block' : `${shield.bonus}% block`);
   const chips = [
     ...(r.spell ? [{ label: `${E.SHOP.find(i => i.id === r.spell)?.name} · this fight`, tone: 'soul' }] : []),
     ...(tonic ? [{ label: `${tonic.name} · this fight`, tone: 'soul' }] : []),
@@ -166,7 +168,7 @@ function renderBattleModal() {
       ? [{ label: `${weapon.name} · +${visual.weaponBonus} attack${weapon.power ? ' · ' + weapon.description.split('·')[1].trim() : ''}`, tone: 'gear' }]
       : [{ label: 'Unarmed', tone: 'gear' }]),
     ...(armor ? [{ label: armor.name + (visual.armorBonus == null ? '' : ` · −${visual.armorBonus} damage`), tone: 'gear' }] : []),
-    ...(shield ? [{ label: `${shield.name} · ${shield.bonus}% block`, tone: 'gear' }] : []),
+    ...(shield ? [{ label: `${shield.name} · ${shieldBlock}`, tone: 'gear' }] : []),
     ...(boots ? [{ label: `${boots.name} · +${boots.bonus}% deflect`, tone: 'gear' }] : []),
     ...(levels.mind > 1
       ? [{ label: `Mind ${levels.mind} · +${4 * (levels.mind - 1)} attack`, tone: 'mind' }]

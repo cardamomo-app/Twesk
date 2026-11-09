@@ -520,6 +520,19 @@ uiTest('selected notes merge into one with paragraph breaks, and Undo restores t
   await page.waitFor(() => JSON.parse(localStorage.getItem('twesk.v1')).notes.length === 3);
 });
 
+uiTest('Command+Enter adds a task with its selected reward after focus leaves the form', async page => {
+  await page.open();
+  await page.click('#app .tasks-panel [data-action="new-task"]');
+  await page.fill('#task-title', 'Pick a different reward');
+  await page.click('.task-size-choice:has([value="hard"])');
+  // Safari can leave focus on the body after the reward click. Reproduce that in Chromium.
+  await page.click('#modal-title');
+  assert.ok(await page.evaluate(() => document.activeElement === document.body));
+  await page.press('Enter', ['Meta']);
+  await page.waitFor(() => !document.querySelector('#task-form'));
+  assert.equal((await page.save()).tasks.find(t => t.title === 'Pick a different reward')?.tier, 'hard');
+});
+
 uiTest('hashtags autocomplete in task titles and captured notes', async page => {
   const s = E.freshState();
   E.saveTask(s, { title: 'Draft outline #thesis', tier: 'quick' }, '2026-10-01');
